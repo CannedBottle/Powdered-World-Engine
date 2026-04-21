@@ -1,0 +1,40 @@
+[gd_scene format=3 uid="uid://df1cfc8y5mrb8"]
+
+[ext_resource type="Script" uid="uid://cg71nmlt7e1c7" path="res://PowderedWorldEngine/Scripts/sand.gd" id="1_8xgu8"]
+[ext_resource type="Script" uid="uid://d2qdk4il2fgb5" path="res://PowderedWorldEngine/Scripts/cameraController.gd" id="3_0u12h"]
+
+[node name="powdered world" type="Node2D" unique_id=977043437]
+script = ExtResource("1_8xgu8")
+debug_mode = true
+pixel_scale = 4
+simulation_speed = 1.0
+individual_chunk_size = 32
+chunk_grid_size = Vector2i(3, 5)
+chunk_insomnia = 3
+
+[node name="camera" type="Camera2D" parent="." unique_id=151552355]
+anchor_mode = 0
+script = ExtResource("3_0u12h")
+use_camera_drag = true
+
+[node name="ui" type="CanvasLayer" parent="." unique_id=1573810607]
+
+[node name="fps" type="Label" parent="ui" unique_id=302606628]
+offset_right = 40.0
+offset_bottom = 23.0
+scale = Vector2(2, 2)
+text = "121"
+
+[node name="update time" type="Label" parent="ui" unique_id=1050402707]
+offset_top = 40.0
+offset_right = 40.0
+offset_bottom = 63.0
+scale = Vector2(2, 2)
+text = "u:"
+
+[node name="draw time" type="Label" parent="ui" unique_id=158418325]
+offset_top = 90.0
+offset_right = 40.0
+offset_bottom = 113.0
+scale = Vector2(2, 2)
+text = "d:"

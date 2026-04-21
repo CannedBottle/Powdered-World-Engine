@@ -1,0 +1,39 @@
+[gd_scene format=3 uid="uid://df1cfc8y5mrb8"]
+
+[ext_resource type="Script" uid="uid://cg71nmlt7e1c7" path="res://Scripts/game.gd" id="1_ebmjs"]
+[ext_resource type="Texture2D" uid="uid://bl44kum6qyruu" path="res://Assets/sandTileset.png" id="2_qxrlw"]
+
+[sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_wrm1d"]
+texture = ExtResource("2_qxrlw")
+texture_region_size = Vector2i(1, 1)
+0:0/0 = 0
+0:0/0/custom_data_0 = "Sand"
+1:0/0 = 0
+1:0/0/custom_data_0 = "Water"
+2:0/0 = 0
+2:0/0/custom_data_0 = "Acid"
+3:0/0 = 0
+3:0/0/custom_data_0 = "Stone"
+4:0/0 = 0
+4:0/0/custom_data_0 = "Wall"
+
+[sub_resource type="TileSet" id="TileSet_ebmjs"]
+tile_size = Vector2i(1, 1)
+custom_data_layer_0/name = "Name"
+custom_data_layer_0/type = 4
+sources/0 = SubResource("TileSetAtlasSource_wrm1d")
+
+[node name="Game" type="Node2D" unique_id=977043437]
+script = ExtResource("1_ebmjs")
+
+[node name="simulation" type="TileMapLayer" parent="." unique_id=1608165003]
+tile_set = SubResource("TileSet_ebmjs")
+
+[node name="fps" type="Label" parent="." unique_id=302606628]
+offset_right = 40.0
+offset_bottom = 23.0
+scale = Vector2(0.5, 0.5)
+text = "121"
+
+[node name="Camera2D" type="Camera2D" parent="." unique_id=151552355]
+position = Vector2(64, 36)
