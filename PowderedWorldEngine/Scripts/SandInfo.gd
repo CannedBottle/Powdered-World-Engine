@@ -48,12 +48,25 @@ const element_classes: Dictionary = {
 			var new_chunk_pos: Vector2i = neighbor_pos / chunk.chunk_size
 			
 			write_chunk = cell.sim_ref.chunks[new_chunk_pos]
+			
 		
 		if not neighbor_pos == Vector2i(-1, -1) and write_chunk.cells[neighbor_pos].element == SandInfo.Elements.AIR:
 			var neighbor_cell: Cell = write_chunk.cells[neighbor_pos]
 			
 			chunk.updated_cells.get_or_add(cell.position, cell)
 			write_chunk.updated_cells.get_or_add(neighbor_cell.position, neighbor_cell)
+			
+			
+			#if on edge of chunk and successfully updates, wake chunk next to it
+			if cell.chunk_edge and not cell.sim_edge:
+				#wake the chunk nearest to cell
+				var pos_addition: Vector2i = Vector2i(
+					int(cell.position.x == chunk.max_extents.x) - int(cell.position.x == chunk.min_extents.x),
+					int(cell.position.y == chunk.max_extents.y) - int(cell.position.y == chunk.min_extents.y)
+				)
+				if not pos_addition == Vector2i.ZERO:
+					cell.sim_ref.chunks[chunk.chunk_position + pos_addition].wake()
+			
 			
 			chunk.swap_cells(cell, neighbor_cell)
 			write_chunk.wake()
@@ -95,7 +108,7 @@ class Cell:
 	var chunk_size: int
 	var neighbors: Dictionary[String, Vector2i] # if neighbor is an edge, will show up as (0, 0)
 	var neighbor_strings: Array[String] = ["topleft", "topmiddle", "topright", "leftmiddle", "rightmiddle", "bottomleft", "bottommiddle", "bottomright"]
-	var sim_ref: simulation
+	var sim_ref: PowderSimulation
 	var updated: bool = false
 	var random: int = randi_range(0, 1)
 	var brightness: float = randf_range(0.9, 1.0)
@@ -106,11 +119,12 @@ class Cell:
 	
 	#if on the edge of a chunk, so can update using both chunks
 	var chunk_edge: bool = false
+	var sim_edge: bool = false
 	
 	var element_class: Element
 	
 	@warning_ignore("shadowed_variable")
-	func _init(position: Vector2i, chunk_size: int, type: Elements, sim_ref: simulation, chunk: Chunk, chunk_idx: int) -> void:
+	func _init(position: Vector2i, chunk_size: int, type: Elements, sim_ref: PowderSimulation, chunk: Chunk, chunk_idx: int) -> void:
 		self.position = position
 		self.element = type
 		self.chunk_size = chunk_size
@@ -123,6 +137,8 @@ class Cell:
 		create_element_class()
 		# if the cell is at the edge of the chunk or not
 		self.chunk_edge = position.x == chunk.max_extents.x or position.y == chunk.max_extents.y or position.x == chunk.min_extents.x or position.y == chunk.min_extents.y
+		
+		self.sim_edge = (position.x == 0 or position.y == 0 or position.x == sim_size.x or position.y == sim_size.y)
 	
 	func create_element_class():
 		if element != Elements.AIR:
@@ -150,7 +166,7 @@ class Chunk:
 	#position of chunk in the grid of chunks (not cells)
 	var chunk_position: Vector2i = Vector2i.ZERO
 	#reference to simulation node
-	var sim_ref: simulation
+	var sim_ref: PowderSimulation
 	#how many updates of no change before sleeping
 	var insomnia: int = 1
 	#keeps track of updates of no change for insomnia
@@ -168,7 +184,7 @@ class Chunk:
 	var renderer: chunk_renderer = null
 	
 	@warning_ignore("shadowed_variable")
-	func _init(chunk_size: int, chunk_position: Vector2i, sim_ref: simulation, insomnia: int) -> void:
+	func _init(chunk_size: int, chunk_position: Vector2i, sim_ref: PowderSimulation, insomnia: int) -> void:
 		self.chunk_size = chunk_size
 		self.chunk_position = chunk_position
 		self.sim_ref = sim_ref
@@ -204,7 +220,7 @@ class Chunk:
 			cell.find_neighbor_indices()
 	
 	
-	func update_half_cells(invert_checkerboard: bool = false):
+	func update_half_cells(invert_checkerboard: bool = false, use_checkerboard_updates: bool = true):
 		if self.sleeping:
 			if renderer.show_debug_info:
 				renderer.debug_info.modulate = Color(0.24, 0.24, 0.24, 1.0)
@@ -214,15 +230,16 @@ class Chunk:
 		
 		var index: int = 0
 		for cell in self.cells.values():
-			index += 1
-			if index % chunk_size == 0:
-				invert_checkerboard = !invert_checkerboard
-			if invert_checkerboard:
-				if index % 2 == 0:
-					continue
-			else:
-				if index % 2 == 1:
-					continue
+			if use_checkerboard_updates:
+				index += 1
+				if index % chunk_size == 0:
+					invert_checkerboard = !invert_checkerboard
+				if invert_checkerboard:
+					if index % 2 == 0:
+						continue
+				else:
+					if index % 2 == 1:
+						continue
 				
 			if cell.position in updated_cells or cell.element == Elements.AIR:
 				continue

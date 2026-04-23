@@ -1,0 +1,48 @@
+[gd_scene format=3 uid="uid://df1cfc8y5mrb8"]
+
+[ext_resource type="Script" uid="uid://cmk5jb1k5o4ff" path="res://PowderedWorldEngine/Test_Playground/test_playground.gd" id="1_vu1hh"]
+[ext_resource type="Script" uid="uid://cg71nmlt7e1c7" path="res://PowderedWorldEngine/Scripts/powder_simulation.gd" id="2_n1b4i"]
+[ext_resource type="Script" uid="uid://d2qdk4il2fgb5" path="res://PowderedWorldEngine/Scripts/cameraController.gd" id="3_da7b7"]
+[ext_resource type="Script" uid="uid://co545rbd16tk6" path="res://PowderedWorldEngine/Scripts/CSharp/SandInfoCS.cs" id="4_k2img"]
+
+[node name="Test Playground" type="Node2D" unique_id=2102102969]
+script = ExtResource("1_vu1hh")
+
+[node name="powdered world" type="Node2D" parent="." unique_id=977043437]
+script = ExtResource("2_n1b4i")
+debug_mode = true
+show_sim_border = true
+pixel_scale = 5
+individual_chunk_size = 32
+chunk_grid_size = Vector2i(7, 4)
+chunk_insomnia = 3
+
+[node name="CStest" type="Node" parent="." unique_id=1559746548]
+script = ExtResource("4_k2img")
+
+[node name="camera" type="Camera2D" parent="." unique_id=151552355]
+anchor_mode = 0
+script = ExtResource("3_da7b7")
+use_camera_drag = true
+
+[node name="ui" type="CanvasLayer" parent="." unique_id=1573810607]
+
+[node name="fps" type="Label" parent="ui" unique_id=302606628]
+offset_right = 40.0
+offset_bottom = 23.0
+scale = Vector2(2, 2)
+text = "121"
+
+[node name="update time" type="Label" parent="ui" unique_id=1050402707]
+offset_top = 40.0
+offset_right = 40.0
+offset_bottom = 63.0
+scale = Vector2(2, 2)
+text = "u:"
+
+[node name="draw time" type="Label" parent="ui" unique_id=158418325]
+offset_top = 90.0
+offset_right = 40.0
+offset_bottom = 113.0
+scale = Vector2(2, 2)
+text = "d:"
