@@ -17,6 +17,11 @@ class_name PowderSimulation
 ##Checkerboard updates is a way of updating chunks in a checkerboard fashion, skipping every other cell. 
 ## Setting this to [code]false[/code] iterates without skipping.
 @export var use_checkerboard_updates: bool = false
+## Dirty rects are rectangles calculated at runtime that only contain the cells that were updated in the last frame, lowering the total number of cells needing updates.
+## [br]
+## [br]
+## [b]Note:[/b] Recommended for chunk sizes 32 and above.
+@export var use_dirty_rects: bool = true
 ##How many pixels (on each side) each chunk contains.
 ##[b]IF CHANGING HIGHER THAN VALUE IN CHUNKRENDER SHADER,[/b] change the size of the array in the chunkrender shader as well.
 @export_range(1, 9223372036854775807) var individual_chunk_size: int = 64:
@@ -85,8 +90,12 @@ func update_chunks(invert_checkerboard: bool = false):
 	#--------------------------------------------------------------
 	for chunk in chunks.values():
 		chunk.update_half_cells(invert_checkerboard, use_checkerboard_updates)
+		if use_dirty_rects:
+			chunk.update_dirty_rect()
 	#--------------------------------------------------------------
 	update_time = Time.get_ticks_usec() / 1000.0 - update_time
+	if use_dirty_rects and debug_mode:
+		queue_redraw()
 
 func render_chunk_updates():
 	draw_time = Time.get_ticks_usec() / 1000.0
@@ -149,6 +158,14 @@ func _ready() -> void:
 	self.add_child(chunk_renderer_parent)
 	
 	init_grid()
+
+#used to draw dirty rects for debug purposes.
+func _draw() -> void:
+	var centering_val = Vector2i(1, 1) * (pixel_scale)
+	for chunk in chunks.values():
+		if chunk.has_valid_dirty_rect:
+			var size: Vector2i = chunk.dirty_rect_max - chunk.dirty_rect_min
+			draw_rect(Rect2i((chunk.dirty_rect_min) * pixel_scale, size * pixel_scale + centering_val), Color(0.85, 0.317, 0.008, 1.0), false, 1)
 
 ##Used to call a single update tick to the simulation. For a constantly running simulation, putting in [method _process] is recommended.
 func update_simulation() -> void:

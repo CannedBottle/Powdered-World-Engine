@@ -180,6 +180,11 @@ class Chunk:
 	var max_extents: Vector2i
 	var min_extents: Vector2i
 	
+	#Dirty rect extents
+	var dirty_rect_max: Vector2i
+	var dirty_rect_min: Vector2i
+	var has_valid_dirty_rect: bool = false
+	
 	var sleeping: bool = false
 	var renderer: chunk_renderer = null
 	
@@ -199,6 +204,9 @@ class Chunk:
 			chunk_position.x * chunk_size,
 			chunk_position.y * chunk_size
 		)
+		self.dirty_rect_max = max_extents
+		self.dirty_rect_min = min_extents
+		
 		init_cells()
 	
 	
@@ -240,7 +248,11 @@ class Chunk:
 				else:
 					if index % 2 == 1:
 						continue
-				
+			
+			if has_valid_dirty_rect:
+				if not (cell.position <= dirty_rect_max + Vector2i(1, 1) and cell.position >= dirty_rect_min - Vector2i(1, 1)):
+					continue
+			
 			if cell.position in updated_cells or cell.element == Elements.AIR:
 				continue
 			
@@ -255,6 +267,20 @@ class Chunk:
 		else:
 			insomnia_count = 0
 	
+	func update_dirty_rect():
+		has_valid_dirty_rect = false
+		self.dirty_rect_max = self.min_extents
+		self.dirty_rect_min = self.max_extents
+		
+		for pos in updated_cells.keys():
+			dirty_rect_max.x = max(dirty_rect_max.x, pos.x)
+			dirty_rect_max.y = max(dirty_rect_max.y, pos.y)
+			
+			dirty_rect_min.x = min(dirty_rect_min.x, pos.x)
+			dirty_rect_min.y = min(dirty_rect_min.y, pos.y)
+		
+		if dirty_rect_max != self.min_extents and dirty_rect_min != self.max_extents:
+			has_valid_dirty_rect = true
 	
 	func send_draw_info_to_renderer():
 		if self.updated_cells.size() == 0:
