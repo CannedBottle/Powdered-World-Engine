@@ -10,9 +10,11 @@ script = ExtResource("1_vu1hh")
 
 [node name="powdered world" type="Node2D" parent="." unique_id=977043437]
 script = ExtResource("2_n1b4i")
+debug_mode = true
 show_sim_border = true
-pixel_scale = 3
-chunk_grid_size = Vector2i(8, 5)
+pixel_scale = 6
+individual_chunk_size = 32
+chunk_grid_size = Vector2i(6, 3)
 chunk_insomnia = 3
 
 [node name="CStest" type="Node" parent="." unique_id=1559746548]

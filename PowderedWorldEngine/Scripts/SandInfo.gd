@@ -9,6 +9,38 @@ enum Elements{
 	WALL
 }
 
+## a way of determining what special attributes an element has.
+enum ElementTypes{
+	STATIC,
+	SOLID,
+	LIQUID,
+	GAS
+}
+
+const element_to_type: Dictionary[Elements, ElementTypes] = {
+	Elements.AIR: ElementTypes.STATIC,
+	Elements.SAND: ElementTypes.SOLID,
+	Elements.WATER: ElementTypes.LIQUID,
+	Elements.ACID: ElementTypes.LIQUID,
+	Elements.STONE: ElementTypes.SOLID,
+	Elements.WALL: ElementTypes.STATIC,
+}
+
+## in the random values, a [code]Vector2i[/code] is used for min/max values since constants cannot use random functions.
+const element_type_defaults: Dictionary[ElementTypes, Dictionary] = {
+	ElementTypes.STATIC: {"none": null},
+	
+	ElementTypes.SOLID: {"random": Vector2i(0, 1)},
+	
+	ElementTypes.LIQUID: {
+		"random": Vector2i(0, 1),
+		"direction": 0,
+		"density": 0,
+	},
+	
+	ElementTypes.GAS: {"random": Vector2i(0, 7)},
+}
+
 const base_element_colors: Dictionary[Elements, Vector4] = {
 	Elements.AIR: Vector4.ZERO,
 	Elements.SAND: Vector4(1.0, 0.93, 0.474, 1.0),
@@ -18,93 +50,59 @@ const base_element_colors: Dictionary[Elements, Vector4] = {
 	Elements.WALL: Vector4(0.27, 0.27, 0.27, 1.0)
 }
 
-const element_classes: Dictionary = {
-	Elements.SAND: Sand
-}
+# // --------------------- ELEMENT MOVEMENT RULESETS ---------------------------- //
 
-# // --------------------- ELEMENT CLASSES ---------------------------- //
+func on_update(cell: Cell):
+	if cell.type == ElementTypes.LIQUID:
+		if cell.try_move("bottommiddle") == false:
+					var success: bool = false
+					if cell.random == 0:
+						success = cell.try_move("bottomright")
+						if success == false:
+							success = cell.try_move("bottomleft")
+					else:
+						success = cell.try_move("bottomleft")
+						if success == false:
+							success = cell.try_move("bottomright")
+					
+					if success == false:
+						if cell.type_attributes["direction"] == 1:
+							success = cell.try_move("rightmiddle")
+							cell.type_attributes["direction"] = int(success)
+							
+							if success == false:
+								cell.try_move("leftmiddle")
+						else:
+							success = cell.try_move("leftmiddle")
+							cell.type_attributes["direction"] = 0 if success else 1
+							
+							if success == false:
+								cell.try_move("rightmiddle")
+	else:
+		match cell.element:
+			Elements.SAND:
+				if cell.try_move("bottommiddle") == false:
+					if cell.random == 0:
+						if cell.try_move("bottomright") == false:
+							cell.try_move("bottomleft")
+					else:
+						if cell.try_move("bottomleft") == false:
+							cell.try_move("bottomright")
 
-@abstract class Element:
-	var cell: Cell
-	var element_enum: Elements
-	var base_color: Vector4
-	
-	@warning_ignore("shadowed_variable")
-	func _init(cell: Cell) -> void:
-		self.cell = cell
-		
-		self.element_enum = element_classes.find_key(get_script())
-		
-		base_color = base_element_colors[element_enum]
-	
-	
-	##returns whether the move was successful or not.
-	func try_move(chunk: Chunk, to_neighbor: String) -> bool:
-		var write_chunk: Chunk = chunk
-		
-		var neighbor_pos: Vector2i = cell.neighbors[to_neighbor]
-		if (cell.chunk_edge) and not neighbor_pos == Vector2i(-1, -1):
-			@warning_ignore("integer_division")
-			var new_chunk_pos: Vector2i = neighbor_pos / chunk.chunk_size
-			
-			write_chunk = cell.sim_ref.chunks[new_chunk_pos]
-			
-		
-		if not neighbor_pos == Vector2i(-1, -1) and write_chunk.cells[neighbor_pos].element == SandInfo.Elements.AIR:
-			var neighbor_cell: Cell = write_chunk.cells[neighbor_pos]
-			
-			chunk.updated_cells.get_or_add(cell.position, cell)
-			write_chunk.updated_cells.get_or_add(neighbor_cell.position, neighbor_cell)
-			
-			
-			#if on edge of chunk and successfully updates, wake chunk next to it
-			if cell.chunk_edge and not cell.sim_edge:
-				#wake the chunk nearest to cell
-				var pos_addition: Vector2i = Vector2i(
-					int(cell.position.x == chunk.max_extents.x) - int(cell.position.x == chunk.min_extents.x),
-					int(cell.position.y == chunk.max_extents.y) - int(cell.position.y == chunk.min_extents.y)
-				)
-				if not pos_addition == Vector2i.ZERO:
-					cell.sim_ref.chunks[chunk.chunk_position + pos_addition].wake()
-			
-			
-			chunk.swap_cells(cell, neighbor_cell)
-			write_chunk.wake()
-			
-			return true
-		else:
-			return false
-	
-	
-	func on_update():
-		pass
-
-@abstract class Liquid extends Element:
-	#add liquid movement here, and a value to control which liquids it can sink through
-	pass
-
-@abstract class Solid extends Element:
-	pass
-
-@abstract class Gas extends Element:
-	pass
-
-class Sand extends Solid:
-	
-	func on_update():
-		if try_move(cell.chunk, "bottommiddle") == false:
-			if cell.random == 0:
-				if try_move(cell.chunk, "bottomright") == false:
-					try_move(cell.chunk, "bottomleft")
-			else:
-				if try_move(cell.chunk, "bottomleft") == false:
-					try_move(cell.chunk, "bottomright")
 
 # // ------------------------- CELL/CHUNK CLASSES ---------------------------- //
 
 class Cell:
 	var position: Vector2i
-	var element: Elements
+	var type: ElementTypes
+	var element: Elements:
+		set(value):
+			element = value
+			type = element_to_type[value]
+			replace_type_attributes_with_defaults(type)
+	
+	var type_attributes: Dictionary
+	
 	var chunk_size: int
 	var neighbors: Dictionary[String, Vector2i] # if neighbor is an edge, will show up as (0, 0)
 	var neighbor_strings: Array[String] = ["topleft", "topmiddle", "topright", "leftmiddle", "rightmiddle", "bottomleft", "bottommiddle", "bottomright"]
@@ -121,7 +119,7 @@ class Cell:
 	var chunk_edge: bool = false
 	var sim_edge: bool = false
 	
-	var element_class: Element
+	
 	
 	@warning_ignore("shadowed_variable")
 	func _init(position: Vector2i, chunk_size: int, type: Elements, sim_ref: PowderSimulation, chunk: Chunk, chunk_idx: int) -> void:
@@ -134,15 +132,20 @@ class Cell:
 		
 		self.sim_size = sim_ref.simulation_size
 		
-		create_element_class()
 		# if the cell is at the edge of the chunk or not
 		self.chunk_edge = position.x == chunk.max_extents.x or position.y == chunk.max_extents.y or position.x == chunk.min_extents.x or position.y == chunk.min_extents.y
 		
 		self.sim_edge = (position.x == 0 or position.y == 0 or position.x == sim_size.x or position.y == sim_size.y)
 	
-	func create_element_class():
-		if element != Elements.AIR:
-			element_class = element_classes[element].new(self)
+	
+	func replace_type_attributes_with_defaults(new_type: ElementTypes):
+		type_attributes = element_type_defaults[new_type].duplicate()
+		
+		if !type_attributes.get("random") == null:
+			type_attributes["random"] = randi_range(type_attributes["random"].x, type_attributes["random"].y)
+		
+		if !type_attributes.get("direction") == null:
+			type_attributes["direction"] = type_attributes["random"]
 	
 	func find_neighbor_indices():
 		#loop through neighbor spots, determine if edge, if so set to (0, 0), if not set to position on tilemap
@@ -159,7 +162,73 @@ class Cell:
 					neighbors[neighbor_strings[loopnum]] = Vector2i(-1, -1)
 				
 				loopnum += 1
-
+	
+	
+	
+	# // ------------------------ Movement 'n shi(im going insane) ------------------------------ //
+	func can_move(to_neighbor: String, write_chunk: Chunk = null) -> bool:
+		var neighbor_pos: Vector2i = neighbors[to_neighbor]
+		
+		if write_chunk == null:
+			#find write chunk
+			write_chunk = chunk
+			if chunk_edge and not neighbor_pos == Vector2i(-1, -1):
+				@warning_ignore("integer_division")
+				var new_chunk_pos: Vector2i = neighbor_pos / chunk.chunk_size
+				
+				write_chunk = sim_ref.chunks[new_chunk_pos]
+		
+		if neighbor_pos == Vector2i(-1, -1):
+			return false
+		#valid cell to move checking
+		var valid_move: bool = false
+		var neighbor_cell: Cell = write_chunk.cells[neighbor_pos]
+		if neighbor_cell.element == Elements.AIR:
+			valid_move = true
+		else:
+			match type:
+				ElementTypes.SOLID:
+					valid_move = neighbor_cell.type == ElementTypes.LIQUID or neighbor_cell.type == ElementTypes.GAS
+		return valid_move
+	
+	##returns whether the move was successful or not.
+	func try_move(to_neighbor: String) -> bool:
+		var write_chunk: Chunk = chunk
+		
+		var neighbor_pos: Vector2i = neighbors[to_neighbor]
+		if chunk_edge and not neighbor_pos == Vector2i(-1, -1):
+			@warning_ignore("integer_division")
+			var new_chunk_pos: Vector2i = neighbor_pos / chunk.chunk_size
+			
+			write_chunk = sim_ref.chunks[new_chunk_pos]
+			
+		
+		var valid_move = can_move(to_neighbor, write_chunk)
+		
+		if valid_move == true:
+			var neighbor_cell: Cell = write_chunk.cells[neighbor_pos]
+			
+			chunk.updated_cells.get_or_add(position, self)
+			write_chunk.updated_cells.get_or_add(neighbor_cell.position, neighbor_cell)
+			
+			
+			#if on edge of chunk and successfully updates, wake chunk next to it
+			if chunk_edge and not sim_edge:
+				#wake the chunk nearest to cell
+				var pos_addition: Vector2i = Vector2i(
+					int(position.x == chunk.max_extents.x) - int(position.x == chunk.min_extents.x),
+					int(position.y == chunk.max_extents.y) - int(position.y == chunk.min_extents.y)
+				)
+				if not pos_addition == Vector2i.ZERO:
+					sim_ref.chunks[chunk.chunk_position + pos_addition].wake()
+			
+			
+			chunk.swap_cells(self, neighbor_cell)
+			write_chunk.wake()
+			
+			return true
+		else:
+			return false
 
 class Chunk:
 	var chunk_size: int = 64
@@ -249,14 +318,17 @@ class Chunk:
 					if index % 2 == 1:
 						continue
 			
+			
 			if has_valid_dirty_rect:
-				if not (cell.position <= dirty_rect_max + Vector2i(1, 1) and cell.position >= dirty_rect_min - Vector2i(1, 1)):
+				if not (cell.position <= dirty_rect_max + Vector2i(2, 2) and cell.position >= dirty_rect_min - Vector2i(2, 2)):
+					
+					#inflate over chunk borders
 					continue
 			
 			if cell.position in updated_cells or cell.element == Elements.AIR:
 				continue
 			
-			cell.element_class.on_update()
+			SandInfo.on_update(cell)
 		#sleeps cell if no cells are updated
 		if updated_cells.size() == 0:
 			if insomnia_count >= insomnia - 1:
@@ -300,20 +372,15 @@ class Chunk:
 	func swap_cells(copy_cell: Cell, paste_cell: Cell):
 		var paste_cell_element: Elements = paste_cell.element
 		var paste_cell_random: int = paste_cell.random
-		var paste_cell_element_class := paste_cell.element_class
-		var copy_cell_element_class := copy_cell.element_class
-		
-		copy_cell_element_class.cell = paste_cell
-		if paste_cell_element_class:
-			paste_cell_element_class.cell = copy_cell
-		paste_cell.element_class = copy_cell_element_class
-		copy_cell.element_class = paste_cell_element_class
+		var paste_cell_type_attributes: Dictionary = paste_cell.type_attributes
 		
 		paste_cell.element = copy_cell.element
 		paste_cell.random = copy_cell.random
+		paste_cell.type_attributes = copy_cell.type_attributes
 		
 		copy_cell.element = paste_cell_element
 		copy_cell.random = paste_cell_random
+		copy_cell.type_attributes = paste_cell_type_attributes
 	
 	func sleep():
 		self.sleeping = true

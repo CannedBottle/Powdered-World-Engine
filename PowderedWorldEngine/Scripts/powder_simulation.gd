@@ -120,7 +120,7 @@ func place_element(pos: Vector2i, element: SandInfo.Elements, override: bool = f
 	else:
 		chunk.cells[pos].element = element
 		chunk.updated_cells.get_or_add(pos, chunk.cells[pos])
-		chunk.cells[pos].create_element_class()
+		#chunk.cells[pos].create_element_class()
 		return true
 
 func place_group_elements(brushsize: int, pos: Vector2i, element: SandInfo.Elements, override: bool = false):
