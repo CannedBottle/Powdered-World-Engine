@@ -50,6 +50,14 @@ const base_element_colors: Dictionary[Elements, Vector4] = {
 	Elements.WALL: Vector4(0.27, 0.27, 0.27, 1.0)
 }
 
+# // --------------------- USEFUL FUNCTIONS ----------------------------------- //
+func world_pos_to_chunkidx(worldpos: Vector2i, chunksize: int, inverse_chunksize: float) -> int:
+	@warning_ignore("integer_division")
+	var chunk_pos: Vector2i = worldpos * inverse_chunksize
+	var local_x: int = worldpos.x - (chunk_pos.x * chunksize)
+	var local_y: int = worldpos.y - (chunk_pos.y * chunksize)
+	return local_y * chunksize + local_x
+
 # // --------------------- ELEMENT MOVEMENT RULESETS ---------------------------- //
 
 func on_update(cell: Cell):
@@ -120,7 +128,6 @@ class Cell:
 	var sim_edge: bool = false
 	
 	
-	
 	@warning_ignore("shadowed_variable")
 	func _init(position: Vector2i, chunk_size: int, type: Elements, sim_ref: PowderSimulation, chunk: Chunk, chunk_idx: int) -> void:
 		self.position = position
@@ -131,6 +138,7 @@ class Cell:
 		self.chunk_idx = chunk_idx
 		
 		self.sim_size = sim_ref.simulation_size
+		
 		
 		# if the cell is at the edge of the chunk or not
 		self.chunk_edge = position.x == chunk.max_extents.x or position.y == chunk.max_extents.y or position.x == chunk.min_extents.x or position.y == chunk.min_extents.y
@@ -163,53 +171,55 @@ class Cell:
 				
 				loopnum += 1
 	
-	
+		
 	
 	# // ------------------------ Movement 'n shi(im going insane) ------------------------------ //
-	func can_move(to_neighbor: String, write_chunk: Chunk = null) -> bool:
-		var neighbor_pos: Vector2i = neighbors[to_neighbor]
+	func can_move(neighbor_cell: Cell) -> bool:
+		var valid_move: bool = false
+		match type:
+			ElementTypes.SOLID:
+				valid_move = neighbor_cell.type == ElementTypes.LIQUID or neighbor_cell.type == ElementTypes.GAS
 		
+		return valid_move
+	
+	##returns whether the move was successful or not.
+	func try_move(to_neighbor: String) -> bool:
+		var neighbor_pos: Vector2i = neighbors[to_neighbor]
+		if neighbor_pos == Vector2i(-1, -1):
+			return false
+		
+		var write_chunk: Chunk = chunk
+		
+		if chunk_edge:
+			@warning_ignore("integer_division")
+			var new_chunk_pos: Vector2i = neighbor_pos * chunk.inv_chunksize
+			
+			write_chunk = sim_ref.chunks[new_chunk_pos]
+			
+		# determine whether move is available
 		if write_chunk == null:
 			#find write chunk
 			write_chunk = chunk
-			if chunk_edge and not neighbor_pos == Vector2i(-1, -1):
+			if chunk_edge:
 				@warning_ignore("integer_division")
 				var new_chunk_pos: Vector2i = neighbor_pos / chunk.chunk_size
 				
 				write_chunk = sim_ref.chunks[new_chunk_pos]
 		
-		if neighbor_pos == Vector2i(-1, -1):
-			return false
-		#valid cell to move checking
+		var neighbor_idx: int = SandInfo.world_pos_to_chunkidx(neighbor_pos, chunk_size, chunk.inv_chunksize)
+		
+		#valid cell to move checking (per type check)
 		var valid_move: bool = false
-		var neighbor_cell: Cell = write_chunk.cells[neighbor_pos]
+		var neighbor_cell: Cell = write_chunk.cells[neighbor_idx]
 		if neighbor_cell.element == Elements.AIR:
 			valid_move = true
 		else:
-			match type:
-				ElementTypes.SOLID:
-					valid_move = neighbor_cell.type == ElementTypes.LIQUID or neighbor_cell.type == ElementTypes.GAS
-		return valid_move
-	
-	##returns whether the move was successful or not.
-	func try_move(to_neighbor: String) -> bool:
-		var write_chunk: Chunk = chunk
-		
-		var neighbor_pos: Vector2i = neighbors[to_neighbor]
-		if chunk_edge and not neighbor_pos == Vector2i(-1, -1):
-			@warning_ignore("integer_division")
-			var new_chunk_pos: Vector2i = neighbor_pos / chunk.chunk_size
-			
-			write_chunk = sim_ref.chunks[new_chunk_pos]
-			
-		
-		var valid_move = can_move(to_neighbor, write_chunk)
+			valid_move = can_move(neighbor_cell)
 		
 		if valid_move == true:
-			var neighbor_cell: Cell = write_chunk.cells[neighbor_pos]
 			
-			chunk.updated_cells.get_or_add(position, self)
-			write_chunk.updated_cells.get_or_add(neighbor_cell.position, neighbor_cell)
+			chunk.mark_cell_updated(self)
+			write_chunk.mark_cell_updated(neighbor_cell)
 			
 			
 			#if on edge of chunk and successfully updates, wake chunk next to it
@@ -241,9 +251,10 @@ class Chunk:
 	#keeps track of updates of no change for insomnia
 	var insomnia_count: int = 0
 	
-	var cells: Dictionary[Vector2i, Cell]
+	var cells: Array[Cell]
 	#cells to draw, also cells that have been updated in the past frame
-	var updated_cells: Dictionary[Vector2i, Cell]
+	var updated_cells_mask: Array[bool]
+	var updated_cells_indexes: Array[int]
 	
 	#the max/min values the chunk cells dict contains, used for moving cells from one chunk to another
 	var max_extents: Vector2i
@@ -254,6 +265,9 @@ class Chunk:
 	var dirty_rect_min: Vector2i
 	var has_valid_dirty_rect: bool = false
 	
+	#to remove division operations
+	var inv_chunksize: float
+	
 	var sleeping: bool = false
 	var renderer: chunk_renderer = null
 	
@@ -263,6 +277,9 @@ class Chunk:
 		self.chunk_position = chunk_position
 		self.sim_ref = sim_ref
 		self.insomnia = insomnia
+		
+		self.inv_chunksize = 1.0 / float(chunk_size)
+		self.updated_cells_mask.resize(chunk_size * chunk_size)
 		
 		# set extents
 		self.max_extents = Vector2i(
@@ -289,11 +306,11 @@ class Chunk:
 					y + (chunk_position.y * chunk_size)
 				)
 				
-				cells.get_or_add(pos, Cell.new(pos, self.chunk_size, Elements.AIR, self.sim_ref, self, idx))
+				cells.append(Cell.new(pos, self.chunk_size, Elements.AIR, self.sim_ref, self, idx))
 				
 				idx += 1
 		
-		for cell in self.cells.values():
+		for cell in cells:
 			cell.find_neighbor_indices()
 	
 	
@@ -306,7 +323,7 @@ class Chunk:
 			renderer.debug_info.modulate = Color(1.0, 1.0, 1.0, 1.0)
 		
 		var index: int = 0
-		for cell in self.cells.values():
+		for cell in cells:
 			if use_checkerboard_updates:
 				index += 1
 				if index % chunk_size == 0:
@@ -325,12 +342,12 @@ class Chunk:
 					#inflate over chunk borders
 					continue
 			
-			if cell.position in updated_cells or cell.element == Elements.AIR:
+			if updated_cells_mask[cell.chunk_idx] == true or cell.element == Elements.AIR:
 				continue
 			
 			SandInfo.on_update(cell)
 		#sleeps cell if no cells are updated
-		if updated_cells.size() == 0:
+		if updated_cells_indexes.size() == 0:
 			if insomnia_count >= insomnia - 1:
 				insomnia_count = 0
 				sleep()
@@ -339,12 +356,23 @@ class Chunk:
 		else:
 			insomnia_count = 0
 	
+	func mark_cell_updated(cell: Cell, include_mask: bool = true):
+		updated_cells_indexes.append(cell.chunk_idx)
+		if include_mask == true:
+			updated_cells_mask[cell.chunk_idx] = true
+	
+	#TODO: WHEN MAKING INTO C#, DO NOT USE THIS AND FOR THE MASK USE A FIXED-SIZE BOOL LIST WITH .Clear()
+	func clear_updated_mask():
+		for idx in updated_cells_mask.size():
+			updated_cells_mask[idx] = false
+	
 	func update_dirty_rect():
 		has_valid_dirty_rect = false
 		self.dirty_rect_max = self.min_extents
 		self.dirty_rect_min = self.max_extents
 		
-		for pos in updated_cells.keys():
+		for idx in updated_cells_indexes:
+			var pos: Vector2i = cells[idx].position
 			dirty_rect_max.x = max(dirty_rect_max.x, pos.x)
 			dirty_rect_max.y = max(dirty_rect_max.y, pos.y)
 			
@@ -355,17 +383,19 @@ class Chunk:
 			has_valid_dirty_rect = true
 	
 	func send_draw_info_to_renderer():
-		if self.updated_cells.size() == 0:
+		if self.updated_cells_indexes.size() == 0:
 			return
 		
-		for cell in self.updated_cells.values():
+		for idx in updated_cells_indexes:
+			var cell: Cell = cells[idx]
 			#base element color
 			var col: Vector4 = SandInfo.base_element_colors[cell.element]
 			#darkness of pixel
 			var d: float = 1.0 - cell.brightness
 			#darkness applied only on non-alpha channels
 			renderer.cell_values[cell.chunk_idx] = Vector4(col.x - d, col.y - d, col.z - d, col.w)
-		self.updated_cells.clear()
+		self.clear_updated_mask()
+		self.updated_cells_indexes.clear()
 		renderer.cells_updated.emit()
 	
 	## a function to put all the necessary variables to carry over when moving cells

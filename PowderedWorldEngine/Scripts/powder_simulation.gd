@@ -57,13 +57,15 @@ var accumulator: float = 0.0
 #number of ticks passed since startup, mod by 2
 var ticks_passed: int = 1
 
+var inv_chunksize: float
+
 var active_chunk_renderers: Array[chunk_renderer]
 var chunk_renderer_parent: Node2D
 
 var chunks: Dictionary[Vector2i, SandInfo.Chunk]
 var cells: Dictionary[Vector2i, SandInfo.Cell]
 ## for cells that need to be redrawn, after update
-var cells_to_update: Dictionary[Vector2i, SandInfo.Cell]
+var cells_to_update: Array[SandInfo.Cell]
 
 func init_grid():
 	chunks.clear()
@@ -113,14 +115,16 @@ func place_element(pos: Vector2i, element: SandInfo.Elements, override: bool = f
 	#pos of chunk the cell being placed is in
 	var chunk_position: Vector2i = pos / individual_chunk_size
 	var chunk: SandInfo.Chunk = chunks[chunk_position]
+	var local_cell_idx: int = SandInfo.world_pos_to_chunkidx(pos, individual_chunk_size, inv_chunksize)
 	chunk.wake()
 	
-	if override == false and chunk.cells[pos].element != SandInfo.Elements.AIR:
+	var cell: SandInfo.Cell = chunk.cells[local_cell_idx]
+	
+	if override == false and cell.element != SandInfo.Elements.AIR:
 		return false
 	else:
-		chunk.cells[pos].element = element
-		chunk.updated_cells.get_or_add(pos, chunk.cells[pos])
-		#chunk.cells[pos].create_element_class()
+		cell.element = element
+		chunk.mark_cell_updated(cell, false)
 		return true
 
 func place_group_elements(brushsize: int, pos: Vector2i, element: SandInfo.Elements, override: bool = false):
@@ -149,7 +153,7 @@ func update_simulation_size():
 	simulation_size = Vector2(chunk_grid_size.x * individual_chunk_size - 1, chunk_grid_size.y * individual_chunk_size - 1)
 
 func _ready() -> void:
-	
+	inv_chunksize = 1.0 / individual_chunk_size
 	#make border if set to do so
 	if show_sim_border:
 		_create_border(10)
