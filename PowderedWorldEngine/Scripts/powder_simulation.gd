@@ -92,7 +92,9 @@ func update_chunks(invert_checkerboard: bool = false):
 	#--------------------------------------------------------------
 	for chunk in chunks.values():
 		chunk.update_half_cells(invert_checkerboard, use_checkerboard_updates)
-		if use_dirty_rects:
+	
+	if use_dirty_rects:
+		for chunk in chunks.values():
 			chunk.update_dirty_rect()
 	#--------------------------------------------------------------
 	update_time = Time.get_ticks_usec() / 1000.0 - update_time

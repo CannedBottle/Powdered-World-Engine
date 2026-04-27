@@ -11,6 +11,7 @@ var ElementKeys: Dictionary[Key, SandInfo.Elements] = {
 	KEY_S: SandInfo.Elements.SAND,
 	KEY_A: SandInfo.Elements.AIR,
 	KEY_W: SandInfo.Elements.WATER,
+	KEY_Q: SandInfo.Elements.WALL,
 }
 
 var keys_pressed: Array = []

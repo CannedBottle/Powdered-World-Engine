@@ -20,8 +20,8 @@ SandInfo="*uid://c5rmjbdsvxn7d"
 
 [display]
 
-window/size/viewport_width=1280
-window/size/viewport_height=720
+window/size/viewport_width=2560
+window/size/viewport_height=1440
 window/size/resizable=false
 window/stretch/mode="viewport"
 window/stretch/scale_mode="integer"
