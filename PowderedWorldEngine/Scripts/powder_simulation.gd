@@ -110,7 +110,7 @@ func render_chunk_updates():
 	draw_time = Time.get_ticks_usec() / 1000.0 - draw_time
 
 func place_element(pos: Vector2i, element: SandInfo.Elements, override: bool = false) -> bool:
-	if (pos.x < 0 or pos.y < 0 or pos.x > simulation_size.x - 1 or pos.y > simulation_size.y - 1):
+	if (pos.x < 0 or pos.y < 0 or pos.x > simulation_size.x or pos.y > simulation_size.y):
 		return false
 	
 	@warning_ignore("integer_division")

@@ -44,7 +44,7 @@ const element_type_defaults: Dictionary[ElementTypes, Dictionary] = {
 const base_element_colors: Dictionary[Elements, Vector4] = {
 	Elements.AIR: Vector4.ZERO,
 	Elements.SAND: Vector4(1.0, 0.93, 0.474, 1.0),
-	Elements.WATER: Vector4(0.112, 0.644, 0.93, 0.75),
+	Elements.WATER: Vector4(0.112, 0.644, 0.93, 0.6),
 	Elements.ACID: Vector4(0.678, 1.0, 0.31, 0.75),
 	Elements.STONE: Vector4(0.58, 0.58, 0.58, 1.0),
 	Elements.WALL: Vector4(0.27, 0.27, 0.27, 1.0)
@@ -107,6 +107,12 @@ class Cell:
 		set(value):
 			element = value
 			type = element_to_type[value]
+			
+			if type == ElementTypes.LIQUID:
+				brightness = 1.0
+			else:
+				brightness = randf_range(0.9, 1.0)
+			
 			replace_type_attributes_with_defaults(type)
 	
 	var type_attributes: Dictionary
@@ -117,7 +123,7 @@ class Cell:
 	var sim_ref: PowderSimulation
 	var updated: bool = false
 	var random: int = randi_range(0, 1)
-	var brightness: float = randf_range(0.9, 1.0)
+	var brightness: float
 	var chunk: Chunk
 	var sim_size: Vector2i
 	#idx of cell inside the chunk's own cells list, basically local position
