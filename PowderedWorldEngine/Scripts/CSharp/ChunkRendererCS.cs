@@ -11,7 +11,7 @@ public partial class ChunkRendererCS : TextureRect
 	[Export] public int PixelScale = 10;
 	[Export] public bool ShowDebugInfo = false;
 
-	[Export] public Color DebugBorderColor = new Color(0.96f, 0.58f, 0.125f, 0.75f);
+	[Export] public Color DebugBorderColor = new Color(1f, 0f, 0f, 0.75f);
 
 
 	private static readonly Shader RenderShader = GD.Load<Shader>("uid://dtywnulygwh48");
@@ -52,7 +52,9 @@ public partial class ChunkRendererCS : TextureRect
 			col.A = 0.2f;
 		}
 
-		DrawRect(new Rect2(new Vector2(0, 0), new Vector2(ChunkSize * PixelScale, ChunkSize * PixelScale)), col, false, 2, false);
+		Vector2 RectSize = new Vector2(ChunkSize * PixelScale, ChunkSize * PixelScale);
+
+		DrawRect(new Rect2(RectSize / 2, RectSize), col, false, 2, false);
     }
 
 	

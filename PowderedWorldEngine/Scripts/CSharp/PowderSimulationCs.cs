@@ -1,7 +1,8 @@
 using Godot;
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
+using System.Diagnostics;
+
 
 
 [GlobalClass, Icon("uid://b0ol6juljiyfp")]
@@ -90,7 +91,113 @@ public partial class PowderSimulationCs : Node2D
 	public List<ChunkRendererCS> ActiveChunkRenderers;
 	public Node2D ChunkRendererParent;
 
-	
+
+	public void InitGrid()
+	{
+		Chunks.Clear();
+
+		for(int y = 0; y < ChunkGridSize.Y; y++)
+		{
+			for(int x = 0; x < ChunkGridSize.X; x++)
+			{
+				Vector2I LoopPos = new Vector2I(x, y);
+
+				Chunks.Add(LoopPos, new SandInfoCS.Chunk(IndividualChunkSize, LoopPos, this, ChunkInsomnia));
+
+				ChunkRendererCS Render = new ChunkRendererCS();
+				Render.ChunkSize = IndividualChunkSize;
+				Render.PixelScale = PixelScale;
+				Render.Position = LoopPos * IndividualChunkSize * PixelScale;
+				if (DebugMode)
+				{
+					Render.ShowDebugInfo = true;
+				}
+
+				ChunkRendererParent.AddChild(Render);
+				ActiveChunkRenderers.Add(Render);
+
+				Chunks[LoopPos].Renderer = Render;
+			}
+		}
+	}
+
+	public void UpdateChunks()
+	{
+		UpdateTime = Time.GetTicksUsec() / 1000.0f;
+		// ----------------------------------------------------------------------------
+		foreach(SandInfoCS.Chunk chunk in Chunks.Values)
+		{
+			chunk.UpdateCells();
+		}
+
+		if (UseDirtyRects)
+		{
+			foreach(SandInfoCS.Chunk chunk in Chunks.Values)
+			{
+				chunk.UpdateDirtyRect();
+			}
+		}
+		//-----------------------------------------------------------------------------
+		UpdateTime = Time.GetTicksUsec() / 1000.0f - UpdateTime;
+		if(UseDirtyRects && DebugMode)
+		{
+			QueueRedraw();
+		}
+	}
+
+
+	public void RenderChunkUpdates()
+	{
+		DrawTime = Time.GetTicksUsec() / 1000.0f;
+		// -----------------------------------------------------------------
+		foreach(SandInfoCS.Chunk chunk in Chunks.Values)
+		{
+			chunk.SendDrawInfoToRenderer();
+		}
+		// -----------------------------------------------------------------
+		DrawTime = Time.GetTicksUsec() / 1000.0f - DrawTime;
+	}
+
+
+	public bool PlaceElement(Vector2I pos, SandInfoCS.Elements element, bool overRide = false)
+	{
+		if(pos.X < 0 || pos.Y < 0 || pos.X > SimulationSize.X || pos.Y > SimulationSize.Y)
+		{
+			return false;
+		}
+
+		// pos of chunk the cell is being placed in
+		Vector2I ChunkPosition = new Vector2I(pos.X / IndividualChunkSize, pos.Y / IndividualChunkSize);
+		SandInfoCS.Chunk chunk = Chunks[ChunkPosition];
+		int LocalCellIdx = SandInfoCS.WorldPosToChunkPos(pos, IndividualChunkSize, InvChunkSize);
+		chunk.Wake();
+
+		SandInfoCS.Cell cell = chunk.Cells[LocalCellIdx];
+
+		if(overRide == false && cell.Element != SandInfoCS.Elements.AIR)
+		{
+			return false;
+		}
+		else
+		{
+			cell.Element = element;
+			chunk.MarkCellUpdated(cell);
+			return true;
+		}
+	}
+
+
+	public void PlaceGroupElements(int brushSize, Vector2I pos, SandInfoCS.Elements element, bool overRide = false)
+	{
+		for (int y = 0; y < brushSize * 2 + 1; y++)
+		{
+			for (int x = 0; x < brushSize * 2 + 1; x++)
+			{
+				PlaceElement(pos + new Vector2I(x - brushSize, y - brushSize), element, overRide);
+			}
+		}
+	}
+
 
 	/// <summary>
 	/// Updates the simulation_size variable if chunk grid size has been changed. This is automatically done, so no need to call this.
@@ -102,13 +209,47 @@ public partial class PowderSimulationCs : Node2D
 
 	public override void _Ready()
 	{
-		
+		InvChunkSize = 1.0f / IndividualChunkSize;
+
+
+		ChunkRendererParent = new Node2D();
+		AddChild(ChunkRendererParent);
+
+		InitGrid();
 	}
 
+	// used to draw dirty rects for debug purposes.
     public override void _Draw()
     {
         base._Draw();
+
+		Vector2I CenteringVal = new Vector2I(PixelScale, PixelScale);
+		foreach(SandInfoCS.Chunk chunk in Chunks.Values)
+		{
+			if (chunk.HasValidDirtyRect)
+			{
+				Vector2I Size = chunk.DirtyRectMax - chunk.DirtyRectMin;
+				DrawRect(new Rect2(chunk.DirtyRectMin * PixelScale, Size * PixelScale + CenteringVal), new Color(0.85f, 0.317f, 0.008f, 1.0f), false, 1, false);
+			}
+		}
     }
+
+	public void UpdateSimulation()
+	{
+		
+		Accumulator += (float)GetProcessDeltaTime() * SimulationSpeed;
+
+		if(Accumulator >= SimDt)
+		{
+			UpdateChunks();
+			RenderChunkUpdates();
+
+			TicksPassed += 1;
+			TicksPassed %= 2;
+			Accumulator -= SimDt;
+		}
+
+	}
 
 
 }

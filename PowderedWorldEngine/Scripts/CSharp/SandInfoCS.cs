@@ -503,11 +503,13 @@ public partial class SandInfoCS : Node
 		public void Sleep()
 		{
 			Sleeping = true;
+			Renderer.Sleeping = true;
 		}
 
 		public void Wake()
 		{
 			Sleeping = false;
+			Renderer.Sleeping = false;
 		}
 
 
