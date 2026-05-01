@@ -118,10 +118,9 @@ class Cell:
 	var type_attributes: Dictionary
 	
 	var chunk_size: int
-	var neighbors: Dictionary[String, Vector2i] # if neighbor is an edge, will show up as (0, 0)
+	var neighbors: Dictionary[String, Vector2i] # if neighbor is an edge, will show up as (-1, -1)
 	var neighbor_strings: Array[String] = ["topleft", "topmiddle", "topright", "leftmiddle", "rightmiddle", "bottomleft", "bottommiddle", "bottomright"]
 	var sim_ref: PowderSimulation
-	var updated: bool = false
 	var random: int = randi_range(0, 1)
 	var brightness: float
 	var chunk: Chunk
@@ -202,15 +201,6 @@ class Cell:
 			
 			write_chunk = sim_ref.chunks[new_chunk_pos]
 			
-		# determine whether move is available
-		if write_chunk == null:
-			#find write chunk
-			write_chunk = chunk
-			if chunk_edge:
-				@warning_ignore("integer_division")
-				var new_chunk_pos: Vector2i = neighbor_pos / chunk.chunk_size
-				
-				write_chunk = sim_ref.chunks[new_chunk_pos]
 		
 		var neighbor_idx: int = SandInfo.world_pos_to_chunkidx(neighbor_pos, chunk_size, chunk.inv_chunksize)
 		
@@ -362,10 +352,9 @@ class Chunk:
 		else:
 			insomnia_count = 0
 	
-	func mark_cell_updated(cell: Cell, include_mask: bool = true):
+	func mark_cell_updated(cell: Cell):
 		updated_cells_indexes.append(cell.chunk_idx)
-		if include_mask == true:
-			updated_cells_mask[cell.chunk_idx] = true
+		updated_cells_mask[cell.chunk_idx] = true
 	
 	#TODO: WHEN MAKING INTO C#, DO NOT USE THIS AND FOR THE MASK USE A FIXED-SIZE BOOL LIST WITH .Clear()
 	func clear_updated_mask():

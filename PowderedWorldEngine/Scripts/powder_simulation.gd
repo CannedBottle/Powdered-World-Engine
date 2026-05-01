@@ -63,9 +63,6 @@ var active_chunk_renderers: Array[chunk_renderer]
 var chunk_renderer_parent: Node2D
 
 var chunks: Dictionary[Vector2i, SandInfo.Chunk]
-var cells: Dictionary[Vector2i, SandInfo.Cell]
-## for cells that need to be redrawn, after update
-var cells_to_update: Array[SandInfo.Cell]
 
 func init_grid():
 	chunks.clear()
@@ -126,7 +123,7 @@ func place_element(pos: Vector2i, element: SandInfo.Elements, override: bool = f
 		return false
 	else:
 		cell.element = element
-		chunk.mark_cell_updated(cell, false)
+		chunk.mark_cell_updated(cell)
 		return true
 
 func place_group_elements(brushsize: int, pos: Vector2i, element: SandInfo.Elements, override: bool = false):

@@ -17,6 +17,7 @@ config/features=PackedStringArray("4.6", "C#", "Forward Plus")
 [autoload]
 
 SandInfo="*uid://c5rmjbdsvxn7d"
+SandInfoCS="*uid://co545rbd16tk6"
 
 [display]
 
