@@ -63,29 +63,29 @@ func world_pos_to_chunkidx(worldpos: Vector2i, chunksize: int, inverse_chunksize
 func on_update(cell: Cell):
 	if cell.type == ElementTypes.LIQUID:
 		if cell.try_move("bottommiddle") == false:
-					var success: bool = false
-					if cell.random == 0:
-						success = cell.try_move("bottomright")
-						if success == false:
-							success = cell.try_move("bottomleft")
-					else:
-						success = cell.try_move("bottomleft")
-						if success == false:
-							success = cell.try_move("bottomright")
+			var success: bool = false
+			if cell.random == 0:
+				success = cell.try_move("bottomright")
+				if success == false:
+					success = cell.try_move("bottomleft")
+			else:
+				success = cell.try_move("bottomleft")
+				if success == false:
+					success = cell.try_move("bottomright")
+			
+			if success == false:
+				if cell.type_attributes["direction"] == 1:
+					success = cell.try_move("rightmiddle")
+					cell.type_attributes["direction"] = int(success)
 					
 					if success == false:
-						if cell.type_attributes["direction"] == 1:
-							success = cell.try_move("rightmiddle")
-							cell.type_attributes["direction"] = int(success)
-							
-							if success == false:
-								cell.try_move("leftmiddle")
-						else:
-							success = cell.try_move("leftmiddle")
-							cell.type_attributes["direction"] = 0 if success else 1
-							
-							if success == false:
-								cell.try_move("rightmiddle")
+						cell.try_move("leftmiddle")
+				else:
+					success = cell.try_move("leftmiddle")
+					cell.type_attributes["direction"] = 0 if success else 1
+					
+					if success == false:
+						cell.try_move("rightmiddle")
 	else:
 		match cell.element:
 			Elements.SAND:

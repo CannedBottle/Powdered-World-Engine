@@ -1,7 +1,6 @@
 using Godot;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 
 public partial class SandInfoCS : Node
 {
@@ -35,7 +34,7 @@ public partial class SandInfoCS : Node
 	};
 
 
-	// in the random values, a [code]Vector2i[/code] is used for min/max values since constants cannot use random functions.
+	// in the random values, a Vector2i is used for min/max values since constants cannot use random functions.
 	public static readonly Dictionary<ElementTypes, Dictionary<string, int>> ElementTypeDefaults = new Dictionary<ElementTypes, Dictionary<string, int>>
 	{
 		{ElementTypes.STATIC, new Dictionary<string, int>{{"none", 0}}},
@@ -78,7 +77,79 @@ public partial class SandInfoCS : Node
 
 	public static void OnUpdate(Cell cell)
 	{
-		
+		if(cell.CellType == ElementTypes.LIQUID)
+		{
+			if(cell.TryMove("bottommiddle") == false)
+			{
+				bool success = false;
+				if(cell.TypeAttributes["random"] == 0)
+				{
+					success = cell.TryMove("bottomright");
+					if(success == false)
+					{
+						success = cell.TryMove("bottomleft");
+					}
+				}
+				else
+				{
+					success = cell.TryMove("bottomleft");
+					if(success == false)
+					{
+						success = cell.TryMove("bottomright");
+					}
+				}
+
+				if(success == false)
+				{
+					if(cell.TypeAttributes["direction"] == 1)
+					{
+						success = cell.TryMove("rightmiddle");
+						cell.TypeAttributes["direction"] = success ? 1 : 0;
+
+						if(success == false)
+						{
+							cell.TryMove("leftmiddle");
+						}
+					}
+					else
+					{
+						success = cell.TryMove("leftmiddle");
+						cell.TypeAttributes["direction"] = success ? 0 : 1;
+
+						if(success == false)
+						{
+							cell.TryMove("rightmiddle");
+						}
+					}
+				}
+			}
+		}
+		else
+		{
+			switch (cell.Element)
+			{
+				case Elements.SAND:
+					if(cell.TryMove("bottommiddle") == false)
+					{
+						if(cell.TypeAttributes["random"] == 0)
+						{
+							if(cell.TryMove("bottomright") == false)
+							{
+								cell.TryMove("bottomleft");
+							}
+						}
+						else
+						{
+							if(cell.TryMove("bottomleft") == false)
+							{
+								cell.TryMove("bottomright");
+							}
+						}
+					}
+					break;
+			}
+
+		}
 	}
 
 

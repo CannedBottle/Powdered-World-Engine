@@ -223,6 +223,9 @@ public partial class PowderSimulationCs : Node2D
     {
         base._Draw();
 
+		DrawRect(new Rect2(SimulationSize * PixelScale / 2, SimulationSize * PixelScale), new Color(0, 0, 0, 1.0f), false, 10, false);
+
+		//dirty rects
 		Vector2I CenteringVal = new Vector2I(PixelScale, PixelScale);
 		foreach(SandInfoCS.Chunk chunk in Chunks.Values)
 		{

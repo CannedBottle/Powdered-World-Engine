@@ -1,0 +1,87 @@
+using Godot;
+using System;
+using System.Collections.Generic;
+
+public partial class TestPlaygroundCS : Node2D
+{
+
+	private PowderSimulationCs Sim;
+	private Label Fps;
+	private Label UTime;
+	private Label DTime;
+
+
+	[Export] public int brushSize = 2;
+
+
+	public Dictionary<Key, SandInfoCS.Elements> ElementKeys = new Dictionary<Key, SandInfoCS.Elements>
+	{
+		{Key.S, SandInfoCS.Elements.SAND},
+		{Key.A, SandInfoCS.Elements.AIR},
+		{Key.W, SandInfoCS.Elements.WATER},
+		{Key.Q, SandInfoCS.Elements.WALL},
+	};
+
+	private List<Key> KeysPressed;
+	
+	public override void _Ready()
+	{
+		Sim = GetNode<PowderSimulationCs>("PowderSimulationCs");
+		Fps = GetNode<Label>("ui/fps");
+		UTime = GetNode<Label>("ui/update time");
+		DTime = GetNode<Label>("ui/draw time");
+
+		DisplayServer.WindowSetSize(DisplayServer.ScreenGetSize());
+	}
+
+
+    public override void _Input(InputEvent @event)
+    {
+        base._Input(@event);
+
+		if(@event is InputEventKey inputKey)
+		{
+
+			if (inputKey.IsPressed())
+			{
+				if (ElementKeys.TryGetValue(inputKey.Keycode, out SandInfoCS.Elements element) && !KeysPressed.Contains(inputKey.Keycode))
+				{
+					KeysPressed.Add(inputKey.Keycode);
+				}
+			}
+			else
+			{
+				KeysPressed.Remove(inputKey.Keycode);
+			}
+		}
+    }
+
+	
+	public override void _Process(double delta)
+	{
+		Vector2I MousePos = (Vector2I)GetGlobalMousePosition();
+
+		// spawn elements using keys
+		if(KeysPressed.Count > 0)
+		{
+			Sim.PlaceGroupElements(brushSize, MousePos / Sim.PixelScale, ElementKeys[KeysPressed[0]], ElementKeys[KeysPressed[0]] == SandInfoCS.Elements.AIR);
+		}
+
+		Fps.Text = Engine.GetFramesPerSecond().ToString();
+		UTime.Text = "u: " + Sim.UpdateTime.ToString();
+		DTime.Text = "d: " + Sim.DrawTime.ToString();
+
+		if (Input.IsActionPressed("Place"))
+		{
+			Sim.PlaceGroupElements(brushSize, MousePos / Sim.PixelScale, ElementKeys[KeysPressed[0]], ElementKeys[KeysPressed[0]] == SandInfoCS.Elements.AIR);
+		}
+
+		if (Input.IsActionPressed("Exit"))
+		{
+			GetTree().Quit();
+		}
+
+		Sim.UpdateSimulation();
+
+	}
+}
