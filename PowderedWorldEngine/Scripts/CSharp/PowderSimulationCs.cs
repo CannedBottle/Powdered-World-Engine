@@ -1,7 +1,6 @@
 using Godot;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 
 
 
@@ -13,9 +12,14 @@ public partial class PowderSimulationCs : Node2D
 	/// </summary>
 	[Export] public bool DebugMode = false;
 	/// <summary>
+	/// The color of the chunk borders if DebugMode is turned on. 
+	/// </summary>
+	[Export] public Color DebugChunkBorderColor = new Color(1f, 0f, 0f, 0.9f);
+	/// <summary>
 	/// draws a border around the simulation.
 	/// </summary>
 	[Export] public bool ShowSimBorder = false;
+	[Export] public int SimBorderWidth = 5;
 	/// <summary>
 	/// How big the pixels appear on the screen.
 	/// </summary>
@@ -30,6 +34,8 @@ public partial class PowderSimulationCs : Node2D
 	/// Recommended for chunk sizes 32 and above.
 	/// </summary>
 	[Export] public bool UseDirtyRects = true;
+
+	private int _individualChunkSize;
 	/// <summary>
 	/// How many pixels (on each side) each chunk contains.
 	///
@@ -37,12 +43,12 @@ public partial class PowderSimulationCs : Node2D
 	/// </summary>
 	[Export(PropertyHint.Range, "1,9223372036854775807")] public int IndividualChunkSize
 	{
-		get => IndividualChunkSize;
+		get => _individualChunkSize;
 		set
 		{
 			if (IsInsideTree() != true)
 			{
-				IndividualChunkSize = value;
+				_individualChunkSize = value;
 			}
 			else
 			{
@@ -51,15 +57,17 @@ public partial class PowderSimulationCs : Node2D
 		}
 	}
 
+
+	private Vector2I _chunkGridSize;
 	/// <summary>
 	/// how many chunks to be used in the entire simulation.
 	/// </summary>
 	[Export] public Vector2I ChunkGridSize
 	{
-		get => ChunkGridSize; 
+		get => _chunkGridSize; 
 		set
 		{
-			ChunkGridSize = value;
+			_chunkGridSize = value;
 			UpdateSimulationSize();
 		}
 	}
@@ -71,7 +79,7 @@ public partial class PowderSimulationCs : Node2D
 	[Export] public int ChunkInsomnia = 2;
 
 
-	public Dictionary<Vector2I, SandInfoCS.Chunk> Chunks;
+	public Dictionary<Vector2I, SandInfoCS.Chunk> Chunks = new Dictionary<Vector2I, SandInfoCS.Chunk>();
 
 	public Vector2I SimulationSize;
 
@@ -88,7 +96,7 @@ public partial class PowderSimulationCs : Node2D
 
 	public float InvChunkSize;
 
-	public List<ChunkRendererCS> ActiveChunkRenderers;
+	public List<ChunkRendererCS> ActiveChunkRenderers = new List<ChunkRendererCS>();
 	public Node2D ChunkRendererParent;
 
 
@@ -102,7 +110,7 @@ public partial class PowderSimulationCs : Node2D
 			{
 				Vector2I LoopPos = new Vector2I(x, y);
 
-				Chunks.Add(LoopPos, new SandInfoCS.Chunk(IndividualChunkSize, LoopPos, this, ChunkInsomnia));
+				Chunks.Add(LoopPos, new SandInfoCS.Chunk(IndividualChunkSize, LoopPos, SimulationSize, ChunkInsomnia));
 
 				ChunkRendererCS Render = new ChunkRendererCS();
 				Render.ChunkSize = IndividualChunkSize;
@@ -127,7 +135,7 @@ public partial class PowderSimulationCs : Node2D
 		// ----------------------------------------------------------------------------
 		foreach(SandInfoCS.Chunk chunk in Chunks.Values)
 		{
-			chunk.UpdateCells();
+			chunk.UpdateCells(this);
 		}
 
 		if (UseDirtyRects)
@@ -139,7 +147,7 @@ public partial class PowderSimulationCs : Node2D
 		}
 		//-----------------------------------------------------------------------------
 		UpdateTime = Time.GetTicksUsec() / 1000.0f - UpdateTime;
-		if(UseDirtyRects && DebugMode)
+		if(DebugMode)
 		{
 			QueueRedraw();
 		}
@@ -166,10 +174,11 @@ public partial class PowderSimulationCs : Node2D
 			return false;
 		}
 
+
 		// pos of chunk the cell is being placed in
 		Vector2I ChunkPosition = new Vector2I(pos.X / IndividualChunkSize, pos.Y / IndividualChunkSize);
 		SandInfoCS.Chunk chunk = Chunks[ChunkPosition];
-		int LocalCellIdx = SandInfoCS.WorldPosToChunkPos(pos, IndividualChunkSize, InvChunkSize);
+		int LocalCellIdx = SandInfoCS.WorldPosToChunkPos(pos, IndividualChunkSize);
 		chunk.Wake();
 
 		SandInfoCS.Cell cell = chunk.Cells[LocalCellIdx];
@@ -223,18 +232,41 @@ public partial class PowderSimulationCs : Node2D
     {
         base._Draw();
 
-		DrawRect(new Rect2(SimulationSize * PixelScale / 2, SimulationSize * PixelScale), new Color(0, 0, 0, 1.0f), false, 10, false);
+		if(ShowSimBorder)
+		{
+			DrawRect(new Rect2(new Vector2(-SimBorderWidth / 2, -SimBorderWidth / 2), SimulationSize * PixelScale + new Vector2(PixelScale + SimBorderWidth, PixelScale + SimBorderWidth)), new Color(0, 0, 0, 1.0f), false, SimBorderWidth, false);
+		}
+
+
+		if (!DebugMode)
+		{
+			return;
+		}
 
 		//dirty rects
 		Vector2I CenteringVal = new Vector2I(PixelScale, PixelScale);
 		foreach(SandInfoCS.Chunk chunk in Chunks.Values)
 		{
+
+			//dirty rects
 			if (chunk.HasValidDirtyRect)
 			{
 				Vector2I Size = chunk.DirtyRectMax - chunk.DirtyRectMin;
-				DrawRect(new Rect2(chunk.DirtyRectMin * PixelScale, Size * PixelScale + CenteringVal), new Color(0.85f, 0.317f, 0.008f, 1.0f), false, 1, false);
+				DrawRect(new Rect2(chunk.DirtyRectMin * PixelScale - new Vector2(0.5f, 0.5f), Size * PixelScale + CenteringVal), new Color(0.85f, 0.317f, 0.008f, 1.0f), false, 1, false);
 			}
+
+			// chunk borders
+			Vector2 RectSize = new Vector2(chunk.ChunkSize * PixelScale, chunk.ChunkSize * PixelScale);
+			Color col = DebugChunkBorderColor;
+			float thickness = 5;
+			if (chunk.Sleeping)
+			{
+				col.A = 0.25f;
+			}
+
+			DrawRect(new Rect2(chunk.ChunkPosition * chunk.ChunkSize * PixelScale + new Vector2(thickness / 2, thickness / 2), RectSize - new Vector2(thickness, thickness)), col, false, thickness, false);
 		}
+
     }
 
 	public void UpdateSimulation()

@@ -1,6 +1,7 @@
 using Godot;
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 
 public partial class SandInfoCS : Node
 {
@@ -64,9 +65,9 @@ public partial class SandInfoCS : Node
 
 
 	// ------------------------------------ USEFUL FUNCTIONS ----------------------------- //
-	public static int WorldPosToChunkPos(Vector2I worldPos, int chunkSize, float inverseChunkSize)
+	public static int WorldPosToChunkPos(Vector2I worldPos, int chunkSize)
 	{
-		Vector2I ChunkPos = new Vector2I((int)(worldPos.X * inverseChunkSize), (int)(worldPos.Y * inverseChunkSize));
+		Vector2I ChunkPos = new Vector2I(worldPos.X / chunkSize, worldPos.Y / chunkSize);
 		int LocalX = worldPos.X - (ChunkPos.X * chunkSize);
 		int LocalY = worldPos.Y - (ChunkPos.Y * chunkSize);
 		return LocalY * chunkSize + LocalX;
@@ -75,27 +76,70 @@ public partial class SandInfoCS : Node
 
 	// --------------------------------- ELEMENT MOVEMENT RULESETS ----------------------- //
 
-	public static void OnUpdate(Cell cell)
+	public static void OnUpdate(Cell cell, PowderSimulationCs simRef)
 	{
+		
+		switch (cell.Element)
+		{
+			case Elements.SAND:
+					if(cell.TryMove("bottommiddle", simRef) == false)
+					{
+						if(cell.TypeAttributes["random"] == 0)
+						{
+							if(cell.TryMove("bottomright", simRef) == false)
+							{
+								cell.TryMove("bottomleft", simRef);
+							}
+						}
+						else
+						{
+							if(cell.TryMove("bottomleft", simRef) == false)
+							{
+								cell.TryMove("bottomright", simRef);
+							}
+						}
+					}
+					break;
+			
+
+			case Elements.STONE:
+				cell.TryMove("bottommiddle", simRef);
+				break;	
+
+			case Elements.ACID:
+				Cell neighbor = cell.SearchNeighborElements(simRef, Elements.AIR, true, Elements.ACID);
+				if(neighbor != null && neighbor.Element != Elements.ACID)
+				{
+					cell.Element = Elements.AIR;
+					cell.CellChunk.MarkCellUpdated(cell);
+					neighbor.Element = Elements.AIR;
+					neighbor.CellChunk.MarkCellUpdated(neighbor);
+					return;
+				}
+
+				break;
+		}
+
+
 		if(cell.CellType == ElementTypes.LIQUID)
 		{
-			if(cell.TryMove("bottommiddle") == false)
+			if(cell.TryMove("bottommiddle", simRef) == false)
 			{
 				bool success = false;
 				if(cell.TypeAttributes["random"] == 0)
 				{
-					success = cell.TryMove("bottomright");
+					success = cell.TryMove("bottomright", simRef);
 					if(success == false)
 					{
-						success = cell.TryMove("bottomleft");
+						success = cell.TryMove("bottomleft", simRef);
 					}
 				}
 				else
 				{
-					success = cell.TryMove("bottomleft");
+					success = cell.TryMove("bottomleft", simRef);
 					if(success == false)
 					{
-						success = cell.TryMove("bottomright");
+						success = cell.TryMove("bottomright", simRef);
 					}
 				}
 
@@ -103,53 +147,29 @@ public partial class SandInfoCS : Node
 				{
 					if(cell.TypeAttributes["direction"] == 1)
 					{
-						success = cell.TryMove("rightmiddle");
+						success = cell.TryMove("rightmiddle", simRef);
 						cell.TypeAttributes["direction"] = success ? 1 : 0;
 
 						if(success == false)
 						{
-							cell.TryMove("leftmiddle");
+							cell.TryMove("leftmiddle", simRef);
 						}
 					}
 					else
 					{
-						success = cell.TryMove("leftmiddle");
+						success = cell.TryMove("leftmiddle", simRef);
 						cell.TypeAttributes["direction"] = success ? 0 : 1;
 
 						if(success == false)
 						{
-							cell.TryMove("rightmiddle");
+							cell.TryMove("rightmiddle", simRef);
 						}
 					}
 				}
 			}
 		}
-		else
-		{
-			switch (cell.Element)
-			{
-				case Elements.SAND:
-					if(cell.TryMove("bottommiddle") == false)
-					{
-						if(cell.TypeAttributes["random"] == 0)
-						{
-							if(cell.TryMove("bottomright") == false)
-							{
-								cell.TryMove("bottomleft");
-							}
-						}
-						else
-						{
-							if(cell.TryMove("bottomleft") == false)
-							{
-								cell.TryMove("bottomright");
-							}
-						}
-					}
-					break;
-			}
+		
 
-		}
 	}
 
 
@@ -160,14 +180,15 @@ public partial class SandInfoCS : Node
 	public class Cell
 	{
 		
-		public Vector2I Position;
+		public Vector2I Position = new Vector2I();
 		public ElementTypes CellType;
+		private Elements _element;
 		public Elements Element
 		{
-			get => Element;
+			get => _element;
 			set
 			{
-				Element = value;
+				_element = value;
 				CellType = ElementToType[value];
 
 				if(CellType == ElementTypes.LIQUID)
@@ -185,16 +206,17 @@ public partial class SandInfoCS : Node
 
 
 		public Dictionary<string, int> TypeAttributes;
-		public Dictionary<string, Vector2I> Neighbors; // if neighbor is an edge, will show up as (-1, -1)
-		public readonly List<string> NeighborStrings = [
-			"topleft", "topmiddle", "topright", "leftmiddle", "rightmiddle", "bottomleft", "bottommiddle", "bottomright"
-		];
+		public Dictionary<string, Vector2I> Neighbors = new Dictionary<string, Vector2I>(); // if neighbor is an edge, will show up as (-1, -1)
 
-		public PowderSimulationCs SimRef;
+		public List<Elements> NeighborElements = new List<Elements>();
+		public readonly List<string> NeighborStrings = new List<string>([
+			"topleft", "topmiddle", "topright", "leftmiddle", "rightmiddle", "bottomleft", "bottommiddle", "bottomright"
+		]);
+
 		public float Brightness;
 		public int ChunkSize;
 		public Chunk CellChunk;
-		public Vector2I SimSize;
+		public Vector2I SimSize = new Vector2I();
 
 		// idx of cell inside the chunk's own cells list, basically local position
 		public int ChunkIdx;
@@ -204,17 +226,15 @@ public partial class SandInfoCS : Node
 		public bool SimEdge = false;
 
 
-
-		public Cell(Vector2I cellPosition, int chunkSize, Elements cellElement, PowderSimulationCs simRef, Chunk cellChunk, int cellChunkIdx)
+		public Cell(Vector2I cellPosition, int chunkSize, Elements cellElement, Vector2I simulationSize, Chunk cellChunk, int cellChunkIdx)
 		{
 			Position = cellPosition;
 			ChunkSize = chunkSize;
 			Element = cellElement;
-			SimRef = simRef;
 			CellChunk = cellChunk;
 			ChunkIdx = cellChunkIdx;
 
-			SimSize = SimRef.SimulationSize;
+			SimSize = simulationSize;
 
 
 			ChunkEdge = Position.X == CellChunk.MaxExtents.X || Position.Y == CellChunk.MaxExtents.Y || Position.X == CellChunk.MinExtents.X || Position.Y == CellChunk.MinExtents.Y;
@@ -242,9 +262,9 @@ public partial class SandInfoCS : Node
 		{
 			int LoopNum = 0;
 
-			for(int y = -1; y == 1; y++)
+			for(int y = -1; y <= 1; y++)
 			{
-				for(int x = -1; x == 1; x++)
+				for(int x = -1; x <= 1; x++)
 				{
 					if(x == 0 && y == 0)
 					{
@@ -268,6 +288,69 @@ public partial class SandInfoCS : Node
 		}
 
 
+		public void FindNeighborElements(PowderSimulationCs simRef)
+		{
+			NeighborElements.Clear();
+
+			foreach(Vector2I pos in Neighbors.Values)
+			{
+
+				Chunk ActualChunk = CellChunk;
+
+				if (ChunkEdge)
+				{
+					Vector2I NewChunkPos = new Vector2I(pos.X / CellChunk.ChunkSize, pos.Y / CellChunk.ChunkSize);
+
+					ActualChunk = simRef.Chunks[NewChunkPos];
+				}
+
+				int NeighborIdx = WorldPosToChunkPos(pos, ChunkSize);
+
+				NeighborElements.Add(ActualChunk.Cells[NeighborIdx].Element);
+				
+			}
+		}
+
+		#nullable enable
+		public Cell? SearchNeighborElements(PowderSimulationCs simRef, Elements targetElement, bool opposite = false, Elements? SecondaryTarget = null)
+		{
+			foreach(Vector2I pos in Neighbors.Values)
+			{
+				if(pos.X == -1 && pos.Y == -1)
+				{
+					continue;
+				}
+				Chunk ActualChunk = CellChunk;
+
+				if (ChunkEdge)
+				{
+					Vector2I NewChunkPos = new Vector2I(pos.X / CellChunk.ChunkSize, pos.Y / CellChunk.ChunkSize);
+
+					ActualChunk = simRef.Chunks[NewChunkPos];
+				}
+				
+				int NeighborIdx = WorldPosToChunkPos(pos, ChunkSize);
+
+				if(!opposite)
+				{
+					if (ActualChunk.Cells[NeighborIdx].Element == targetElement || ActualChunk.Cells[NeighborIdx].Element == SecondaryTarget)
+					{
+						return ActualChunk.Cells[NeighborIdx];
+					}
+				}
+				else
+				{
+					if (ActualChunk.Cells[NeighborIdx].Element != targetElement && SecondaryTarget != null && ActualChunk.Cells[NeighborIdx].Element != SecondaryTarget)
+					{
+						return ActualChunk.Cells[NeighborIdx];
+					}
+				}
+				
+			}
+			return null;
+		}
+		#nullable disable
+
 		// ---------------------------------======= Movement Stuff =======--------------------------------------- //
 		public bool CanMove(Cell NeighborCell)
 		{
@@ -285,10 +368,10 @@ public partial class SandInfoCS : Node
 
 
 		///returns whether the move that successful or not.
-		public bool TryMove(string ToNeighbor)
+		public bool TryMove(string ToNeighbor, PowderSimulationCs simRef)
 		{
 			Vector2I NeighborPos = Neighbors[ToNeighbor];
-			if(NeighborPos == Vector2I.Zero)
+			if(NeighborPos.X == -1 && NeighborPos.Y == -1)
 			{
 				return false;
 			}
@@ -297,12 +380,12 @@ public partial class SandInfoCS : Node
 
 			if (ChunkEdge)
 			{
-				Vector2I NewChunkPos = new Vector2I((int)(NeighborPos.X * CellChunk.InvChunkSize), (int)(NeighborPos.Y * CellChunk.InvChunkSize));
+				Vector2I NewChunkPos = new Vector2I(NeighborPos.X / CellChunk.ChunkSize, NeighborPos.Y / CellChunk.ChunkSize);
 
-				WriteChunk = SimRef.Chunks[NewChunkPos];
+				WriteChunk = simRef.Chunks[NewChunkPos];
 			}
 
-			int NeighborIdx = WorldPosToChunkPos(NeighborPos, ChunkSize, CellChunk.InvChunkSize);
+			int NeighborIdx = WorldPosToChunkPos(NeighborPos, ChunkSize);
 
 			//valid cell to move checking (per type check)
 			bool ValidMove = false;
@@ -335,7 +418,7 @@ public partial class SandInfoCS : Node
 
 					if(PosAddition != Vector2.Zero)
 					{
-						SimRef.Chunks[CellChunk.ChunkPosition + PosAddition].Wake();
+						simRef.Chunks[CellChunk.ChunkPosition + PosAddition].Wake();
 						//TODO: PUT CODE TO UPDATE THE DIRTYRECT OF THE CHUNK HERE LATER
 						// could use the y position of the cell to mark that one + their neighbors for updating in dirtyrect, or just update that whole side
 					}
@@ -367,10 +450,10 @@ public partial class SandInfoCS : Node
 		public int Insomnia = 1;
 		//keeps track of updates of no change for insomnia
 		public int InsomniaCount = 0;
-		public List<Cell> Cells;
+		public List<Cell> Cells = new List<Cell>();
 		//cells to draw, also cells that have been updated in the past frame
 		public bool[] UpdatedCellsMask;
-		public List<int> UpdatedCellsIndexes;
+		public List<int> UpdatedCellsIndexes = new List<int>();
 
 		//position of chunk in the grid of chunks (not cells)
 		public Vector2I ChunkPosition;
@@ -385,21 +468,20 @@ public partial class SandInfoCS : Node
 		public Vector2I DirtyRectMin;
 		public bool HasValidDirtyRect;
 
-		// to remove unneccesary division operations
-		public float InvChunkSize;
+		
 
+		public Vector2I SimSize;
 		public bool Sleeping = false;
 
 		public ChunkRendererCS Renderer;
 
-		public Chunk(int chunkSize, Vector2I chunkPosition, PowderSimulationCs simRef, int insomnia)
+		public Chunk(int chunkSize, Vector2I chunkPosition, Vector2I simulationSize, int insomnia)
 		{
 			ChunkSize = chunkSize;
 			ChunkPosition = chunkPosition;
-			SimRef = simRef;
+			SimSize = simulationSize;
 			Insomnia = insomnia;
 
-			InvChunkSize = 1.0f / ChunkSize;
 			UpdatedCellsMask = new bool[ChunkSize * ChunkSize];
 			
 
@@ -435,7 +517,7 @@ public partial class SandInfoCS : Node
 						y + MinExtents.Y
 					);
 
-					Cells.Add(new Cell(Pos, ChunkSize, Elements.AIR, SimRef, this, Idx));
+					Cells.Add(new Cell(Pos, ChunkSize, Elements.AIR, SimSize, this, Idx));
 
 					Idx += 1;
 				}
@@ -449,17 +531,8 @@ public partial class SandInfoCS : Node
 		}
 
 
-		public void UpdateCells()
+		public void UpdateCells(PowderSimulationCs simRef)
 		{
-			if (Sleeping)
-			{
-				// TODO: Modulate cell border if sleeping
-				return;
-			}else if (Renderer.ShowDebugInfo)
-			{
-				// TODO: Modulate if not sleeping
-			}
-
 
 			foreach (Cell cell in Cells)
 			{
@@ -477,7 +550,7 @@ public partial class SandInfoCS : Node
 					continue;
 				}
 
-				OnUpdate(cell);
+				OnUpdate(cell, simRef);
 
 			}
 
@@ -574,13 +647,11 @@ public partial class SandInfoCS : Node
 		public void Sleep()
 		{
 			Sleeping = true;
-			Renderer.Sleeping = true;
 		}
 
 		public void Wake()
 		{
 			Sleeping = false;
-			Renderer.Sleeping = false;
 		}
 
 

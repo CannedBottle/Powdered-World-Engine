@@ -11,16 +11,14 @@ public partial class ChunkRendererCS : TextureRect
 	[Export] public int PixelScale = 10;
 	[Export] public bool ShowDebugInfo = false;
 
-	[Export] public Color DebugBorderColor = new Color(1f, 0f, 0f, 0.75f);
-
 
 	private static readonly Shader RenderShader = GD.Load<Shader>("uid://dtywnulygwh48");
 
 	ShaderMaterial Mat = new ShaderMaterial();
 
 	public Vector4[] CellValues;
-
-	public bool Sleeping = false;
+	
+	
 
 	public override void _Ready()
 	{
@@ -39,23 +37,9 @@ public partial class ChunkRendererCS : TextureRect
 		Scale = new Vector2(PixelScale, PixelScale);
 		CustomMinimumSize = new Vector2(ChunkSize, ChunkSize);
 		CellValues = new Vector4[ChunkSize * ChunkSize];
-		EmitSignal(ChunkRendererCS.SignalName.CellsUpdated);
+		EmitSignal(SignalName.CellsUpdated);
+
 	}
-
-    public override void _Draw()
-    {
-        base._Draw();
-		
-		Color col = DebugBorderColor;
-		if (Sleeping)
-		{
-			col.A = 0.2f;
-		}
-
-		Vector2 RectSize = new Vector2(ChunkSize * PixelScale, ChunkSize * PixelScale);
-
-		DrawRect(new Rect2(RectSize / 2, RectSize), col, false, 2, false);
-    }
 
 	
 	private void WhenCellsUpdated()

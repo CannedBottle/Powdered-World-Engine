@@ -11,8 +11,8 @@ script = ExtResource("1_vu1hh")
 script = ExtResource("2_n1b4i")
 debug_mode = true
 show_sim_border = true
-pixel_scale = 8
-chunk_grid_size = Vector2i(4, 2)
+pixel_scale = 5
+chunk_grid_size = Vector2i(4, 3)
 chunk_insomnia = 3
 
 [node name="camera" type="Camera2D" parent="." unique_id=151552355]

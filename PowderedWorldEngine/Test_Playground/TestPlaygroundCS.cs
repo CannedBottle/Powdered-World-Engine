@@ -20,9 +20,11 @@ public partial class TestPlaygroundCS : Node2D
 		{Key.A, SandInfoCS.Elements.AIR},
 		{Key.W, SandInfoCS.Elements.WATER},
 		{Key.Q, SandInfoCS.Elements.WALL},
+		{Key.D, SandInfoCS.Elements.STONE},
+		{Key.E, SandInfoCS.Elements.ACID},
 	};
 
-	private List<Key> KeysPressed;
+	private List<Key> KeysPressed = new List<Key>();
 	
 	public override void _Ready()
 	{
@@ -67,13 +69,13 @@ public partial class TestPlaygroundCS : Node2D
 			Sim.PlaceGroupElements(brushSize, MousePos / Sim.PixelScale, ElementKeys[KeysPressed[0]], ElementKeys[KeysPressed[0]] == SandInfoCS.Elements.AIR);
 		}
 
-		Fps.Text = Engine.GetFramesPerSecond().ToString();
+		Fps.Text = "fps: " + Engine.GetFramesPerSecond().ToString();
 		UTime.Text = "u: " + Sim.UpdateTime.ToString();
 		DTime.Text = "d: " + Sim.DrawTime.ToString();
 
 		if (Input.IsActionPressed("Place"))
 		{
-			Sim.PlaceGroupElements(brushSize, MousePos / Sim.PixelScale, ElementKeys[KeysPressed[0]], ElementKeys[KeysPressed[0]] == SandInfoCS.Elements.AIR);
+			Sim.PlaceGroupElements(brushSize, MousePos / Sim.PixelScale, SandInfoCS.Elements.SAND, false);
 		}
 
 		if (Input.IsActionPressed("Exit"))

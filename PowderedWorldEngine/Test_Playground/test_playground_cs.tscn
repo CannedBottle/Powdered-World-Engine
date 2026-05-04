@@ -6,11 +6,15 @@
 
 [node name="Test_Playground CS" type="Node2D" unique_id=1643439571]
 script = ExtResource("1_q510b")
+brushSize = 1
 
 [node name="PowderSimulationCs" type="Node2D" parent="." unique_id=81232668]
 script = ExtResource("1_rcxy1")
-IndividualChunkSize = 32
-ChunkGridSize = Vector2i(1, 1)
+DebugMode = true
+ShowSimBorder = true
+SimBorderWidth = 20
+IndividualChunkSize = 64
+ChunkGridSize = Vector2i(4, 3)
 metadata/_custom_type_script = "uid://dfhpn88ccdse0"
 
 [node name="camera" type="Camera2D" parent="." unique_id=1204493082]
