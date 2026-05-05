@@ -531,27 +531,56 @@ public partial class SandInfoCS : Node
 		}
 
 
-		public void UpdateCells(PowderSimulationCs simRef)
+		public void UpdateCells(PowderSimulationCs simRef, int tick)
 		{
 
-			foreach (Cell cell in Cells)
+			if (tick != 0)
 			{
-				if (HasValidDirtyRect)
+				for(int i = 0; i < Cells.Count; i++)
 				{
-					if(!(cell.Position <= DirtyRectMax + new Vector2I(2, 2) && cell.Position >= DirtyRectMin - new Vector2I(2, 2)))
+					Cell cell = Cells[i];
+
+					if (HasValidDirtyRect)
 					{
-						// inflate over chunk in the place where cell updates chunk when on edge
+						if(!(cell.Position <= DirtyRectMax + new Vector2I(2, 2) && cell.Position >= DirtyRectMin - new Vector2I(2, 2)))
+						{
+							// inflate over chunk in the place where cell updates chunk when on edge
+							continue;
+						}
+					}
+
+					if(UpdatedCellsMask[cell.ChunkIdx] == true || cell.Element == Elements.AIR)
+					{
 						continue;
 					}
-				}
 
-				if(UpdatedCellsMask[cell.ChunkIdx] == true || cell.Element == Elements.AIR)
+					OnUpdate(cell, simRef);
+
+				}
+			}
+			else
+			{
+				for(int i = Cells.Count - 1; i > -1; i--)
 				{
-					continue;
+					Cell cell = Cells[i];
+
+					if (HasValidDirtyRect)
+					{
+						if(!(cell.Position <= DirtyRectMax + new Vector2I(2, 2) && cell.Position >= DirtyRectMin - new Vector2I(2, 2)))
+						{
+							// inflate over chunk in the place where cell updates chunk when on edge
+							continue;
+						}
+					}
+
+					if(UpdatedCellsMask[cell.ChunkIdx] == true || cell.Element == Elements.AIR)
+					{
+						continue;
+					}
+
+					OnUpdate(cell, simRef);
+
 				}
-
-				OnUpdate(cell, simRef);
-
 			}
 
 			//sleeps chunk if no cells are updated
@@ -621,11 +650,12 @@ public partial class SandInfoCS : Node
 				//darkness of pixel
 				float D = 1.0f - cell.Brightness;
 				//darkness applied to only non-alpha channels
-				Renderer.CellValues[cell.ChunkIdx] = new Vector4(Col.X - D, Col.Y - D, Col.Z - D, Col.W);
+				Renderer.ChunkImage.SetPixel(idx % ChunkSize, (int)Mathf.Floor(idx / ChunkSize), new Color(Col.X - D, Col.Y - D, Col.Z - D, Col.W));
 			}
+			Renderer.ChunkTexture.Update(Renderer.ChunkImage);
+
 			UpdatedCellsIndexes.Clear();
 			Array.Clear(UpdatedCellsMask, 0, UpdatedCellsMask.Length);
-			Renderer.EmitSignal(ChunkRendererCS.SignalName.CellsUpdated);
 
 		}
 

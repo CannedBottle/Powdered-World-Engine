@@ -129,13 +129,13 @@ public partial class PowderSimulationCs : Node2D
 		}
 	}
 
-	public void UpdateChunks()
+	public void UpdateChunks(int tick)
 	{
 		UpdateTime = Time.GetTicksUsec() / 1000.0f;
 		// ----------------------------------------------------------------------------
 		foreach(SandInfoCS.Chunk chunk in Chunks.Values)
 		{
-			chunk.UpdateCells(this);
+			chunk.UpdateCells(this, tick);
 		}
 
 		if (UseDirtyRects)
@@ -258,7 +258,7 @@ public partial class PowderSimulationCs : Node2D
 			// chunk borders
 			Vector2 RectSize = new Vector2(chunk.ChunkSize * PixelScale, chunk.ChunkSize * PixelScale);
 			Color col = DebugChunkBorderColor;
-			float thickness = 5;
+			float thickness = 3;
 			if (chunk.Sleeping)
 			{
 				col.A = 0.25f;
@@ -276,7 +276,7 @@ public partial class PowderSimulationCs : Node2D
 
 		if(Accumulator >= SimDt)
 		{
-			UpdateChunks();
+			UpdateChunks(TicksPassed);
 			RenderChunkUpdates();
 
 			TicksPassed += 1;

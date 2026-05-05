@@ -1,11 +1,10 @@
 using Godot;
 using System;
+using System.Collections.Generic;
 
 [GlobalClass]
 public partial class ChunkRendererCS : TextureRect
 {
-	
-	[Signal] public delegate void CellsUpdatedEventHandler();
 
 	[Export] public int ChunkSize = 30;
 	[Export] public int PixelScale = 10;
@@ -16,13 +15,13 @@ public partial class ChunkRendererCS : TextureRect
 
 	ShaderMaterial Mat = new ShaderMaterial();
 
-	public Vector4[] CellValues;
+	public Image ChunkImage;
+	public ImageTexture ChunkTexture;
 	
 	
 
 	public override void _Ready()
 	{
-		CellsUpdated += WhenCellsUpdated;
 
 
 		// create an Image to assign to this textureRect with the dimensions needed for the shader
@@ -30,21 +29,22 @@ public partial class ChunkRendererCS : TextureRect
 		ImageTexture Tex = ImageTexture.CreateFromImage(Img);
 		Texture = Tex;
 
+		// create image and texture to be used by that shader and visual updates
+		ChunkImage = Image.CreateEmpty(ChunkSize, ChunkSize, false, Image.Format.Rgba8);
+		ChunkTexture = ImageTexture.CreateFromImage(ChunkImage);
+		TextureFilter = TextureFilterEnum.Nearest;
+
 
 		Mat.Shader = RenderShader;
 		Material = Mat;
 
+
 		Scale = new Vector2(PixelScale, PixelScale);
 		CustomMinimumSize = new Vector2(ChunkSize, ChunkSize);
-		CellValues = new Vector4[ChunkSize * ChunkSize];
-		EmitSignal(SignalName.CellsUpdated);
 
+
+		Mat.SetShaderParameter("cell_tex", ChunkTexture);
 	}
 
-	
-	private void WhenCellsUpdated()
-	{
-		Mat.SetShaderParameter("cells", CellValues);
-	}
 
 }
