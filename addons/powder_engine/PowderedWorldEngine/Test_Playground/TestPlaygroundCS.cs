@@ -9,7 +9,7 @@ public partial class TestPlaygroundCS : Node2D
 	// you just have to handle the placement yourself since most likely it will not be done with the mouse + keys.
 	// ----------------------------------------------------------------------------------------------------------------------------------
 
-	private PowderSimulationCs Sim;
+	private PowderSimulation Sim;
 	private Label Fps;
 	private Label UTime;
 	private Label DTime;
@@ -33,7 +33,7 @@ public partial class TestPlaygroundCS : Node2D
 	
 	public override void _Ready()
 	{
-		Sim = GetNode<PowderSimulationCs>("PowderSimulationCs");
+		Sim = GetNode<PowderSimulation>("PowderSimulation");
 		Fps = GetNode<Label>("ui/fps");
 		UTime = GetNode<Label>("ui/update time");
 		DTime = GetNode<Label>("ui/draw time");

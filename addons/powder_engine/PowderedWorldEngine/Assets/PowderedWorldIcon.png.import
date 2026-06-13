@@ -3,15 +3,15 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://b0ol6juljiyfp"
-path="res://.godot/imported/PowderedWorldIcon.png-92375c91b2fa4a62431cdb6aa64145aa.ctex"
+path="res://.godot/imported/PowderedWorldIcon.png-48996387005053c2e90a9271bcf8db80.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://PowderedWorldEngine/Assets/PowderedWorldIcon.png"
-dest_files=["res://.godot/imported/PowderedWorldIcon.png-92375c91b2fa4a62431cdb6aa64145aa.ctex"]
+source_file="res://addons/powder_engine/PowderedWorldEngine/Assets/PowderedWorldIcon.png"
+dest_files=["res://.godot/imported/PowderedWorldIcon.png-48996387005053c2e90a9271bcf8db80.ctex"]
 
 [params]
 

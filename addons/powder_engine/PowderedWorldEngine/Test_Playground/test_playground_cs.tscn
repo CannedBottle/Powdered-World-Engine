@@ -1,8 +1,8 @@
 [gd_scene format=3 uid="uid://ins8vgen1wrn"]
 
-[ext_resource type="Script" uid="uid://c6kb7kabsigl2" path="res://PowderedWorldEngine/Test_Playground/TestPlaygroundCS.cs" id="1_q510b"]
-[ext_resource type="Script" uid="uid://dfhpn88ccdse0" path="res://PowderedWorldEngine/Scripts/CSharp/PowderSimulationCs.cs" id="1_rcxy1"]
-[ext_resource type="Script" uid="uid://d2qdk4il2fgb5" path="res://PowderedWorldEngine/Scripts/cameraController.gd" id="3_q510b"]
+[ext_resource type="Script" uid="uid://c6kb7kabsigl2" path="res://addons/powder_engine/PowderedWorldEngine/Test_Playground/TestPlaygroundCS.cs" id="1_q510b"]
+[ext_resource type="Script" uid="uid://b5ufmvvm0i4bm" path="res://addons/powder_engine/PowderedWorldEngine/Scripts/CSharp/PowderSimulation.cs" id="2_sl452"]
+[ext_resource type="Script" uid="uid://d2qdk4il2fgb5" path="res://addons/powder_engine/PowderedWorldEngine/Test_Playground/cameraController.gd" id="3_q510b"]
 
 [sub_resource type="Curve" id="Curve_q510b"]
 _data = [Vector2(0.011235952, 0), 0.0, 0.0, 0, 0, Vector2(0.23220974, 1), 0.0, 0.0, 0, 0, Vector2(0.8052435, 1), 0.0, 0.0, 0, 0, Vector2(1, 0), 0.0, 0.0, 0, 0]
@@ -34,14 +34,15 @@ alpha_curve = SubResource("CurveTexture_ew800")
 script = ExtResource("1_q510b")
 brushSize = 1
 
-[node name="PowderSimulationCs" type="Node2D" parent="." unique_id=81232668]
-script = ExtResource("1_rcxy1")
+[node name="PowderSimulation" type="Node2D" parent="." unique_id=215125392]
+script = ExtResource("2_sl452")
 DebugMode = true
 ShowSimBorder = true
-SimBorderWidth = 20
+SimBorderWidth = 10
 IndividualChunkSize = 64
 ChunkGridSize = Vector2i(5, 4)
-metadata/_custom_type_script = "uid://dfhpn88ccdse0"
+ChunkInsomnia = 3
+metadata/_custom_type_script = "uid://b5ufmvvm0i4bm"
 
 [node name="camera" type="Camera2D" parent="." unique_id=1204493082]
 anchor_mode = 0

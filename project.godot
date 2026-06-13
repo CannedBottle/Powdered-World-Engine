@@ -16,7 +16,6 @@ config/features=PackedStringArray("4.6", "C#", "Forward Plus")
 
 [autoload]
 
-SandInfo="*uid://c5rmjbdsvxn7d"
 SandInfoCS="*uid://co545rbd16tk6"
 
 [display]
@@ -32,12 +31,16 @@ window/vsync/vsync_mode=0
 
 project/assembly_name="Powdered World Engine"
 
+[editor_plugins]
+
+enabled=PackedStringArray("res://addons/powder_engine/plugin.cfg")
+
 [file_customization]
 
 folder_colors={
-"res://PowderedWorldEngine/Assets/": "orange",
-"res://PowderedWorldEngine/Scenes/": "blue",
-"res://PowderedWorldEngine/Scripts/": "red"
+"res://addons/powder_engine/PowderedWorldEngine/Assets/": "orange",
+"res://addons/powder_engine/PowderedWorldEngine/Scenes/": "blue",
+"res://addons/powder_engine/PowderedWorldEngine/Scripts/": "red"
 }
 
 [input]

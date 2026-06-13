@@ -5,7 +5,7 @@ using System.Collections.Generic;
 
 
 [GlobalClass, Icon("uid://b0ol6juljiyfp")]
-public partial class PowderSimulationCs : Node2D
+public partial class PowderSimulation : Node2D
 {
 	/// <summary>
 	/// shows a visual of chunk borders and dirty rects.
@@ -39,7 +39,6 @@ public partial class PowderSimulationCs : Node2D
 	/// <summary>
 	/// How many pixels (on each side) each chunk contains.
 	///
-	/// IF CHANGING HIGHER THAN VALUE IN CHUNKRENDER SHADER, change the size of the array in the chunkrender shader as well.
 	/// </summary>
 	[Export(PropertyHint.Range, "1,9223372036854775807")] public int IndividualChunkSize
 	{

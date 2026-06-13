@@ -1,7 +1,6 @@
 using Godot;
 using System;
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
 
 public partial class SandInfoCS : Node
 {
@@ -76,7 +75,7 @@ public partial class SandInfoCS : Node
 
 	// --------------------------------- ELEMENT MOVEMENT RULESETS ----------------------- //
 
-	public static void OnUpdate(Cell cell, PowderSimulationCs simRef)
+	public static void OnUpdate(Cell cell, PowderSimulation simRef)
 	{
 		
 		switch (cell.Element)
@@ -288,7 +287,7 @@ public partial class SandInfoCS : Node
 		}
 
 
-		public void FindNeighborElements(PowderSimulationCs simRef)
+		public void FindNeighborElements(PowderSimulation simRef)
 		{
 			NeighborElements.Clear();
 
@@ -312,7 +311,7 @@ public partial class SandInfoCS : Node
 		}
 
 		#nullable enable
-		public Cell? SearchNeighborElements(PowderSimulationCs simRef, Elements targetElement, bool opposite = false, Elements? SecondaryTarget = null)
+		public Cell? SearchNeighborElements(PowderSimulation simRef, Elements targetElement, bool opposite = false, Elements? SecondaryTarget = null)
 		{
 			foreach(Vector2I pos in Neighbors.Values)
 			{
@@ -368,7 +367,7 @@ public partial class SandInfoCS : Node
 
 
 		///returns whether the move that successful or not.
-		public bool TryMove(string ToNeighbor, PowderSimulationCs simRef)
+		public bool TryMove(string ToNeighbor, PowderSimulation simRef)
 		{
 			Vector2I NeighborPos = Neighbors[ToNeighbor];
 			if(NeighborPos.X == -1 && NeighborPos.Y == -1)
@@ -444,7 +443,7 @@ public partial class SandInfoCS : Node
 		
 		public int ChunkSize;
 		//reference to simulation node
-		public PowderSimulationCs SimRef;
+		public PowderSimulation SimRef;
 
 		//how many updates of no change before sleeping
 		public int Insomnia = 1;
@@ -531,7 +530,7 @@ public partial class SandInfoCS : Node
 		}
 
 
-		public void UpdateCells(PowderSimulationCs simRef, int tick)
+		public void UpdateCells(PowderSimulation simRef, int tick)
 		{
 
 			if (tick != 0)
