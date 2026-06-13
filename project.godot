@@ -39,7 +39,6 @@ enabled=PackedStringArray("res://addons/powder_engine/plugin.cfg")
 
 folder_colors={
 "res://addons/powder_engine/PowderedWorldEngine/Assets/": "orange",
-"res://addons/powder_engine/PowderedWorldEngine/Scenes/": "blue",
 "res://addons/powder_engine/PowderedWorldEngine/Scripts/": "red"
 }
 

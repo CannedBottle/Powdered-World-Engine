@@ -3,7 +3,6 @@ using System;
 using System.Collections.Generic;
 
 
-
 [GlobalClass, Icon("uid://b0ol6juljiyfp")]
 public partial class PowderSimulation : Node2D
 {
