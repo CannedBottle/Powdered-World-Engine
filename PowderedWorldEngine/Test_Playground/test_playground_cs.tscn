@@ -4,6 +4,32 @@
 [ext_resource type="Script" uid="uid://dfhpn88ccdse0" path="res://PowderedWorldEngine/Scripts/CSharp/PowderSimulationCs.cs" id="1_rcxy1"]
 [ext_resource type="Script" uid="uid://d2qdk4il2fgb5" path="res://PowderedWorldEngine/Scripts/cameraController.gd" id="3_q510b"]
 
+[sub_resource type="Curve" id="Curve_q510b"]
+_data = [Vector2(0.011235952, 0), 0.0, 0.0, 0, 0, Vector2(0.23220974, 1), 0.0, 0.0, 0, 0, Vector2(0.8052435, 1), 0.0, 0.0, 0, 0, Vector2(1, 0), 0.0, 0.0, 0, 0]
+point_count = 4
+
+[sub_resource type="CurveTexture" id="CurveTexture_ew800"]
+curve = SubResource("Curve_q510b")
+
+[sub_resource type="Gradient" id="Gradient_q510b"]
+colors = PackedColorArray(1, 0.921, 0.20999998, 1, 1, 0.9790492, 0.80655646, 1)
+
+[sub_resource type="GradientTexture1D" id="GradientTexture1D_ew800"]
+gradient = SubResource("Gradient_q510b")
+
+[sub_resource type="ParticleProcessMaterial" id="ParticleProcessMaterial_q510b"]
+lifetime_randomness = 0.49
+particle_flag_disable_z = true
+emission_shape = 3
+emission_box_extents = Vector3(1920, 1080, 1)
+initial_velocity_min = -200.0
+initial_velocity_max = 200.0
+gravity = Vector3(0, 0, 0)
+scale_min = 5.0
+scale_max = 15.0
+color_initial_ramp = SubResource("GradientTexture1D_ew800")
+alpha_curve = SubResource("CurveTexture_ew800")
+
 [node name="Test_Playground CS" type="Node2D" unique_id=1643439571]
 script = ExtResource("1_q510b")
 brushSize = 1
@@ -14,13 +40,26 @@ DebugMode = true
 ShowSimBorder = true
 SimBorderWidth = 20
 IndividualChunkSize = 64
-ChunkGridSize = Vector2i(4, 3)
+ChunkGridSize = Vector2i(5, 4)
 metadata/_custom_type_script = "uid://dfhpn88ccdse0"
 
 [node name="camera" type="Camera2D" parent="." unique_id=1204493082]
 anchor_mode = 0
 script = ExtResource("3_q510b")
 use_camera_drag = true
+
+[node name="ColorRect" type="ColorRect" parent="camera" unique_id=1415504252]
+z_index = -20
+offset_right = 2572.0
+offset_bottom = 1448.0
+pivot_offset_ratio = Vector2(0.5, 0.5)
+color = Color(0.120000005, 0.185, 0.25, 1)
+
+[node name="fireflies" type="GPUParticles2D" parent="camera" unique_id=796130923]
+z_index = -19
+amount = 50
+lifetime = 10.0
+process_material = SubResource("ParticleProcessMaterial_q510b")
 
 [node name="ui" type="CanvasLayer" parent="." unique_id=1609312808]
 
@@ -43,3 +82,10 @@ offset_right = 40.0
 offset_bottom = 113.0
 scale = Vector2(2, 2)
 text = "d:"
+
+[node name="debugswitch" type="CheckButton" parent="ui" unique_id=21945265]
+offset_top = 146.0
+offset_right = 44.0
+offset_bottom = 170.0
+scale = Vector2(2, 2)
+text = "Debug"

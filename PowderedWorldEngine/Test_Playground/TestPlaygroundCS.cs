@@ -4,11 +4,16 @@ using System.Collections.Generic;
 
 public partial class TestPlaygroundCS : Node2D
 {
+	// ----------------------------------------------------------------------------------------------------------------------------------
+	// This script is completely for handling the placing of elements in the playground, it is not needed whatsoever for the simulation;
+	// you just have to handle the placement yourself since most likely it will not be done with the mouse + keys.
+	// ----------------------------------------------------------------------------------------------------------------------------------
 
 	private PowderSimulationCs Sim;
 	private Label Fps;
 	private Label UTime;
 	private Label DTime;
+	private CheckButton DebugSwitch;
 
 
 	[Export] public int brushSize = 2;
@@ -32,8 +37,13 @@ public partial class TestPlaygroundCS : Node2D
 		Fps = GetNode<Label>("ui/fps");
 		UTime = GetNode<Label>("ui/update time");
 		DTime = GetNode<Label>("ui/draw time");
+		DebugSwitch = GetNode<CheckButton>("ui/debugswitch");
 
 		DisplayServer.WindowSetSize(DisplayServer.ScreenGetSize());
+
+		DebugSwitch.ButtonPressed = Sim.DebugMode;
+
+		DebugSwitch.Pressed += OnDebugSwitched;
 	}
 
 
@@ -86,4 +96,11 @@ public partial class TestPlaygroundCS : Node2D
 		Sim.UpdateSimulation();
 
 	}
+
+	private void OnDebugSwitched()
+	{
+		Sim.DebugMode = DebugSwitch.ButtonPressed;
+		Sim.QueueRedraw();
+	}
+
 }
