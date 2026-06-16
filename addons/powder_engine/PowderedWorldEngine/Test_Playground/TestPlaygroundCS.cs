@@ -65,6 +65,7 @@ public partial class TestPlaygroundCS : Node2D
 			{
 				KeysPressed.Remove(inputKey.Keycode);
 			}
+
 		}
     }
 

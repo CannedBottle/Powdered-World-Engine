@@ -1,0 +1,117 @@
+[gd_scene format=3 uid="uid://odrmtxhbb4d3"]
+
+[ext_resource type="Script" uid="uid://ljs8sqhpulke" path="res://addons/powder_engine/PowderedWorldEngine/Element Creation/element_creator.gd" id="1_n584d"]
+[ext_resource type="Texture2D" uid="uid://0wfxwmclxoui" path="res://addons/powder_engine/PowderedWorldEngine/Assets/Add.svg" id="2_3hmnj"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_3khar"]
+content_margin_left = 8.0
+content_margin_top = 4.0
+content_margin_right = 8.0
+content_margin_bottom = 4.0
+bg_color = Color(0.101960786, 0.101960786, 0.101960786, 1)
+corner_radius_top_left = 3
+corner_radius_top_right = 3
+corner_radius_bottom_right = 3
+corner_radius_bottom_left = 3
+corner_detail = 5
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_3hmnj"]
+content_margin_left = 8.0
+content_margin_top = 4.0
+content_margin_right = 8.0
+content_margin_bottom = 4.0
+bg_color = Color(0.22352941, 0.22352941, 0.22352941, 1)
+corner_radius_top_left = 3
+corner_radius_top_right = 3
+corner_radius_bottom_right = 3
+corner_radius_bottom_left = 3
+corner_detail = 5
+
+[node name="ElementCreator" type="VBoxContainer" unique_id=84035164]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 15
+script = ExtResource("1_n584d")
+
+[node name="Element" type="HBoxContainer" parent="." unique_id=800772985]
+layout_mode = 2
+alignment = 1
+
+[node name="SelectElementLabel" type="Label" parent="Element" unique_id=1512852163]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Select Element to Edit"
+
+[node name="ElementSelection" type="OptionButton" parent="Element" unique_id=469543168]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_styles/normal = SubResource("StyleBoxFlat_3khar")
+theme_override_styles/hover = SubResource("StyleBoxFlat_3hmnj")
+selected = 1
+item_count = 3
+popup/item_0/text = "sand"
+popup/item_0/id = 0
+popup/item_1/text = "water"
+popup/item_1/id = 1
+popup/item_2/text = "Add Element"
+popup/item_2/icon = ExtResource("2_3hmnj")
+popup/item_2/id = 2
+
+[node name="Name" type="HBoxContainer" parent="." unique_id=579595886]
+layout_mode = 2
+alignment = 1
+
+[node name="NameLabel" type="Label" parent="Name" unique_id=1675626225]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Element Name"
+
+[node name="NameField" type="LineEdit" parent="Name" unique_id=1472168313]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_styles/normal = SubResource("StyleBoxFlat_3khar")
+placeholder_text = "New Element"
+
+[node name="Type" type="HBoxContainer" parent="." unique_id=597324438]
+layout_mode = 2
+alignment = 1
+
+[node name="SelectTypeLabel" type="Label" parent="Type" unique_id=272174227]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Element Type"
+
+[node name="TypeSelection" type="OptionButton" parent="Type" unique_id=370276116]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_styles/normal = SubResource("StyleBoxFlat_3khar")
+theme_override_styles/hover = SubResource("StyleBoxFlat_3hmnj")
+selected = 0
+item_count = 2
+popup/item_0/text = "solid"
+popup/item_0/id = 0
+popup/item_1/text = "liquid"
+popup/item_1/id = 1
+
+[node name="test" type="HBoxContainer" parent="." unique_id=1959447196]
+layout_mode = 2
+alignment = 1
+
+[node name="SelectTypeLabel" type="Label" parent="test" unique_id=2084095967]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "test"
+
+[node name="TypeSelection" type="Button" parent="test" unique_id=1634191396]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_styles/normal = SubResource("StyleBoxFlat_3khar")
+theme_override_styles/hover = SubResource("StyleBoxFlat_3hmnj")
+text = "add 1"
+
+[node name="ReactionSection" type="FoldableContainer" parent="." unique_id=522792377]
+layout_mode = 2
+title = "Reactions"

@@ -35,13 +35,6 @@ project/assembly_name="Powdered World Engine"
 
 enabled=PackedStringArray("res://addons/powder_engine/plugin.cfg")
 
-[file_customization]
-
-folder_colors={
-"res://addons/powder_engine/PowderedWorldEngine/Assets/": "orange",
-"res://addons/powder_engine/PowderedWorldEngine/Scripts/": "red"
-}
-
 [input]
 
 Place={

@@ -39,6 +39,7 @@ script = ExtResource("2_sl452")
 DebugMode = true
 ShowSimBorder = true
 SimBorderWidth = 10
+PixelScale = 6
 IndividualChunkSize = 64
 ChunkGridSize = Vector2i(5, 4)
 ChunkInsomnia = 3

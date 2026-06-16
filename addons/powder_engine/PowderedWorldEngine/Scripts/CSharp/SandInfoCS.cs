@@ -1,9 +1,12 @@
 using Godot;
+using Godot.NativeInterop;
 using System;
 using System.Collections.Generic;
 
+[Tool]
 public partial class SandInfoCS : Node
 {
+
 	public enum Elements
 	{
 		AIR,
@@ -23,6 +26,14 @@ public partial class SandInfoCS : Node
 		GAS
 	}
 
+	// a way to add small features to an element and combine them, to allow for more element combinations.
+	public enum ElementFlags
+	{
+		FLAMMABLE,
+
+	}
+
+
 	public static readonly Dictionary<Elements, ElementTypes> ElementToType = new Dictionary<Elements, ElementTypes>
 	{
 		{Elements.AIR, ElementTypes.STATIC},
@@ -33,6 +44,11 @@ public partial class SandInfoCS : Node
 		{Elements.WALL, ElementTypes.STATIC}
 	};
 
+	
+	public static readonly Dictionary<Elements, List<ElementFlags>> ElementToFlags = new Dictionary<Elements, List<ElementFlags>>
+	{
+		{Elements.AIR, new List<ElementFlags>{}},	
+	};
 
 	// in the random values, a Vector2i is used for min/max values since constants cannot use random functions.
 	public static readonly Dictionary<ElementTypes, Dictionary<string, int>> ElementTypeDefaults = new Dictionary<ElementTypes, Dictionary<string, int>>
@@ -72,12 +88,35 @@ public partial class SandInfoCS : Node
 		return LocalY * chunkSize + LocalX;
 	}
 
+	public static void UpdateCloseChunks(Cell cell, PowderSimulation simRef)
+	{
+		// if on edge of chunk and successfully updates, wake chunk next to it
+				if(cell.ChunkEdge && !cell.SimEdge)
+				{
+					//wake chunk nearest to cell   (no bool to int now i have to use ternary ops :[ )
+					Vector2I PosAddition = new Vector2I(
+						(cell.Position.X == cell.CellChunk.MaxExtents.X ? 1 : 0) - (cell.Position.X == cell.CellChunk.MinExtents.X ? 1 : 0),
+						(cell.Position.Y == cell.CellChunk.MaxExtents.Y ? 1 : 0) - (cell.Position.Y == cell.CellChunk.MinExtents.Y ? 1 : 0)
+					);
+
+					if(PosAddition != Vector2.Zero)
+					{
+						Chunk NeighborChunk = simRef.Chunks[cell.CellChunk.ChunkPosition + PosAddition];
+
+						NeighborChunk.Wake();
+						//Inflate DirtyRect across chunk borders, fixes liquids not falling when dirtyrect is stuck on the other side of the chunk
+						NeighborChunk.MarkCellUpdated(NeighborChunk.Cells[WorldPosToChunkPos(cell.Position + PosAddition, cell.ChunkSize)]);
+						 
+					}
+				}
+	}
 
 	// --------------------------------- ELEMENT MOVEMENT RULESETS ----------------------- //
 
 	public static void OnUpdate(Cell cell, PowderSimulation simRef)
 	{
 		
+
 		switch (cell.Element)
 		{
 			case Elements.SAND:
@@ -124,7 +163,7 @@ public partial class SandInfoCS : Node
 		{
 			if(cell.TryMove("bottommiddle", simRef) == false)
 			{
-				bool success = false;
+				bool success;
 				if(cell.TypeAttributes["random"] == 0)
 				{
 					success = cell.TryMove("bottomright", simRef);
@@ -205,7 +244,7 @@ public partial class SandInfoCS : Node
 
 
 		public Dictionary<string, int> TypeAttributes;
-		public Dictionary<string, Vector2I> Neighbors = new Dictionary<string, Vector2I>(); // if neighbor is an edge, will show up as (-1, -1)
+		public Dictionary<string, Vector2I?> Neighbors = new Dictionary<string, Vector2I?>(); // if neighbor is an edge, will show up as (-1, -1)
 
 		public List<Elements> NeighborElements = new List<Elements>();
 		public readonly List<string> NeighborStrings = new List<string>([
@@ -277,7 +316,7 @@ public partial class SandInfoCS : Node
 					if(Position.X + x > SimSize.X || Position.X + x < 0 ||
 					Position.Y + y > SimSize.Y || Position.Y + y < 0)
 					{
-						Neighbors[NeighborStrings[LoopNum]] = new Vector2I(-1, -1);
+						Neighbors[NeighborStrings[LoopNum]] = null;
 					}
 
 
@@ -313,22 +352,27 @@ public partial class SandInfoCS : Node
 		#nullable enable
 		public Cell? SearchNeighborElements(PowderSimulation simRef, Elements targetElement, bool opposite = false, Elements? SecondaryTarget = null)
 		{
-			foreach(Vector2I pos in Neighbors.Values)
+			foreach(Vector2I? pos in Neighbors.Values)
 			{
-				if(pos.X == -1 && pos.Y == -1)
+				Vector2I neighborPos;
+				if(pos == null)
 				{
 					continue;
+				}
+				else
+				{
+					neighborPos = pos.Value;
 				}
 				Chunk ActualChunk = CellChunk;
 
 				if (ChunkEdge)
 				{
-					Vector2I NewChunkPos = new Vector2I(pos.X / CellChunk.ChunkSize, pos.Y / CellChunk.ChunkSize);
+					Vector2I NewChunkPos = new Vector2I(neighborPos.X / CellChunk.ChunkSize, neighborPos.Y / CellChunk.ChunkSize);
 
 					ActualChunk = simRef.Chunks[NewChunkPos];
 				}
 				
-				int NeighborIdx = WorldPosToChunkPos(pos, ChunkSize);
+				int NeighborIdx = WorldPosToChunkPos(neighborPos, ChunkSize);
 
 				if(!opposite)
 				{
@@ -360,19 +404,28 @@ public partial class SandInfoCS : Node
 				case ElementTypes.SOLID:
 					ValidMove = NeighborCell.CellType == ElementTypes.LIQUID || NeighborCell.CellType == ElementTypes.GAS;
 					break;
+				case ElementTypes.LIQUID:
+					ValidMove = NeighborCell.CellType == ElementTypes.GAS;
+					break;
 			}
 
 			return ValidMove;
 		}
 
-
+		///<summary>
 		///returns whether the move that successful or not.
+		/// <summary>
 		public bool TryMove(string ToNeighbor, PowderSimulation simRef)
 		{
-			Vector2I NeighborPos = Neighbors[ToNeighbor];
-			if(NeighborPos.X == -1 && NeighborPos.Y == -1)
+			Vector2I? NeighborExist = Neighbors[ToNeighbor];
+			Vector2I NeighborPos;
+			if(NeighborExist == null)
 			{
 				return false;
+			}
+			else
+			{
+				NeighborPos = NeighborExist.Value;
 			}
 
 			Chunk WriteChunk = CellChunk;
@@ -387,7 +440,7 @@ public partial class SandInfoCS : Node
 			int NeighborIdx = WorldPosToChunkPos(NeighborPos, ChunkSize);
 
 			//valid cell to move checking (per type check)
-			bool ValidMove = false;
+			bool ValidMove;
 			Cell NeighborCell = WriteChunk.Cells[NeighborIdx];
 			if(NeighborCell.Element == Elements.AIR)
 			{
@@ -404,32 +457,20 @@ public partial class SandInfoCS : Node
 				
 				CellChunk.MarkCellUpdated(this);
 				WriteChunk.MarkCellUpdated(NeighborCell);
+
+
+				UpdateCloseChunks(this, simRef);
 				
-
-				// if on edge of chunk and successfully updates, wake chunk next to it
-				if(ChunkEdge && !SimEdge)
-				{
-					//wake chunk nearest to cell   (no bool to int now i have to use ternary ops :[ )
-					Vector2I PosAddition = new Vector2I(
-						(Position.X == CellChunk.MaxExtents.X ? 1 : 0) - (Position.X == CellChunk.MinExtents.X ? 1 : 0),
-						(Position.Y == CellChunk.MaxExtents.Y ? 1 : 0) - (Position.Y == CellChunk.MinExtents.Y ? 1 : 0)
-					);
-
-					if(PosAddition != Vector2.Zero)
-					{
-						simRef.Chunks[CellChunk.ChunkPosition + PosAddition].Wake();
-						//TODO: PUT CODE TO UPDATE THE DIRTYRECT OF THE CHUNK HERE LATER
-						// could use the y position of the cell to mark that one + their neighbors for updating in dirtyrect, or just update that whole side
-					}
-				}
 
 				CellChunk.SwapCells(this, NeighborCell);
 				WriteChunk.Wake();
+
 				
 				return true;
 			}
 			else
 			{
+
 				return false;
 			}
 			
@@ -533,7 +574,7 @@ public partial class SandInfoCS : Node
 		public void UpdateCells(PowderSimulation simRef, int tick)
 		{
 
-			if (tick != 0)
+			if (tick == 1)
 			{
 				for(int i = 0; i < Cells.Count; i++)
 				{
@@ -543,7 +584,6 @@ public partial class SandInfoCS : Node
 					{
 						if(!(cell.Position <= DirtyRectMax + new Vector2I(2, 2) && cell.Position >= DirtyRectMin - new Vector2I(2, 2)))
 						{
-							// inflate over chunk in the place where cell updates chunk when on edge
 							continue;
 						}
 					}
@@ -567,7 +607,6 @@ public partial class SandInfoCS : Node
 					{
 						if(!(cell.Position <= DirtyRectMax + new Vector2I(2, 2) && cell.Position >= DirtyRectMin - new Vector2I(2, 2)))
 						{
-							// inflate over chunk in the place where cell updates chunk when on edge
 							continue;
 						}
 					}
@@ -581,6 +620,7 @@ public partial class SandInfoCS : Node
 
 				}
 			}
+
 
 			//sleeps chunk if no cells are updated
 			if(UpdatedCellsIndexes.Count == 0)

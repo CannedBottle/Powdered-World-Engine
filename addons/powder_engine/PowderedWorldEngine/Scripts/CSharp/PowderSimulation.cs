@@ -67,6 +67,9 @@ public partial class PowderSimulation : Node2D
 		{
 			_chunkGridSize = value;
 			UpdateSimulationSize();
+
+			ChunkKeys = new Vector2I[Chunks.Count];
+			Chunks.Keys.CopyTo(ChunkKeys, 0);
 		}
 	}
 
@@ -97,6 +100,7 @@ public partial class PowderSimulation : Node2D
 	public List<ChunkRendererCS> ActiveChunkRenderers = new List<ChunkRendererCS>();
 	public Node2D ChunkRendererParent;
 
+	private Vector2I[] ChunkKeys;
 
 	public void InitGrid()
 	{
@@ -125,15 +129,29 @@ public partial class PowderSimulation : Node2D
 				Chunks[LoopPos].Renderer = Render;
 			}
 		}
+
+		ChunkKeys = new Vector2I[Chunks.Count];
+		Chunks.Keys.CopyTo(ChunkKeys, 0);
 	}
 
 	public void UpdateChunks(int tick)
 	{
 		UpdateTime = Time.GetTicksUsec() / 1000.0f;
 		// ----------------------------------------------------------------------------
-		foreach(SandInfoCS.Chunk chunk in Chunks.Values)
+		if(tick == 1){
+			for(int i = 0; i < ChunkKeys.Length; i++)
+			{
+				Chunks[ChunkKeys[i]].UpdateCells(this, tick);
+			}
+
+		}
+		else
 		{
-			chunk.UpdateCells(this, tick);
+			
+			for(int i = ChunkKeys.Length - 1; i >= 0; i--)
+			{
+				Chunks[ChunkKeys[i]].UpdateCells(this, tick);
+			}
 		}
 
 		if (UseDirtyRects)
@@ -143,6 +161,7 @@ public partial class PowderSimulation : Node2D
 				chunk.UpdateDirtyRect();
 			}
 		}
+
 		//-----------------------------------------------------------------------------
 		UpdateTime = Time.GetTicksUsec() / 1000.0f - UpdateTime;
 		if(DebugMode)
