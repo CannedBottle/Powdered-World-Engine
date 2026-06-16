@@ -1,33 +1,22 @@
 using Godot;
 using System;
-using System.Linq;
+
 
 [Tool]
 [GlobalClass]
 public partial class Elements : Resource
 {
-    
-    public static Godot.Collections.Array<StringName> ElementNames = new Godot.Collections.Array<StringName>
-    {
-        (StringName)"SAND",
-    };
 
-    // ------------ GDScript Helper Functions -------------- //
-    public static void AddElementName(StringName name)
+    // WARNING: This file was automatically generated. Do not manually edit if you want to keep your soul.
+
+    public enum AllElements
     {
-        ElementNames.Append(name);
+       AIR,
+       SAND,
+       WATER,
+       ACID,
+       STONE,
+       WALL,
+
     }
-
-    public static void RemoveElementName(StringName name)
-    {
-        ElementNames.Remove(name);
-    }
-
-    public static Godot.Collections.Array<StringName> GetElementNames()
-    {
-        return ElementNames;
-    }
-
-    // ----------------------------------------------------- //
-
 }

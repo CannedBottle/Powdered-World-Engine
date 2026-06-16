@@ -1,6 +1,7 @@
 using Godot;
 using System;
 using System.Collections.Generic;
+using static Elements;
 
 
 [GlobalClass, Icon("uid://b0ol6juljiyfp")]
@@ -184,7 +185,7 @@ public partial class PowderSimulation : Node2D
 	}
 
 
-	public bool PlaceElement(Vector2I pos, SandInfoCS.Elements element, bool overRide = false)
+	public bool PlaceElement(Vector2I pos, AllElements element, bool overRide = false)
 	{
 		if(pos.X < 0 || pos.Y < 0 || pos.X > SimulationSize.X || pos.Y > SimulationSize.Y)
 		{
@@ -200,7 +201,7 @@ public partial class PowderSimulation : Node2D
 
 		SandInfoCS.Cell cell = chunk.Cells[LocalCellIdx];
 
-		if(overRide == false && cell.Element != SandInfoCS.Elements.AIR)
+		if(overRide == false && cell.Element != AllElements.AIR)
 		{
 			return false;
 		}
@@ -213,7 +214,7 @@ public partial class PowderSimulation : Node2D
 	}
 
 
-	public void PlaceGroupElements(int brushSize, Vector2I pos, SandInfoCS.Elements element, bool overRide = false)
+	public void PlaceGroupElements(int brushSize, Vector2I pos, AllElements element, bool overRide = false)
 	{
 		for (int y = 0; y < brushSize * 2 + 1; y++)
 		{

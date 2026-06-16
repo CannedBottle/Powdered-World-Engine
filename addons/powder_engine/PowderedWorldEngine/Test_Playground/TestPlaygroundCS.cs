@@ -1,6 +1,7 @@
 using Godot;
 using System;
 using System.Collections.Generic;
+using static Elements;
 
 public partial class TestPlaygroundCS : Node2D
 {
@@ -19,14 +20,14 @@ public partial class TestPlaygroundCS : Node2D
 	[Export] public int brushSize = 2;
 
 
-	public Dictionary<Key, SandInfoCS.Elements> ElementKeys = new Dictionary<Key, SandInfoCS.Elements>
+	public Dictionary<Key, AllElements> ElementKeys = new Dictionary<Key, AllElements>
 	{
-		{Key.S, SandInfoCS.Elements.SAND},
-		{Key.A, SandInfoCS.Elements.AIR},
-		{Key.W, SandInfoCS.Elements.WATER},
-		{Key.Q, SandInfoCS.Elements.WALL},
-		{Key.D, SandInfoCS.Elements.STONE},
-		{Key.E, SandInfoCS.Elements.ACID},
+		{Key.S, AllElements.SAND},
+		{Key.A, AllElements.AIR},
+		{Key.W, AllElements.WATER},
+		{Key.Q, AllElements.WALL},
+		{Key.D, AllElements.STONE},
+		{Key.E, AllElements.ACID},
 	};
 
 	private List<Key> KeysPressed = new List<Key>();
@@ -56,7 +57,7 @@ public partial class TestPlaygroundCS : Node2D
 
 			if (inputKey.IsPressed())
 			{
-				if (ElementKeys.TryGetValue(inputKey.Keycode, out SandInfoCS.Elements element) && !KeysPressed.Contains(inputKey.Keycode))
+				if (ElementKeys.TryGetValue(inputKey.Keycode, out AllElements element) && !KeysPressed.Contains(inputKey.Keycode))
 				{
 					KeysPressed.Add(inputKey.Keycode);
 				}
@@ -77,7 +78,7 @@ public partial class TestPlaygroundCS : Node2D
 		// spawn elements using keys
 		if(KeysPressed.Count > 0)
 		{
-			Sim.PlaceGroupElements(brushSize, MousePos / Sim.PixelScale, ElementKeys[KeysPressed[0]], ElementKeys[KeysPressed[0]] == SandInfoCS.Elements.AIR);
+			Sim.PlaceGroupElements(brushSize, MousePos / Sim.PixelScale, ElementKeys[KeysPressed[0]], ElementKeys[KeysPressed[0]] == AllElements.AIR);
 		}
 
 		Fps.Text = "fps: " + Engine.GetFramesPerSecond().ToString();
@@ -86,7 +87,7 @@ public partial class TestPlaygroundCS : Node2D
 
 		if (Input.IsActionPressed("Place"))
 		{
-			Sim.PlaceGroupElements(brushSize, MousePos / Sim.PixelScale, SandInfoCS.Elements.SAND, false);
+			Sim.PlaceGroupElements(brushSize, MousePos / Sim.PixelScale, AllElements.SAND, false);
 		}
 
 		if (Input.IsActionPressed("Exit"))

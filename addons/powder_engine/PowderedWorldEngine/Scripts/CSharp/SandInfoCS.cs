@@ -1,21 +1,22 @@
 using Godot;
-using Godot.NativeInterop;
 using System;
 using System.Collections.Generic;
+using static Elements;
+
 
 [Tool]
 public partial class SandInfoCS : Node
 {
 
-	public enum Elements
-	{
-		AIR,
-		SAND,
-		WATER,
-		ACID,
-		STONE,
-		WALL
-	}
+	//public enum Elements
+	//{
+	//	AIR,
+	//	SAND,
+	//	WATER,
+	//	ACID,
+	//	STONE,
+	//	WALL
+	//}
 
 	// a way of determining what special attributes an element has.
 	public enum ElementTypes
@@ -34,20 +35,30 @@ public partial class SandInfoCS : Node
 	}
 
 
-	public static readonly Dictionary<Elements, ElementTypes> ElementToType = new Dictionary<Elements, ElementTypes>
+	public static Godot.Collections.Array<String> ElementNames = new Godot.Collections.Array<String>
 	{
-		{Elements.AIR, ElementTypes.STATIC},
-		{Elements.SAND, ElementTypes.SOLID},
-		{Elements.WATER, ElementTypes.LIQUID},
-		{Elements.ACID, ElementTypes.LIQUID},
-		{Elements.STONE, ElementTypes.SOLID},
-		{Elements.WALL, ElementTypes.STATIC}
+		"AIR",
+		"SAND",
+		"WATER",
+		"ACID",
+		"STONE",
+		"WALL",
+	};
+
+	public static readonly Dictionary<AllElements, ElementTypes> ElementToType = new Dictionary<AllElements, ElementTypes>
+	{
+		{AllElements.AIR, ElementTypes.STATIC},
+		{AllElements.SAND, ElementTypes.SOLID},
+		{AllElements.WATER, ElementTypes.LIQUID},
+		{AllElements.ACID, ElementTypes.LIQUID},
+		{AllElements.STONE, ElementTypes.SOLID},
+		{AllElements.WALL, ElementTypes.STATIC}
 	};
 
 	
-	public static readonly Dictionary<Elements, List<ElementFlags>> ElementToFlags = new Dictionary<Elements, List<ElementFlags>>
+	public static readonly Dictionary<AllElements, List<ElementFlags>> ElementToFlags = new Dictionary<AllElements, List<ElementFlags>>
 	{
-		{Elements.AIR, new List<ElementFlags>{}},	
+		{AllElements.AIR, new List<ElementFlags>{}},	
 	};
 
 	// in the random values, a Vector2i is used for min/max values since constants cannot use random functions.
@@ -68,14 +79,14 @@ public partial class SandInfoCS : Node
 	};
 
 
-	public static readonly Dictionary<Elements, Vector4> BaseElementColors = new Dictionary<Elements, Vector4>
+	public static readonly Dictionary<AllElements, Vector4> BaseElementColors = new Dictionary<AllElements, Vector4>
 	{
-		{Elements.AIR, Vector4.Zero},
-		{Elements.SAND, new Vector4(1.0f, 0.93f, 0.474f, 1.0f)},
-		{Elements.WATER, new Vector4(0.112f, 0.644f, 0.93f, 0.6f)},
-		{Elements.ACID, new Vector4(0.678f, 1.0f, 0.31f, 0.75f)},
-		{Elements.STONE, new Vector4(0.58f, 0.58f, 0.58f, 1.0f)},
-		{Elements.WALL, new Vector4(0.27f, 0.27f, 0.27f, 1.0f)},
+		{AllElements.AIR, Vector4.Zero},
+		{AllElements.SAND, new Vector4(1.0f, 0.93f, 0.474f, 1.0f)},
+		{AllElements.WATER, new Vector4(0.112f, 0.644f, 0.93f, 0.6f)},
+		{AllElements.ACID, new Vector4(0.678f, 1.0f, 0.31f, 0.75f)},
+		{AllElements.STONE, new Vector4(0.58f, 0.58f, 0.58f, 1.0f)},
+		{AllElements.WALL, new Vector4(0.27f, 0.27f, 0.27f, 1.0f)},
 	};
 
 
@@ -115,11 +126,10 @@ public partial class SandInfoCS : Node
 
 	public static void OnUpdate(Cell cell, PowderSimulation simRef)
 	{
-		
 
 		switch (cell.Element)
 		{
-			case Elements.SAND:
+			case AllElements.SAND:
 					if(cell.TryMove("bottommiddle", simRef) == false)
 					{
 						if(cell.TypeAttributes["random"] == 0)
@@ -140,17 +150,17 @@ public partial class SandInfoCS : Node
 					break;
 			
 
-			case Elements.STONE:
+			case AllElements.STONE:
 				cell.TryMove("bottommiddle", simRef);
 				break;	
 
-			case Elements.ACID:
-				Cell neighbor = cell.SearchNeighborElements(simRef, Elements.AIR, true, Elements.ACID);
-				if(neighbor != null && neighbor.Element != Elements.ACID)
+			case AllElements.ACID:
+				Cell neighbor = cell.SearchNeighborElements(simRef, AllElements.AIR, true, AllElements.ACID);
+				if(neighbor != null && neighbor.Element != AllElements.ACID)
 				{
-					cell.Element = Elements.AIR;
+					cell.Element = AllElements.AIR;
 					cell.CellChunk.MarkCellUpdated(cell);
-					neighbor.Element = Elements.AIR;
+					neighbor.Element = AllElements.AIR;
 					neighbor.CellChunk.MarkCellUpdated(neighbor);
 					return;
 				}
@@ -220,8 +230,8 @@ public partial class SandInfoCS : Node
 		
 		public Vector2I Position = new Vector2I();
 		public ElementTypes CellType;
-		private Elements _element;
-		public Elements Element
+		private AllElements _element;
+		public AllElements Element
 		{
 			get => _element;
 			set
@@ -246,7 +256,7 @@ public partial class SandInfoCS : Node
 		public Dictionary<string, int> TypeAttributes;
 		public Dictionary<string, Vector2I?> Neighbors = new Dictionary<string, Vector2I?>(); // if neighbor is an edge, will show up as (-1, -1)
 
-		public List<Elements> NeighborElements = new List<Elements>();
+		public List<AllElements> NeighborElements = new List<AllElements>();
 		public readonly List<string> NeighborStrings = new List<string>([
 			"topleft", "topmiddle", "topright", "leftmiddle", "rightmiddle", "bottomleft", "bottommiddle", "bottomright"
 		]);
@@ -264,7 +274,7 @@ public partial class SandInfoCS : Node
 		public bool SimEdge = false;
 
 
-		public Cell(Vector2I cellPosition, int chunkSize, Elements cellElement, Vector2I simulationSize, Chunk cellChunk, int cellChunkIdx)
+		public Cell(Vector2I cellPosition, int chunkSize, AllElements cellElement, Vector2I simulationSize, Chunk cellChunk, int cellChunkIdx)
 		{
 			Position = cellPosition;
 			ChunkSize = chunkSize;
@@ -350,7 +360,7 @@ public partial class SandInfoCS : Node
 		}
 
 		#nullable enable
-		public Cell? SearchNeighborElements(PowderSimulation simRef, Elements targetElement, bool opposite = false, Elements? SecondaryTarget = null)
+		public Cell? SearchNeighborElements(PowderSimulation simRef, AllElements targetElement, bool opposite = false, AllElements? SecondaryTarget = null)
 		{
 			foreach(Vector2I? pos in Neighbors.Values)
 			{
@@ -442,7 +452,7 @@ public partial class SandInfoCS : Node
 			//valid cell to move checking (per type check)
 			bool ValidMove;
 			Cell NeighborCell = WriteChunk.Cells[NeighborIdx];
-			if(NeighborCell.Element == Elements.AIR)
+			if(NeighborCell.Element == AllElements.AIR)
 			{
 				ValidMove = true;
 			}
@@ -557,7 +567,7 @@ public partial class SandInfoCS : Node
 						y + MinExtents.Y
 					);
 
-					Cells.Add(new Cell(Pos, ChunkSize, Elements.AIR, SimSize, this, Idx));
+					Cells.Add(new Cell(Pos, ChunkSize, AllElements.AIR, SimSize, this, Idx));
 
 					Idx += 1;
 				}
@@ -588,7 +598,7 @@ public partial class SandInfoCS : Node
 						}
 					}
 
-					if(UpdatedCellsMask[cell.ChunkIdx] == true || cell.Element == Elements.AIR)
+					if(UpdatedCellsMask[cell.ChunkIdx] == true || cell.Element == AllElements.AIR)
 					{
 						continue;
 					}
@@ -611,7 +621,7 @@ public partial class SandInfoCS : Node
 						}
 					}
 
-					if(UpdatedCellsMask[cell.ChunkIdx] == true || cell.Element == Elements.AIR)
+					if(UpdatedCellsMask[cell.ChunkIdx] == true || cell.Element == AllElements.AIR)
 					{
 						continue;
 					}
@@ -702,7 +712,7 @@ public partial class SandInfoCS : Node
 		// a function to put all the necessary variables to carry over when moving cells
 		public void SwapCells(Cell copyCell, Cell pasteCell)
 		{
-			Elements PasteCellElement = pasteCell.Element;
+			AllElements PasteCellElement = pasteCell.Element;
 			Dictionary<string, int> PasteCellTypeAttributes = pasteCell.TypeAttributes;
 
 			pasteCell.Element = copyCell.Element;
