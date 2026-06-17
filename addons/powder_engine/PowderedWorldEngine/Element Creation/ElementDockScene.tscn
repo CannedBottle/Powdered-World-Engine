@@ -96,22 +96,17 @@ popup/item_0/id = 0
 popup/item_1/text = "liquid"
 popup/item_1/id = 1
 
-[node name="test" type="HBoxContainer" parent="." unique_id=1959447196]
-layout_mode = 2
-alignment = 1
-
-[node name="SelectTypeLabel" type="Label" parent="test" unique_id=2084095967]
-layout_mode = 2
-size_flags_horizontal = 3
-text = "test"
-
-[node name="TypeSelection" type="Button" parent="test" unique_id=1634191396]
-layout_mode = 2
-size_flags_horizontal = 3
-theme_override_styles/normal = SubResource("StyleBoxFlat_3khar")
-theme_override_styles/hover = SubResource("StyleBoxFlat_3hmnj")
-text = "add 1"
-
 [node name="ReactionSection" type="FoldableContainer" parent="." unique_id=522792377]
 layout_mode = 2
 title = "Reactions"
+
+[node name="Apply" type="HBoxContainer" parent="." unique_id=1959447196]
+layout_mode = 2
+alignment = 1
+
+[node name="ApplyChangesButton" type="Button" parent="Apply" unique_id=1634191396]
+layout_mode = 2
+theme_override_styles/normal = SubResource("StyleBoxFlat_3khar")
+theme_override_styles/hover = SubResource("StyleBoxFlat_3hmnj")
+text = "Apply Changes
+(Build Project After)"

@@ -34,7 +34,7 @@ public static string codeEnd =
 """;
 
 
-    public static void GenerateElementEnum()
+    public static void GenerateElementAttributes()
     {
         string targetGlobalPath = ProjectSettings.GlobalizePath(elementScriptPath);
 
