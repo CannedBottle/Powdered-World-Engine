@@ -1,22 +1,59 @@
 using Godot;
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Xml.Resolvers;
 using static Elements;
 
 
 [Tool]
 public partial class SandInfoCS : Node
 {
+	// ---------------------------- Element Attribute Storage ---------------------------- //
+	public partial class ElementAttributes : RefCounted
+	{
+		public AllElements Id;
 
-	//public enum Elements
-	//{
-	//	AIR,
-	//	SAND,
-	//	WATER,
-	//	ACID,
-	//	STONE,
-	//	WALL
-	//}
+		public string NameString;
+
+		public ElementTypes Type;
+
+		public Godot.Collections.Array<ElementFlags> Flags;
+
+		public Color BaseColor = new Color(0.0f, 0.0f, 0.0f, 1.0f);
+
+		public float NoiseStrength;
+
+		#nullable enable
+		public ElementAttributes(AllElements EId, ElementTypes EType, Color EColor, float ENoiseStrength, Godot.Collections.Array<ElementFlags>? EFlags)
+		{
+			
+			Id = EId;
+			Type = EType;
+			BaseColor = EColor;
+			NoiseStrength = ENoiseStrength;
+			if(EFlags != null)
+			{
+				Flags = EFlags;		
+			}
+
+		}
+		#nullable disable
+
+	}
+
+
+	// the instance of the ElementStorage resource, which contains all element data.
+	public static readonly ElementStorage ElementResource = GD.Load<ElementStorage>("res://addons/powder_engine/PowderedWorldEngine/ElementData.tres");
+
+	
+	public static ElementStorage GetElementResource()
+	{
+		return ElementResource;
+	}
+
+	// ----------------------------------------------------------------------------------------------------------------------------------- //
+
 
 	// a way of determining what special attributes an element has.
 	public enum ElementTypes
@@ -45,6 +82,8 @@ public partial class SandInfoCS : Node
 		"WALL",
 	};
 
+	
+
 	public static readonly Dictionary<AllElements, ElementTypes> ElementToType = new Dictionary<AllElements, ElementTypes>
 	{
 		{AllElements.AIR, ElementTypes.STATIC},
@@ -55,11 +94,6 @@ public partial class SandInfoCS : Node
 		{AllElements.WALL, ElementTypes.STATIC}
 	};
 
-	
-	public static readonly Dictionary<AllElements, List<ElementFlags>> ElementToFlags = new Dictionary<AllElements, List<ElementFlags>>
-	{
-		{AllElements.AIR, new List<ElementFlags>{}},	
-	};
 
 	// in the random values, a Vector2i is used for min/max values since constants cannot use random functions.
 	public static readonly Dictionary<ElementTypes, Dictionary<string, int>> ElementTypeDefaults = new Dictionary<ElementTypes, Dictionary<string, int>>
@@ -89,6 +123,27 @@ public partial class SandInfoCS : Node
 		{AllElements.WALL, new Vector4(0.27f, 0.27f, 0.27f, 1.0f)},
 	};
 
+	// --------------------------- Get / Set For Static Element Defaults ----------------- //
+
+	public static Godot.Collections.Array<String> GetElementNames()
+	{
+		return ElementNames.Duplicate();
+	}
+	
+	public static void AddElementName(string name)
+	{
+		ElementNames.Append(name);
+	}
+
+	public static void RemoveElementName(string name)
+	{
+		ElementNames.Remove(name);
+	}
+
+	public static void ClearElementNames()
+	{
+		ElementNames.Clear();
+	}
 
 	// ------------------------------------ USEFUL FUNCTIONS ----------------------------- //
 	public static int WorldPosToChunkPos(Vector2I worldPos, int chunkSize)

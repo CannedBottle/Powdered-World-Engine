@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="ElementStorage" format=3 uid="uid://bj5qc7jfjbjel"]
+
+[ext_resource type="Script" uid="uid://jcjrgxvwm8xe" path="res://addons/powder_engine/PowderedWorldEngine/Scripts/CSharp/ElementStorage.cs" id="1_dvpe1"]
+
+[sub_resource type="CSharpScript" id="CSharpScript_dvpe1"]
+
+[resource]
+script = ExtResource("1_dvpe1")
+AllElementAttributes = Array[SubResource("CSharpScript_dvpe1")]([null])
+metadata/_custom_type_script = "uid://jcjrgxvwm8xe"

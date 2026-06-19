@@ -12,7 +12,7 @@ public partial class PowderEnginePlugin : EditorPlugin
     public override void _EnablePlugin()
     {
         base._EnablePlugin();
-        AddAutoloadSingleton("SandInfoCS", "res://addons/powder_engine/PowderedWorldEngine/Scripts/CSharp/SandInfoCS.cs");
+        
     }
 
     public override void _DisablePlugin()
@@ -26,6 +26,8 @@ public partial class PowderEnginePlugin : EditorPlugin
     public override void _EnterTree()
     {
         base._EnterTree();
+        AddAutoloadSingleton("SandInfoCS", "res://addons/powder_engine/PowderedWorldEngine/Scripts/CSharp/SandInfoCS.cs");
+
 
         var _dock_scene = GD.Load<PackedScene>("res://addons/powder_engine/PowderedWorldEngine/Element Creation/ElementDockScene.tscn").Instantiate<Control>();
 

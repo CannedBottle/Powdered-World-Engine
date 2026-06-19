@@ -183,7 +183,7 @@ public partial class PowderSimulation : Node2D
 		// -----------------------------------------------------------------
 		DrawTime = Time.GetTicksUsec() / 1000.0f - DrawTime;
 	}
-
+	
 
 	public bool PlaceElement(Vector2I pos, AllElements element, bool overRide = false)
 	{
@@ -191,7 +191,7 @@ public partial class PowderSimulation : Node2D
 		{
 			return false;
 		}
-
+		
 
 		// pos of chunk the cell is being placed in
 		Vector2I ChunkPosition = new Vector2I(pos.X / IndividualChunkSize, pos.Y / IndividualChunkSize);

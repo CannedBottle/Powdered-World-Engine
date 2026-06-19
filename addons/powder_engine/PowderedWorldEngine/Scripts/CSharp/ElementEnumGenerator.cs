@@ -47,6 +47,8 @@ public static string codeEnd =
 
         try
         {
+
+            
             
             File.WriteAllText(targetGlobalPath, codeStart + GetEnumContents() + codeEnd);
 

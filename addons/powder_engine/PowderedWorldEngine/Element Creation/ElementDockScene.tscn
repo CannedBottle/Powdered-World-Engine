@@ -2,30 +2,8 @@
 
 [ext_resource type="Script" uid="uid://ljs8sqhpulke" path="res://addons/powder_engine/PowderedWorldEngine/Element Creation/element_creator.gd" id="1_n584d"]
 [ext_resource type="Texture2D" uid="uid://0wfxwmclxoui" path="res://addons/powder_engine/PowderedWorldEngine/Assets/Add.svg" id="2_3hmnj"]
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_3khar"]
-content_margin_left = 8.0
-content_margin_top = 4.0
-content_margin_right = 8.0
-content_margin_bottom = 4.0
-bg_color = Color(0.101960786, 0.101960786, 0.101960786, 1)
-corner_radius_top_left = 3
-corner_radius_top_right = 3
-corner_radius_bottom_right = 3
-corner_radius_bottom_left = 3
-corner_detail = 5
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_3hmnj"]
-content_margin_left = 8.0
-content_margin_top = 4.0
-content_margin_right = 8.0
-content_margin_bottom = 4.0
-bg_color = Color(0.22352941, 0.22352941, 0.22352941, 1)
-corner_radius_top_left = 3
-corner_radius_top_right = 3
-corner_radius_bottom_right = 3
-corner_radius_bottom_left = 3
-corner_detail = 5
+[ext_resource type="StyleBox" uid="uid://biohu0otuvsxu" path="res://addons/powder_engine/PowderedWorldEngine/Assets/normalButton.tres" id="2_nti3m"]
+[ext_resource type="StyleBox" uid="uid://b55qqw6x1oq6t" path="res://addons/powder_engine/PowderedWorldEngine/Assets/hoverButton.tres" id="3_g4dkt"]
 
 [node name="ElementCreator" type="VBoxContainer" unique_id=84035164]
 anchors_preset = 15
@@ -48,17 +26,13 @@ text = "Select Element to Edit"
 [node name="ElementSelection" type="OptionButton" parent="Element" unique_id=469543168]
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_styles/normal = SubResource("StyleBoxFlat_3khar")
-theme_override_styles/hover = SubResource("StyleBoxFlat_3hmnj")
-selected = 1
-item_count = 3
-popup/item_0/text = "sand"
+theme_override_styles/normal = ExtResource("2_nti3m")
+theme_override_styles/hover = ExtResource("3_g4dkt")
+selected = 0
+item_count = 1
+popup/item_0/text = "Add Element"
+popup/item_0/icon = ExtResource("2_3hmnj")
 popup/item_0/id = 0
-popup/item_1/text = "water"
-popup/item_1/id = 1
-popup/item_2/text = "Add Element"
-popup/item_2/icon = ExtResource("2_3hmnj")
-popup/item_2/id = 2
 
 [node name="Name" type="HBoxContainer" parent="." unique_id=579595886]
 layout_mode = 2
@@ -72,7 +46,7 @@ text = "Element Name"
 [node name="NameField" type="LineEdit" parent="Name" unique_id=1472168313]
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_styles/normal = SubResource("StyleBoxFlat_3khar")
+theme_override_styles/normal = ExtResource("2_nti3m")
 placeholder_text = "New Element"
 
 [node name="Type" type="HBoxContainer" parent="." unique_id=597324438]
@@ -87,8 +61,8 @@ text = "Element Type"
 [node name="TypeSelection" type="OptionButton" parent="Type" unique_id=370276116]
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_styles/normal = SubResource("StyleBoxFlat_3khar")
-theme_override_styles/hover = SubResource("StyleBoxFlat_3hmnj")
+theme_override_styles/normal = ExtResource("2_nti3m")
+theme_override_styles/hover = ExtResource("3_g4dkt")
 selected = 0
 item_count = 2
 popup/item_0/text = "solid"
@@ -96,9 +70,88 @@ popup/item_0/id = 0
 popup/item_1/text = "liquid"
 popup/item_1/id = 1
 
+[node name="MoveType" type="HBoxContainer" parent="." unique_id=1478306920]
+layout_mode = 2
+alignment = 1
+
+[node name="SelectMoveTypeLabel" type="Label" parent="MoveType" unique_id=1316714423]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Movement Type"
+
+[node name="MoveTypeSelection" type="OptionButton" parent="MoveType" unique_id=1271472329]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_styles/normal = ExtResource("2_nti3m")
+theme_override_styles/hover = ExtResource("3_g4dkt")
+selected = 0
+item_count = 4
+popup/item_0/text = "Sand"
+popup/item_0/id = 0
+popup/item_1/text = "Liquid"
+popup/item_1/id = 1
+popup/item_2/text = "None"
+popup/item_2/id = 2
+popup/item_3/text = "Custom"
+popup/item_3/id = 3
+
 [node name="ReactionSection" type="FoldableContainer" parent="." unique_id=522792377]
 layout_mode = 2
+folded = true
 title = "Reactions"
+
+[node name="MovementSection" type="FoldableContainer" parent="." unique_id=1814600024]
+visible = false
+layout_mode = 2
+folded = true
+title = "Movement"
+
+[node name="FlagSection" type="FoldableContainer" parent="." unique_id=1539560973]
+layout_mode = 2
+folded = true
+title = "Flags"
+
+[node name="VisualSection" type="FoldableContainer" parent="." unique_id=508919294]
+layout_mode = 2
+folded = true
+title = "Visuals"
+
+[node name="VBoxContainer" type="VBoxContainer" parent="VisualSection" unique_id=2137092237]
+visible = false
+layout_mode = 2
+theme_override_constants/separation = 15
+
+[node name="Color" type="HBoxContainer" parent="VisualSection/VBoxContainer" unique_id=286954023]
+layout_mode = 2
+alignment = 1
+
+[node name="SelectColorLabel" type="Label" parent="VisualSection/VBoxContainer/Color" unique_id=146978625]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Base Color"
+
+[node name="ColorSelection" type="ColorPickerButton" parent="VisualSection/VBoxContainer/Color" unique_id=30088833]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_styles/normal = ExtResource("2_nti3m")
+theme_override_styles/hover = ExtResource("3_g4dkt")
+
+[node name="NoiseStrength" type="HBoxContainer" parent="VisualSection/VBoxContainer" unique_id=339340340]
+layout_mode = 2
+alignment = 1
+
+[node name="NoiseLabel" type="Label" parent="VisualSection/VBoxContainer/NoiseStrength" unique_id=328545320]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Noise Strength"
+
+[node name="NoiseStrengthField" type="SpinBox" parent="VisualSection/VBoxContainer/NoiseStrength" unique_id=704099960]
+layout_mode = 2
+size_flags_horizontal = 3
+max_value = 1.0
+step = 0.001
+value = 0.5
+custom_arrow_step = 0.01
 
 [node name="Apply" type="HBoxContainer" parent="." unique_id=1959447196]
 layout_mode = 2
@@ -106,7 +159,38 @@ alignment = 1
 
 [node name="ApplyChangesButton" type="Button" parent="Apply" unique_id=1634191396]
 layout_mode = 2
-theme_override_styles/normal = SubResource("StyleBoxFlat_3khar")
-theme_override_styles/hover = SubResource("StyleBoxFlat_3hmnj")
+theme_override_styles/normal = ExtResource("2_nti3m")
+theme_override_styles/hover = ExtResource("3_g4dkt")
 text = "Apply Changes
 (Build Project After)"
+
+[node name="DangerSection" type="FoldableContainer" parent="." unique_id=225923632]
+layout_mode = 2
+folded = true
+title = "Danger Zone"
+
+[node name="VBoxContainer" type="VBoxContainer" parent="DangerSection" unique_id=1701318359]
+visible = false
+layout_mode = 2
+theme_override_constants/separation = 15
+
+[node name="DeleteElement" type="HBoxContainer" parent="DangerSection/VBoxContainer" unique_id=1915875839]
+layout_mode = 2
+alignment = 1
+
+[node name="DeleteElementButton" type="Button" parent="DangerSection/VBoxContainer/DeleteElement" unique_id=302573523]
+layout_mode = 2
+theme_override_styles/normal = ExtResource("2_nti3m")
+theme_override_styles/hover = ExtResource("3_g4dkt")
+text = "Delete Current Element"
+
+[node name="ResetDefaults" type="HBoxContainer" parent="DangerSection/VBoxContainer" unique_id=753706588]
+layout_mode = 2
+alignment = 1
+
+[node name="ResetDefaultsButton" type="Button" parent="DangerSection/VBoxContainer/ResetDefaults" unique_id=2071988066]
+layout_mode = 2
+theme_override_styles/normal = ExtResource("2_nti3m")
+theme_override_styles/hover = ExtResource("3_g4dkt")
+text = "Reset Defaults
+(Remove custom elements and restore defaults)"
