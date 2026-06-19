@@ -55,7 +55,8 @@ func update_button_states():
 		element_selection.remove_item(element_selection.item_count)
 
 func set_temp_to_actual():
-	temp_element_names = E_storage_ref.AllElementAttributes.keys()
+	if E_storage_ref.AllElementAttributes.size() > 0:
+		temp_element_names = E_storage_ref.AllElementAttributes.keys()
 	
 	temp_attributes = E_storage_ref.AllElementAttributes.duplicate_deep()
 
