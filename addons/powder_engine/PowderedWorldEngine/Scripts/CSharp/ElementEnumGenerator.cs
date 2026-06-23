@@ -70,7 +70,7 @@ public static string codeEnd =
     {
         string enumContents = "";
 
-        foreach(string name in SandInfoCS.ElementNames)
+        foreach(string name in SandInfoCS.ElementResource.AllElementAttributes.Keys)
         {
             enumContents += "       " + name + """
             ,

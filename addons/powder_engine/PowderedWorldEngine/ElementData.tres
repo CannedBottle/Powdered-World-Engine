@@ -1,10 +1,67 @@
 [gd_resource type="Resource" script_class="ElementStorage" format=3 uid="uid://bj5qc7jfjbjel"]
 
+[ext_resource type="Script" uid="uid://b18mxtsbkwnds" path="res://addons/powder_engine/PowderedWorldEngine/Scripts/CSharp/ElementAttributes.cs" id="1_b1pp6"]
 [ext_resource type="Script" uid="uid://jcjrgxvwm8xe" path="res://addons/powder_engine/PowderedWorldEngine/Scripts/CSharp/ElementStorage.cs" id="1_dvpe1"]
 
-[sub_resource type="CSharpScript" id="CSharpScript_dvpe1"]
+[sub_resource type="Resource" id="Resource_b1pp6"]
+script = ExtResource("1_b1pp6")
+StringName = "AIR"
+Flags = null
+BaseColor = Color(0, 0, 0, 0)
+NoiseStrength = 1.0
+
+[sub_resource type="Resource" id="Resource_u0hdg"]
+script = ExtResource("1_b1pp6")
+Id = 1
+Type = 1
+StringName = "SAND"
+Flags = null
+BaseColor = Color(1, 0.93, 0.474, 1)
+NoiseStrength = 0.5
+
+[sub_resource type="Resource" id="Resource_njb8b"]
+script = ExtResource("1_b1pp6")
+Id = 2
+Type = 2
+StringName = "WATER"
+Flags = null
+BaseColor = Color(0.112, 0.644, 0.93, 0.6)
+NoiseStrength = 0.5
+
+[sub_resource type="Resource" id="Resource_bucba"]
+script = ExtResource("1_b1pp6")
+Id = 3
+Type = 2
+StringName = "ACID"
+Flags = null
+BaseColor = Color(0.678, 1, 0.31, 0.75)
+NoiseStrength = 0.5
+
+[sub_resource type="Resource" id="Resource_tw7t8"]
+script = ExtResource("1_b1pp6")
+Id = 4
+Type = 1
+StringName = "STONE"
+Flags = null
+BaseColor = Color(0.58, 0.58, 0.58, 1)
+NoiseStrength = 0.5
+
+[sub_resource type="Resource" id="Resource_icetj"]
+script = ExtResource("1_b1pp6")
+Id = 5
+StringName = "WALL"
+Flags = null
+BaseColor = Color(0.27, 0.27, 0.27, 1)
+NoiseStrength = 0.5
 
 [resource]
 script = ExtResource("1_dvpe1")
-AllElementAttributes = Array[SubResource("CSharpScript_dvpe1")]([null])
+AllElementAttributes = Dictionary[StringName, ExtResource("1_b1pp6")]({
+&"ACID": SubResource("Resource_bucba"),
+&"AIR": SubResource("Resource_b1pp6"),
+&"SAND": SubResource("Resource_u0hdg"),
+&"STONE": SubResource("Resource_tw7t8"),
+&"WALL": SubResource("Resource_icetj"),
+&"WATER": SubResource("Resource_njb8b")
+})
 metadata/_custom_type_script = "uid://jcjrgxvwm8xe"

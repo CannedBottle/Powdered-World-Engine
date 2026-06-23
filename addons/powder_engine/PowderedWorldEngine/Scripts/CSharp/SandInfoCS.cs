@@ -2,7 +2,6 @@ using Godot;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Xml.Resolvers;
 using static Elements;
 
 
@@ -10,46 +9,29 @@ using static Elements;
 public partial class SandInfoCS : Node
 {
 	// ---------------------------- Element Attribute Storage ---------------------------- //
-	public partial class ElementAttributes : RefCounted
-	{
-		public AllElements Id;
 
-		public string NameString;
-
-		public ElementTypes Type;
-
-		public Godot.Collections.Array<ElementFlags> Flags;
-
-		public Color BaseColor = new Color(0.0f, 0.0f, 0.0f, 1.0f);
-
-		public float NoiseStrength;
-
-		#nullable enable
-		public ElementAttributes(AllElements EId, ElementTypes EType, Color EColor, float ENoiseStrength, Godot.Collections.Array<ElementFlags>? EFlags)
-		{
-			
-			Id = EId;
-			Type = EType;
-			BaseColor = EColor;
-			NoiseStrength = ENoiseStrength;
-			if(EFlags != null)
-			{
-				Flags = EFlags;		
-			}
-
-		}
-		#nullable disable
-
-	}
-
+	public static readonly string ElementResourcePath = "res://addons/powder_engine/PowderedWorldEngine/ElementData.tres";
 
 	// the instance of the ElementStorage resource, which contains all element data.
-	public static readonly ElementStorage ElementResource = GD.Load<ElementStorage>("res://addons/powder_engine/PowderedWorldEngine/ElementData.tres");
+	public static readonly ElementStorage ElementResource = ResourceLoader.Load<ElementStorage>(ElementResourcePath);
 
 	
 	public static ElementStorage GetElementResource()
 	{
 		return ElementResource;
+	}
+
+	public static void SaveElementStorage()
+	{
+		Error error = ResourceSaver.Save(ElementResource, ElementResourcePath, ResourceSaver.SaverFlags.None);
+		if(error == Error.Ok)
+		{
+			GD.Print("Successfully saved elements to " + ElementResourcePath);
+		}
+		else
+		{
+			GD.PrintErr("Failed to save elements. Error: " + error);
+		}
 	}
 
 	// ----------------------------------------------------------------------------------------------------------------------------------- //
@@ -64,6 +46,18 @@ public partial class SandInfoCS : Node
 		GAS
 	}
 
+	public static Godot.Collections.Array<StringName> GetElementTypes()
+	{
+		Godot.Collections.Array<StringName> TypeList = new Godot.Collections.Array<StringName>{};
+
+		foreach(string name in Enum.GetNames<ElementTypes>())
+		{
+			TypeList.Append<StringName>((StringName)name);
+		}
+
+		return TypeList;
+	}
+
 	// a way to add small features to an element and combine them, to allow for more element combinations.
 	public enum ElementFlags
 	{
@@ -71,19 +65,20 @@ public partial class SandInfoCS : Node
 
 	}
 
-
-	public static Godot.Collections.Array<String> ElementNames = new Godot.Collections.Array<String>
+	public static Godot.Collections.Array<StringName> GetElementFlags()
 	{
-		"AIR",
-		"SAND",
-		"WATER",
-		"ACID",
-		"STONE",
-		"WALL",
-	};
+		Godot.Collections.Array<StringName> TypeList = new Godot.Collections.Array<StringName>{};
 
+		foreach(string name in Enum.GetNames<ElementFlags>())
+		{
+			TypeList.Append<StringName>((StringName)name);
+		}
+
+		return TypeList;
+	}
+	// -------------------------------------------------------------------------------------
 	
-
+	
 	public static readonly Dictionary<AllElements, ElementTypes> ElementToType = new Dictionary<AllElements, ElementTypes>
 	{
 		{AllElements.AIR, ElementTypes.STATIC},
@@ -123,27 +118,6 @@ public partial class SandInfoCS : Node
 		{AllElements.WALL, new Vector4(0.27f, 0.27f, 0.27f, 1.0f)},
 	};
 
-	// --------------------------- Get / Set For Static Element Defaults ----------------- //
-
-	public static Godot.Collections.Array<String> GetElementNames()
-	{
-		return ElementNames.Duplicate();
-	}
-	
-	public static void AddElementName(string name)
-	{
-		ElementNames.Append(name);
-	}
-
-	public static void RemoveElementName(string name)
-	{
-		ElementNames.Remove(name);
-	}
-
-	public static void ClearElementNames()
-	{
-		ElementNames.Clear();
-	}
 
 	// ------------------------------------ USEFUL FUNCTIONS ----------------------------- //
 	public static int WorldPosToChunkPos(Vector2I worldPos, int chunkSize)
