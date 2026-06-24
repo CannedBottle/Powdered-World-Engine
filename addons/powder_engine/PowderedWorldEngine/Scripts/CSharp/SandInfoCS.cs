@@ -50,9 +50,9 @@ public partial class SandInfoCS : Node
 	{
 		Godot.Collections.Array<StringName> TypeList = new Godot.Collections.Array<StringName>{};
 
-		foreach(string name in Enum.GetNames<ElementTypes>())
+		foreach(string name in ElementTypes.GetNames<ElementTypes>())
 		{
-			TypeList.Append<StringName>((StringName)name);
+			TypeList.Add((StringName)name);
 		}
 
 		return TypeList;
@@ -69,13 +69,26 @@ public partial class SandInfoCS : Node
 	{
 		Godot.Collections.Array<StringName> TypeList = new Godot.Collections.Array<StringName>{};
 
-		foreach(string name in Enum.GetNames<ElementFlags>())
+		foreach(string name in ElementFlags.GetNames<ElementFlags>())
 		{
-			TypeList.Append<StringName>((StringName)name);
+			TypeList.Add((StringName)name);
 		}
 
 		return TypeList;
 	}
+
+	public static Godot.Collections.Array<String> GetElementFlagsAsString()
+	{
+		Godot.Collections.Array<String> TypeList = new Godot.Collections.Array<String>{};
+
+		foreach(string name in ElementFlags.GetNames<ElementFlags>())
+		{
+			TypeList.Add((String)name);
+		}
+
+		return TypeList;
+	}
+
 	// -------------------------------------------------------------------------------------
 	
 	

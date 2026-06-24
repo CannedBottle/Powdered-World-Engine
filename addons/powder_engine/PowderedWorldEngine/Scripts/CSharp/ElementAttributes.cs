@@ -42,4 +42,14 @@ public partial class ElementAttributes : Resource
 		return new ElementAttributes(Id, Type, BaseColor, NoiseStrength, Flags);
 	}
 
+	public void AddFlag(int flagIndex)
+	{
+		Flags.Add((ElementFlags)flagIndex);
+	}
+
+	public void RemoveFlag(int index)
+	{
+		Flags.RemoveAt(index);
+	}
+
 }

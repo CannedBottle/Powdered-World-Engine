@@ -9,6 +9,10 @@ extends VBoxContainer
 @onready var color_selection: ColorPickerButton = $VisualSection/VBoxContainer/Color/ColorSelection
 @onready var noise_strength_field: SpinBox = $VisualSection/VBoxContainer/NoiseStrength/NoiseStrengthField
 
+# ----------------------------------------------------------- Flags
+@onready var flags_parent: VBoxContainer = $FlagSection/FlagsParent
+@onready var add_flag_button: Button = $FlagSection/FlagsParent/AddFlagButton
+
 # ----------------------------------------------------------- Danger Zone
 @onready var delete_element_button: Button = $DangerSection/VBoxContainer/DeleteElement/DeleteElementButton
 @onready var reset_defaults_button: Button = $DangerSection/VBoxContainer/ResetDefaults/ResetDefaultsButton
@@ -32,13 +36,24 @@ func _ready() -> void:
 	update_element_selector()
 	update_button_states()
 	
+	#fill element type selector
+	type_selection.clear()
+	for type in SandInfoCS.GetElementTypes():
+		type_selection.add_item(type)
+	
+	#test flag area creation
+	add_flag()
+	
 	# ------------- Connections -------------- #
 	apply_changes_button.pressed.connect(apply_changes)
 	element_selection.item_selected.connect(_new_selected_element)
 	name_field.text_submitted.connect(_new_element_name)
+	type_selection.item_selected.connect(_type_changed)
 	
 	color_selection.popup_closed.connect(_color_changed)
 	noise_strength_field.value_changed.connect(_noise_strength_changed)
+	
+	add_flag_button.pressed.connect(add_flag)
 	
 	reset_defaults_button.pressed.connect(_reset_defaults)
 	delete_element_button.pressed.connect(_delete_selected_element)
@@ -73,6 +88,8 @@ func update_button_states():
 	# ------------- Element Selector -------------- #
 	if element_selection.item_count > temp_element_names.size() + 1:
 		element_selection.remove_item(element_selection.item_count)
+	
+	type_selection.select(int(temp_attributes[selected_element].Type))
 	
 	# ------------- Visuals --------------------- #
 	color_selection.color = temp_attributes[selected_element].BaseColor
@@ -122,6 +139,18 @@ func add_placeholder_element():
 	temp_element_names.append("ELEMENT" + str(count))
 	temp_attributes.get_or_add(StringName("ELEMENT" + str(count)), ElementStorage.GetDefaultElement())
 
+func create_flag_selector():
+	var new_attributes: AttributeSelector = AttributeSelector.new()
+	new_attributes.this_index = temp_attributes[get_selected_element()].Flags.size()
+	new_attributes.options = SandInfoCS.GetElementFlagsAsString()
+	flags_parent.add_child(new_attributes)
+	new_attributes.create_children()
+	flags_parent.move_child(add_flag_button, -1)
+
+func add_flag():
+	create_flag_selector()
+	#make code for adding an actual flag here
+
 # -------------------- Signals ------------------- #
 func _new_selected_element(index: int):
 	if index == temp_element_names.size():
@@ -169,3 +198,11 @@ func _delete_selected_element():
 	temp_element_names.erase(selected_element_name)
 	
 	update_element_selector()
+
+func _type_changed(index: int):
+	
+	temp_attributes[get_selected_element()].Type = index
+
+func _flag_updated(attribute_index: int, new_selected_index: int):
+	pass
+	#TODO: make code here for setting flags
