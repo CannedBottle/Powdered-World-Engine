@@ -4,6 +4,7 @@
 [ext_resource type="Texture2D" uid="uid://0wfxwmclxoui" path="res://addons/powder_engine/PowderedWorldEngine/Assets/Add.svg" id="2_3hmnj"]
 [ext_resource type="StyleBox" uid="uid://biohu0otuvsxu" path="res://addons/powder_engine/PowderedWorldEngine/Assets/normalButton.tres" id="2_nti3m"]
 [ext_resource type="StyleBox" uid="uid://b55qqw6x1oq6t" path="res://addons/powder_engine/PowderedWorldEngine/Assets/hoverButton.tres" id="3_g4dkt"]
+[ext_resource type="Texture2D" uid="uid://cnbbtnjdbwe46" path="res://addons/powder_engine/PowderedWorldEngine/Assets/ExternalLink.svg" id="5_g4dkt"]
 
 [sub_resource type="Image" id="Image_nti3m"]
 data = {
@@ -183,15 +184,17 @@ size_flags_horizontal = 3
 theme_override_styles/normal = ExtResource("2_nti3m")
 theme_override_styles/hover = ExtResource("3_g4dkt")
 selected = 0
-item_count = 4
+item_count = 5
 popup/item_0/text = "Sand"
 popup/item_0/id = 0
 popup/item_1/text = "Liquid"
 popup/item_1/id = 1
-popup/item_2/text = "None"
-popup/item_2/id = 2
-popup/item_3/text = "Custom"
-popup/item_3/id = 3
+popup/item_2/text = "Stone"
+popup/item_2/id = 4
+popup/item_3/text = "None"
+popup/item_3/id = 2
+popup/item_4/text = "Custom"
+popup/item_4/id = 3
 
 [node name="ReactionSection" type="FoldableContainer" parent="." unique_id=522792377]
 layout_mode = 2
@@ -205,6 +208,7 @@ folded = true
 title = "Movement"
 
 [node name="FlagSection" type="FoldableContainer" parent="." unique_id=1539560973]
+visible = false
 layout_mode = 2
 title = "Flags"
 
@@ -302,3 +306,16 @@ theme_override_styles/normal = ExtResource("2_nti3m")
 theme_override_styles/hover = ExtResource("3_g4dkt")
 text = "Reset Defaults
 (Remove custom elements and restore defaults)"
+
+[node name="DocsLink" type="HBoxContainer" parent="." unique_id=2140990729]
+layout_mode = 2
+alignment = 1
+
+[node name="SelectElementLabel" type="TextureRect" parent="DocsLink" unique_id=1609605393]
+layout_mode = 2
+texture = ExtResource("5_g4dkt")
+
+[node name="ElementSelection" type="LinkButton" parent="DocsLink" unique_id=1465088483]
+layout_mode = 2
+text = "Visit the Official Documentation!"
+uri = "https://cannedbottle.github.io/powderedworld-docs/"

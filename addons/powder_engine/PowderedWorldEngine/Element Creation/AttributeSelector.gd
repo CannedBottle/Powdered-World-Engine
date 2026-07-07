@@ -13,6 +13,8 @@ const trash_icon_path: String = "res://addons/powder_engine/PowderedWorldEngine/
 
 signal attribute_updated(attribute_index: int, new_selected_index: int)
 
+signal attribute_deleted(attribute_index: int)
+
 func _ready() -> void:
 	alignment = BoxContainer.ALIGNMENT_CENTER
 
@@ -49,4 +51,5 @@ func _on_flag_selected(index: int):
 	attribute_updated.emit(this_index, selected_index)
 
 func _on_remove():
+	attribute_deleted.emit(this_index)
 	queue_free()

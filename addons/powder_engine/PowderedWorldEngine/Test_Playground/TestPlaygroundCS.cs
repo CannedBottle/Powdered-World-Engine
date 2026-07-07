@@ -6,7 +6,7 @@ using static Elements;
 public partial class TestPlaygroundCS : Node2D
 {
 	// ----------------------------------------------------------------------------------------------------------------------------------
-	// This script is completely for handling the placing of elements in the playground, it is not needed whatsoever for the simulation;
+	// This script is completely for handling the placing of elements in the playground, it is not needed whatsoever for the plugin itself;
 	// you just have to handle the placement yourself since most likely it will not be done with the mouse + keys.
 	// ----------------------------------------------------------------------------------------------------------------------------------
 

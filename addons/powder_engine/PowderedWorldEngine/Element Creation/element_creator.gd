@@ -4,6 +4,7 @@ extends VBoxContainer
 @onready var element_selection: OptionButton = $Element/ElementSelection
 @onready var name_field: LineEdit = $Name/NameField
 @onready var type_selection: OptionButton = $Type/TypeSelection
+@onready var move_type_selection: OptionButton = $MoveType/MoveTypeSelection
 
 # ----------------------------------------------------------- Visuals
 @onready var color_selection: ColorPickerButton = $VisualSection/VBoxContainer/Color/ColorSelection
@@ -31,24 +32,24 @@ var selected_element: StringName
 func _ready() -> void:
 	E_storage_ref = SandInfoCS.GetElementResource()
 	
+	fill_movetype_button()
 	
 	set_temp_to_actual()
 	update_element_selector()
 	update_button_states()
+	update_flag_list()
 	
 	#fill element type selector
 	type_selection.clear()
 	for type in SandInfoCS.GetElementTypes():
 		type_selection.add_item(type)
 	
-	#test flag area creation
-	add_flag()
-	
 	# ------------- Connections -------------- #
 	apply_changes_button.pressed.connect(apply_changes)
 	element_selection.item_selected.connect(_new_selected_element)
 	name_field.text_submitted.connect(_new_element_name)
 	type_selection.item_selected.connect(_type_changed)
+	move_type_selection.item_selected.connect(_move_type_changed)
 	
 	color_selection.popup_closed.connect(_color_changed)
 	noise_strength_field.value_changed.connect(_noise_strength_changed)
@@ -57,6 +58,14 @@ func _ready() -> void:
 	
 	reset_defaults_button.pressed.connect(_reset_defaults)
 	delete_element_button.pressed.connect(_delete_selected_element)
+
+func fill_movetype_button():
+	move_type_selection.clear()
+	
+	var move_types: Array[StringName] = ElementAttributes.GetMoveTypes()
+	
+	for type: StringName in move_types:
+		move_type_selection.add_item(type, -1)
 
 func update_element_selector(keep_idx: bool = false):
 	# --------- Element Selection ------------- #
@@ -80,6 +89,21 @@ func update_element_selector(keep_idx: bool = false):
 		element_selection.select(0)
 	# ---------------------------------------- #
 
+func update_flag_list():
+	# Delete existing selectors
+	for selector in flags_parent.get_children():
+		if selector is AttributeSelector:
+			selector.queue_free()
+	
+	# Create new selectors
+	var selected_element: StringName = get_selected_element()
+	
+	var idx: int = 0
+	for flag_idx in temp_attributes[selected_element].Flags:
+		create_flag_selector(idx, flag_idx)
+		idx += 1
+	
+
 func update_button_states():
 	var selected_element: StringName = get_selected_element()
 	
@@ -90,6 +114,7 @@ func update_button_states():
 		element_selection.remove_item(element_selection.item_count)
 	
 	type_selection.select(int(temp_attributes[selected_element].Type))
+	move_type_selection.select(int(temp_attributes[selected_element].MovementType))
 	
 	# ------------- Visuals --------------------- #
 	color_selection.color = temp_attributes[selected_element].BaseColor
@@ -111,9 +136,10 @@ func _reset_defaults():
 	E_storage_ref.ResetDefaults()
 	set_temp_attribute_names()
 	
-	set_temp_to_actual()
+	await set_temp_to_actual()
 	update_element_selector()
 	update_button_states()
+	update_flag_list()
 
 func apply_changes():
 	set_actual_to_temp()
@@ -139,17 +165,25 @@ func add_placeholder_element():
 	temp_element_names.append("ELEMENT" + str(count))
 	temp_attributes.get_or_add(StringName("ELEMENT" + str(count)), ElementStorage.GetDefaultElement())
 
-func create_flag_selector():
+func create_flag_selector(edit_idx: int, selection: int = 0):
 	var new_attributes: AttributeSelector = AttributeSelector.new()
-	new_attributes.this_index = temp_attributes[get_selected_element()].Flags.size()
+	new_attributes.this_index = edit_idx
+	new_attributes.selected_index = selection
 	new_attributes.options = SandInfoCS.GetElementFlagsAsString()
 	flags_parent.add_child(new_attributes)
+	
+	new_attributes.attribute_deleted.connect(_flag_removed)
+	new_attributes.attribute_updated.connect(_flag_changed)
+	
 	new_attributes.create_children()
 	flags_parent.move_child(add_flag_button, -1)
 
 func add_flag():
-	create_flag_selector()
-	#make code for adding an actual flag here
+	var selected_element: StringName = get_selected_element()
+	
+	temp_attributes[selected_element].Flags.append(0)
+	
+	create_flag_selector(temp_attributes[selected_element].GetFlagsCount())
 
 # -------------------- Signals ------------------- #
 func _new_selected_element(index: int):
@@ -157,10 +191,20 @@ func _new_selected_element(index: int):
 		add_placeholder_element()
 		
 		update_element_selector()
+		
 		element_selection.selected = index
+	
+	update_flag_list()
 	
 	update_button_states()
 	
+
+func _flag_removed(index: int):
+	temp_attributes[get_selected_element()].Flags.remove_at(index)
+	update_flag_list()
+
+func _flag_changed(attribute_idx: int, flag_selection_idx: int):
+	temp_attributes[get_selected_element()].Flags[attribute_idx] = flag_selection_idx
 
 func _new_element_name(new_text: String):
 	var old_name: StringName = get_selected_element()
@@ -192,17 +236,20 @@ func _noise_strength_changed(new_val: float):
 func _delete_selected_element():
 	var selected_element_name: StringName = get_selected_element()
 	if ElementStorage.GetDefaultElementDict().has(selected_element_name):
+		printerr("Cannot delete a default element.")
 		return
 	
 	temp_attributes.erase(selected_element_name)
 	temp_element_names.erase(selected_element_name)
 	
 	update_element_selector()
+	update_button_states()
+	update_flag_list()
 
 func _type_changed(index: int):
 	
 	temp_attributes[get_selected_element()].Type = index
 
-func _flag_updated(attribute_index: int, new_selected_index: int):
-	pass
-	#TODO: make code here for setting flags
+func _move_type_changed(index: int):
+	
+	temp_attributes[get_selected_element()].MovementType = index

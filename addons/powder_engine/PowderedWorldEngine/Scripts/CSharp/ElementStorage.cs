@@ -2,13 +2,14 @@ using Godot;
 using System;
 using static SandInfoCS;
 using static Elements;
+using static ElementAttributes;
 
 [Tool]
 [GlobalClass]
 public partial class ElementStorage : Resource
 {
 
-	public static readonly ElementAttributes DefaultElement = new ElementAttributes(AllElements.AIR, ElementTypes.STATIC, new Color(1.0f, 0.0f, 0.0f, 1.0f), 0.5f, null);
+	public static readonly ElementAttributes DefaultElement = new ElementAttributes(AllElements.AIR, ElementTypes.STATIC, MoveTypes.NONE, new Color(1.0f, 0.0f, 0.0f, 1.0f), 0.5f, null);
 
 	public static ElementAttributes GetDefaultElement()
 	{
@@ -26,12 +27,12 @@ public partial class ElementStorage : Resource
 	*/
 	private static readonly Godot.Collections.Dictionary<StringName, ElementAttributes> DefaultAttributes = new Godot.Collections.Dictionary<StringName, ElementAttributes>
 	{
-		{(StringName)"AIR", new ElementAttributes((AllElements)0, ElementTypes.STATIC, new Color(0.0f, 0.0f, 0.0f, 0.0f), 1.0f, null)},
-		{(StringName)"SAND", new ElementAttributes((AllElements)1, ElementTypes.SOLID, new Color(1.0f, 0.93f, 0.474f, 1.0f), 0.5f, null)},
-		{(StringName)"WATER", new ElementAttributes((AllElements)2, ElementTypes.LIQUID, new Color(0.112f, 0.644f, 0.93f, 0.6f), 0.5f, null)},
-		{(StringName)"ACID", new ElementAttributes((AllElements)3, ElementTypes.LIQUID, new Color(0.678f, 1.0f, 0.31f, 0.75f), 0.5f, null)},
-		{(StringName)"STONE", new ElementAttributes((AllElements)4, ElementTypes.SOLID, new Color(0.58f, 0.58f, 0.58f, 1.0f), 0.5f, null)},
-		{(StringName)"WALL", new ElementAttributes((AllElements)5, ElementTypes.STATIC, new Color(0.27f, 0.27f, 0.27f, 1.0f), 0.5f, null)},
+		{(StringName)"AIR", new ElementAttributes((AllElements)0, ElementTypes.STATIC, MoveTypes.NONE, new Color(0.0f, 0.0f, 0.0f, 0.0f), 1.0f, null)},
+		{(StringName)"SAND", new ElementAttributes((AllElements)1, ElementTypes.SOLID, MoveTypes.SAND, new Color(1.0f, 0.93f, 0.474f, 1.0f), 0.5f, null)},
+		{(StringName)"WATER", new ElementAttributes((AllElements)2, ElementTypes.LIQUID, MoveTypes.LIQUID, new Color(0.112f, 0.644f, 0.93f, 0.6f), 0.5f, null)},
+		{(StringName)"ACID", new ElementAttributes((AllElements)3, ElementTypes.LIQUID, MoveTypes.LIQUID, new Color(0.678f, 1.0f, 0.31f, 0.75f), 0.5f, null)},
+		{(StringName)"STONE", new ElementAttributes((AllElements)4, ElementTypes.SOLID, MoveTypes.STONE, new Color(0.58f, 0.58f, 0.58f, 1.0f), 0.5f, null)},
+		{(StringName)"WALL", new ElementAttributes((AllElements)5, ElementTypes.STATIC, MoveTypes.NONE, new Color(0.27f, 0.27f, 0.27f, 1.0f), 0.5f, null)},
 	};
 
 
@@ -63,7 +64,7 @@ public partial class ElementStorage : Resource
 			ReturnDict.Add(name, DefaultAttributes[name].Clone());
 		}
 
-		AllElementAttributes = ReturnDict;
+		AllElementAttributes = ReturnDict.Duplicate(true);
 	}
 
 }
