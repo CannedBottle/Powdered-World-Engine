@@ -7,6 +7,7 @@ using static Elements;
 [GlobalClass, Icon("uid://b0ol6juljiyfp")]
 public partial class PowderSimulation : Node2D
 {
+	[ExportGroup("Debug Visuals")]
 	/// <summary>
 	/// shows a visual of chunk borders and dirty rects.
 	/// </summary>
@@ -20,6 +21,8 @@ public partial class PowderSimulation : Node2D
 	/// </summary>
 	[Export] public bool ShowSimBorder = false;
 	[Export] public int SimBorderWidth = 5;
+
+	[ExportGroup("")]
 	/// <summary>
 	/// How big the pixels appear on the screen.
 	/// </summary>
@@ -183,47 +186,6 @@ public partial class PowderSimulation : Node2D
 		// -----------------------------------------------------------------
 		DrawTime = Time.GetTicksUsec() / 1000.0f - DrawTime;
 	}
-	
-
-	public bool PlaceElement(Vector2I pos, AllElements element, bool overRide = false)
-	{
-		if(pos.X < 0 || pos.Y < 0 || pos.X > SimulationSize.X || pos.Y > SimulationSize.Y)
-		{
-			return false;
-		}
-		
-
-		// pos of chunk the cell is being placed in
-		Vector2I ChunkPosition = new Vector2I(pos.X / IndividualChunkSize, pos.Y / IndividualChunkSize);
-		SandInfoCS.Chunk chunk = Chunks[ChunkPosition];
-		int LocalCellIdx = SandInfoCS.WorldPosToChunkPos(pos, IndividualChunkSize);
-		chunk.Wake();
-
-		SandInfoCS.Cell cell = chunk.Cells[LocalCellIdx];
-
-		if(overRide == false && cell.Element != AllElements.AIR)
-		{
-			return false;
-		}
-		else
-		{
-			cell.Element = element;
-			chunk.MarkCellUpdated(cell);
-			return true;
-		}
-	}
-
-
-	public void PlaceGroupElements(int brushSize, Vector2I pos, AllElements element, bool overRide = false)
-	{
-		for (int y = 0; y < brushSize * 2 + 1; y++)
-		{
-			for (int x = 0; x < brushSize * 2 + 1; x++)
-			{
-				PlaceElement(pos + new Vector2I(x - brushSize, y - brushSize), element, overRide);
-			}
-		}
-	}
 
 
 	/// <summary>
@@ -302,6 +264,72 @@ public partial class PowderSimulation : Node2D
 			Accumulator -= SimDt;
 		}
 
+	}
+
+	// ************************ World Manipulation -----------------------------------
+
+
+	public bool PlaceElement(Vector2I pos, AllElements element, bool overRide = false)
+	{
+		if(pos.X < 0 || pos.Y < 0 || pos.X > SimulationSize.X || pos.Y > SimulationSize.Y)
+		{
+			return false;
+		}
+		
+
+		// pos of chunk the cell is being placed in
+		Vector2I ChunkPosition = new Vector2I(pos.X / IndividualChunkSize, pos.Y / IndividualChunkSize);
+		SandInfoCS.Chunk chunk = Chunks[ChunkPosition];
+		int LocalCellIdx = SandInfoCS.WorldPosToChunkPos(pos, IndividualChunkSize);
+		chunk.Wake();
+
+		SandInfoCS.Cell cell = chunk.Cells[LocalCellIdx];
+
+		if(overRide == false && cell.Element != AllElements.AIR)
+		{
+			return false;
+		}
+		else
+		{
+			cell.Element = element;
+			chunk.MarkCellUpdated(cell);
+			return true;
+		}
+	}
+
+
+	public void PlaceGroupElements(int brushSize, Vector2I pos, AllElements element, bool overRide = false)
+	{
+		for (int y = 0; y < brushSize * 2 + 1; y++)
+		{
+			for (int x = 0; x < brushSize * 2 + 1; x++)
+			{
+				PlaceElement(pos + new Vector2I(x - brushSize, y - brushSize), element, overRide);
+			}
+		}
+	}
+
+	/// <summary>
+	/// replaces every element in the current world with the element <c>with</c>.
+	/// </summary>
+	/// <param name="with"></param>
+	public void FillWorld(AllElements with)
+	{
+		foreach(SandInfoCS.Chunk chunk in Chunks.Values)
+		{
+			chunk.ReplaceAll(with);
+		}
+	}
+
+	/// <summary>
+	/// Replaces every element in the current world with <c>AIR</c>. Equivalent to calling <c>FillWorld(AllElements.AIR)</c>.
+	/// </summary>
+	public void ClearWorld()
+	{
+		foreach(SandInfoCS.Chunk chunk in Chunks.Values)
+		{
+			chunk.ClearAll();
+		}
 	}
 
 
