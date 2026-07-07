@@ -7,12 +7,13 @@ using static Elements;
 [GlobalClass]
 public partial class ElementAttributes : Resource
 {
-	// ---------------- STATIC
+	// ---------------- STATIC -----------------------------
 	public enum MoveTypes
 	{
 		SAND,
 		LIQUID,
 		STONE,
+		GAS,
 		NONE,
 		CUSTOM,
 	}
@@ -31,7 +32,7 @@ public partial class ElementAttributes : Resource
 
 	}
 
-	// --------------------------------------------
+	// ----------------------------------------------------------------------------------
 
     [Export] public AllElements Id {get; set;}
 
@@ -74,6 +75,16 @@ public partial class ElementAttributes : Resource
 	public ElementAttributes Clone()
 	{
 		return new ElementAttributes(Id, Type, MovementType, BaseColor, NoiseStrength, Flags.Duplicate(true));
+	}
+
+	public StringName GetTypeStrN()
+	{
+		return (StringName)Type.ToString();
+	}
+
+	public StringName GetMoveTypeStrN()
+	{
+		return (StringName)MovementType.ToString();
 	}
 
 	public void AddFlag(int flagIndex)

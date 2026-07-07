@@ -19,6 +19,10 @@ extends VBoxContainer
 @onready var reset_defaults_button: Button = $DangerSection/VBoxContainer/ResetDefaults/ResetDefaultsButton
 
 
+static var req_type_movement: Dictionary[StringName, StringName] = {
+	&"STATIC": &"NONE",
+}
+
 const add_icon := preload("res://addons/powder_engine/PowderedWorldEngine/Assets/Add.svg")
 
 var temp_element_names: Array[StringName]
@@ -34,15 +38,16 @@ func _ready() -> void:
 	
 	fill_movetype_button()
 	
+	#fill element type selector
+	type_selection.clear()
+	for type in SandInfoCS.GetElementTypes():
+		type_selection.add_item(type)
+	
 	set_temp_to_actual()
 	update_element_selector()
 	update_button_states()
 	update_flag_list()
 	
-	#fill element type selector
-	type_selection.clear()
-	for type in SandInfoCS.GetElementTypes():
-		type_selection.add_item(type)
 	
 	# ------------- Connections -------------- #
 	apply_changes_button.pressed.connect(apply_changes)
@@ -114,7 +119,13 @@ func update_button_states():
 		element_selection.remove_item(element_selection.item_count)
 	
 	type_selection.select(int(temp_attributes[selected_element].Type))
+	
 	move_type_selection.select(int(temp_attributes[selected_element].MovementType))
+	
+	if temp_attributes[selected_element].GetTypeStrN() in req_type_movement.keys():
+		move_type_selection.get_parent().hide()
+	else:
+		move_type_selection.get_parent().show()
 	
 	# ------------- Visuals --------------------- #
 	color_selection.color = temp_attributes[selected_element].BaseColor
@@ -183,7 +194,7 @@ func add_flag():
 	
 	temp_attributes[selected_element].Flags.append(0)
 	
-	create_flag_selector(temp_attributes[selected_element].GetFlagsCount())
+	create_flag_selector(temp_attributes[selected_element].GetFlagsCount() - 1)
 
 # -------------------- Signals ------------------- #
 func _new_selected_element(index: int):
@@ -247,9 +258,27 @@ func _delete_selected_element():
 	update_flag_list()
 
 func _type_changed(index: int):
+	var selected_element: StringName = get_selected_element()
 	
-	temp_attributes[get_selected_element()].Type = index
+	temp_attributes[selected_element].Type = index
+	
+	var type_strn: StringName = temp_attributes[selected_element].GetTypeStrN()
+	
+	if type_strn in req_type_movement.keys():
+		temp_attributes[selected_element].MovementType = ElementAttributes.GetMoveTypes().find(req_type_movement[type_strn])
+	
+	update_button_states()
 
 func _move_type_changed(index: int):
+	var selected_element: StringName = get_selected_element()
 	
-	temp_attributes[get_selected_element()].MovementType = index
+	temp_attributes[selected_element].MovementType = index
+	
+	var movetype_strn: StringName = temp_attributes[selected_element].GetMoveTypeStrN()
+	var type_strn: StringName = temp_attributes[selected_element].GetTypeStrN()
+	
+	if type_strn in req_type_movement.keys() and req_type_movement[type_strn] != movetype_strn:
+		printerr("Cannot change the movement preset if the element type is one of the following: " + str(req_type_movement.keys()))
+		
+		temp_attributes[selected_element].MovementType = ElementAttributes.GetMoveTypes().find(req_type_movement[type_strn])
+		update_button_states()

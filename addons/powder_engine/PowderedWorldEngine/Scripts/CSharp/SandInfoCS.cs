@@ -1,8 +1,8 @@
 using Godot;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using static Elements;
+using static ElementAttributes;
 
 
 [Tool]
@@ -62,6 +62,8 @@ public partial class SandInfoCS : Node
 	public enum ElementFlags
 	{
 		FLAMMABLE,
+		ACID_RESISTANT,
+		INDESTRUCTIBLE,
 
 	}
 
@@ -91,44 +93,23 @@ public partial class SandInfoCS : Node
 
 	// -------------------------------------------------------------------------------------
 	
-	
-	public static readonly Dictionary<AllElements, ElementTypes> ElementToType = new Dictionary<AllElements, ElementTypes>
-	{
-		{AllElements.AIR, ElementTypes.STATIC},
-		{AllElements.SAND, ElementTypes.SOLID},
-		{AllElements.WATER, ElementTypes.LIQUID},
-		{AllElements.ACID, ElementTypes.LIQUID},
-		{AllElements.STONE, ElementTypes.SOLID},
-		{AllElements.WALL, ElementTypes.STATIC}
-	};
 
 
 	// in the random values, a Vector2i is used for min/max values since constants cannot use random functions.
-	public static readonly Dictionary<ElementTypes, Dictionary<string, int>> ElementTypeDefaults = new Dictionary<ElementTypes, Dictionary<string, int>>
+	public static readonly Dictionary<MoveTypes, Dictionary<string, int>> ElementTypeDefaults = new Dictionary<MoveTypes, Dictionary<string, int>>
 	{
-		{ElementTypes.STATIC, new Dictionary<string, int>{{"none", 0}}},
+		{MoveTypes.NONE, new Dictionary<string, int>{{"none", 0}}},
 		
-		{ElementTypes.SOLID, new Dictionary<string, int>{{"random", 1}}},
+		{MoveTypes.SAND, new Dictionary<string, int>{{"random", 1}}},
 		
-		{ElementTypes.LIQUID, new Dictionary<string, int> 
+		{MoveTypes.LIQUID, new Dictionary<string, int> 
 		{
 			{"random", 1},
 			{"direction", 0},
 			{"density", 0},
 		}},
 		
-		{ElementTypes.GAS, new Dictionary<string, int>{{"random", 7}}},
-	};
-
-
-	public static readonly Dictionary<AllElements, Vector4> BaseElementColors = new Dictionary<AllElements, Vector4>
-	{
-		{AllElements.AIR, Vector4.Zero},
-		{AllElements.SAND, new Vector4(1.0f, 0.93f, 0.474f, 1.0f)},
-		{AllElements.WATER, new Vector4(0.112f, 0.644f, 0.93f, 0.6f)},
-		{AllElements.ACID, new Vector4(0.678f, 1.0f, 0.31f, 0.75f)},
-		{AllElements.STONE, new Vector4(0.58f, 0.58f, 0.58f, 1.0f)},
-		{AllElements.WALL, new Vector4(0.27f, 0.27f, 0.27f, 1.0f)},
+		{MoveTypes.GAS, new Dictionary<string, int>{{"random", 7}}},
 	};
 
 
@@ -166,39 +147,17 @@ public partial class SandInfoCS : Node
 
 	// --------------------------------- ELEMENT MOVEMENT RULESETS ----------------------- //
 
+	// First run Reactions, then run Movement
 	public static void OnUpdate(Cell cell, PowderSimulation simRef)
 	{
-
+		
+		// Reactions *********************************************************************
+		// TODO: Change this section when implementing custom reaction rulesets (and movement section when making custom movements)
 		switch (cell.Element)
 		{
-			case AllElements.SAND:
-					if(cell.TryMove("bottommiddle", simRef) == false)
-					{
-						if(cell.TypeAttributes["random"] == 0)
-						{
-							if(cell.TryMove("bottomright", simRef) == false)
-							{
-								cell.TryMove("bottomleft", simRef);
-							}
-						}
-						else
-						{
-							if(cell.TryMove("bottomleft", simRef) == false)
-							{
-								cell.TryMove("bottomright", simRef);
-							}
-						}
-					}
-					break;
-			
-
-			case AllElements.STONE:
-				cell.TryMove("bottommiddle", simRef);
-				break;	
-
 			case AllElements.ACID:
 				Cell neighbor = cell.SearchNeighborElements(simRef, AllElements.AIR, true, AllElements.ACID);
-				if(neighbor != null && neighbor.Element != AllElements.ACID)
+				if(neighbor != null && neighbor.Element != AllElements.ACID && !neighbor.Attributes.Flags.Contains(ElementFlags.ACID_RESISTANT))
 				{
 					cell.Element = AllElements.AIR;
 					cell.CellChunk.MarkCellUpdated(cell);
@@ -210,55 +169,85 @@ public partial class SandInfoCS : Node
 				break;
 		}
 
+		// Movement ******************************************************************************--
 
-		if(cell.CellType == ElementTypes.LIQUID)
+		switch (cell.Attributes.MovementType)
 		{
-			if(cell.TryMove("bottommiddle", simRef) == false)
-			{
-				bool success;
-				if(cell.TypeAttributes["random"] == 0)
-				{
-					success = cell.TryMove("bottomright", simRef);
-					if(success == false)
-					{
-						success = cell.TryMove("bottomleft", simRef);
-					}
-				}
-				else
-				{
-					success = cell.TryMove("bottomleft", simRef);
-					if(success == false)
-					{
-						success = cell.TryMove("bottomright", simRef);
-					}
-				}
+			case MoveTypes.SAND: // ---------------------------------------
 
-				if(success == false)
+				if(cell.TryMove("bottommiddle", simRef) == false)
 				{
-					if(cell.TypeAttributes["direction"] == 1)
+					if(cell.TypeAttributes["random"] == 0)
 					{
-						success = cell.TryMove("rightmiddle", simRef);
-						cell.TypeAttributes["direction"] = success ? 1 : 0;
-
-						if(success == false)
+						if(cell.TryMove("bottomright", simRef) == false)
 						{
-							cell.TryMove("leftmiddle", simRef);
+							cell.TryMove("bottomleft", simRef);
 						}
 					}
 					else
 					{
-						success = cell.TryMove("leftmiddle", simRef);
-						cell.TypeAttributes["direction"] = success ? 0 : 1;
-
-						if(success == false)
+						if(cell.TryMove("bottomleft", simRef) == false)
 						{
-							cell.TryMove("rightmiddle", simRef);
+							cell.TryMove("bottomright", simRef);
 						}
 					}
 				}
-			}
+				break;
+			
+			case MoveTypes.LIQUID: // ---------------------------------------
+
+				if(cell.TryMove("bottommiddle", simRef) == false)
+				{
+					bool success;
+					if(cell.TypeAttributes["random"] == 0)
+					{
+						success = cell.TryMove("bottomright", simRef);
+						if(success == false)
+						{
+							success = cell.TryMove("bottomleft", simRef);
+						}
+					}
+					else
+					{
+						success = cell.TryMove("bottomleft", simRef);
+						if(success == false)
+						{
+							success = cell.TryMove("bottomright", simRef);
+						}
+					}
+
+					if(success == false)
+					{
+						if(cell.TypeAttributes["direction"] == 1)
+						{
+							success = cell.TryMove("rightmiddle", simRef);
+							cell.TypeAttributes["direction"] = success ? 1 : 0;
+
+							if(success == false)
+							{
+								cell.TryMove("leftmiddle", simRef);
+							}
+						}
+						else
+						{
+							success = cell.TryMove("leftmiddle", simRef);
+							cell.TypeAttributes["direction"] = success ? 0 : 1;
+
+							if(success == false)
+							{
+								cell.TryMove("rightmiddle", simRef);
+							}
+						}
+					}
+				}
+
+				break;
+
+			case MoveTypes.STONE: // ----------------------------------------
+
+				cell.TryMove("bottommiddle", simRef);
+				break;
 		}
-		
 
 	}
 
@@ -271,7 +260,7 @@ public partial class SandInfoCS : Node
 	{
 		
 		public Vector2I Position = new Vector2I();
-		public ElementTypes CellType;
+	
 		private AllElements _element;
 		public AllElements Element
 		{
@@ -279,21 +268,17 @@ public partial class SandInfoCS : Node
 			set
 			{
 				_element = value;
-				CellType = ElementToType[value];
 
-				if(CellType == ElementTypes.LIQUID)
-				{
-					Brightness = 1.0f;
-				}
-				else
-				{
-					Brightness = (float)GD.RandRange(0.9, 1.0);
-				}
+				Attributes = ElementResource.AllElementAttributes[(StringName)Element.ToString()];
 
-				ReplaceTypeAttributesWithDefault(CellType);
+
+				Brightness = (float)GD.RandRange(1.0 - Attributes.NoiseStrength, 1.0);
+
+				ReplaceTypeAttributesWithDefault(Attributes.MovementType);
 			}
 		}
 
+		public ElementAttributes Attributes;
 
 		public Dictionary<string, int> TypeAttributes;
 		public Dictionary<string, Vector2I?> Neighbors = new Dictionary<string, Vector2I?>(); // if neighbor is an edge, will show up as (-1, -1)
@@ -333,7 +318,7 @@ public partial class SandInfoCS : Node
 		}
 
 
-		private void ReplaceTypeAttributesWithDefault(ElementTypes newType)
+		private void ReplaceTypeAttributesWithDefault(MoveTypes newType)
 		{
 			TypeAttributes = new Dictionary<string, int>(ElementTypeDefaults[newType]);
 
@@ -451,13 +436,13 @@ public partial class SandInfoCS : Node
 		{
 			bool ValidMove = false;
 
-			switch (CellType)
+			switch (Attributes.Type)
 			{
 				case ElementTypes.SOLID:
-					ValidMove = NeighborCell.CellType == ElementTypes.LIQUID || NeighborCell.CellType == ElementTypes.GAS;
+					ValidMove = NeighborCell.Attributes.Type == ElementTypes.LIQUID || NeighborCell.Attributes.Type == ElementTypes.GAS;
 					break;
 				case ElementTypes.LIQUID:
-					ValidMove = NeighborCell.CellType == ElementTypes.GAS;
+					ValidMove = NeighborCell.Attributes.Type == ElementTypes.GAS;
 					break;
 			}
 
@@ -737,11 +722,15 @@ public partial class SandInfoCS : Node
 			{
 				Cell cell = Cells[idx];
 				//base element color
-				Vector4 Col = BaseElementColors[cell.Element];
+				Color Col = cell.Attributes.BaseColor;
 				//darkness of pixel
 				float D = 1.0f - cell.Brightness;
 				//darkness applied to only non-alpha channels
-				Renderer.ChunkImage.SetPixel(idx % ChunkSize, (int)Mathf.Floor(idx / ChunkSize), new Color(Col.X - D, Col.Y - D, Col.Z - D, Col.W));
+				Col.R -= D;
+				Col.G -= D;
+				Col.B -= D;
+				// sets the pixel on the renderer's Image to the correct color
+				Renderer.ChunkImage.SetPixel(idx % ChunkSize, (int)Mathf.Floor(idx / ChunkSize), Col);
 			}
 			Renderer.ChunkTexture.Update(Renderer.ChunkImage);
 
@@ -775,6 +764,22 @@ public partial class SandInfoCS : Node
 			Sleeping = false;
 		}
 
+
+		public void ReplaceAll(AllElements with)
+		{
+			foreach(Cell cell in Cells)
+			{
+				cell.Element = with;
+			}
+		}
+
+		public void ClearAll()
+		{
+			foreach(Cell cell in Cells)
+			{
+				cell.Element = AllElements.AIR;
+			}
+		}
 
 	}
 }
