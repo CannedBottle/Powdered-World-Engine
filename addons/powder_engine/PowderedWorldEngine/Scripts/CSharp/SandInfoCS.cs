@@ -102,6 +102,8 @@ public partial class SandInfoCS : Node
 		
 		{MoveTypes.SAND, new Dictionary<string, int>{{"random", 1}}},
 		
+		{MoveTypes.STONE, new Dictionary<string, int>{{"none", 0}}},
+		
 		{MoveTypes.LIQUID, new Dictionary<string, int> 
 		{
 			{"random", 1},
