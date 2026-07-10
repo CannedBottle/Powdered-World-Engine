@@ -72,8 +72,6 @@ public partial class PowderSimulation : Node2D
 			_chunkGridSize = value;
 			UpdateSimulationSize();
 
-			ChunkKeys = new Vector2I[Chunks.Count];
-			Chunks.Keys.CopyTo(ChunkKeys, 0);
 		}
 	}
 
@@ -84,7 +82,8 @@ public partial class PowderSimulation : Node2D
 	[Export] public int ChunkInsomnia = 2;
 
 
-	public Dictionary<Vector2I, SandInfoCS.Chunk> Chunks = new Dictionary<Vector2I, SandInfoCS.Chunk>();
+	//public Dictionary<Vector2I, SandInfoCS.Chunk> Chunks = new Dictionary<Vector2I, SandInfoCS.Chunk>();
+	public List<SandInfoCS.Chunk> Chunks = new List<SandInfoCS.Chunk>{};
 
 	public Vector2I SimulationSize;
 
@@ -99,12 +98,18 @@ public partial class PowderSimulation : Node2D
 	// number of ticks passed since startup, mod by 2
 	private int TicksPassed = 1;
 
-	public float InvChunkSize;
-
 	public List<ChunkRendererCS> ActiveChunkRenderers = new List<ChunkRendererCS>();
 	public Node2D ChunkRendererParent;
 
-	private Vector2I[] ChunkKeys;
+	// ***************** Misc ---------------------------------------
+
+	public int GetChunkIndexFromPos(Vector2I pos)
+	{
+		return pos.Y * ChunkGridSize.X + pos.X;
+	}
+
+
+	// ***************** Updating + Initialization --------------------------
 
 	public void InitGrid()
 	{
@@ -116,7 +121,9 @@ public partial class PowderSimulation : Node2D
 			{
 				Vector2I LoopPos = new Vector2I(x, y);
 
-				Chunks.Add(LoopPos, new SandInfoCS.Chunk(IndividualChunkSize, LoopPos, SimulationSize, ChunkInsomnia));
+				int ChunkListPos = y * ChunkGridSize.X + x;
+
+				Chunks.Add(new SandInfoCS.Chunk(IndividualChunkSize, LoopPos, SimulationSize, ChunkInsomnia));
 
 				ChunkRendererCS Render = new ChunkRendererCS();
 				Render.ChunkSize = IndividualChunkSize;
@@ -130,12 +137,10 @@ public partial class PowderSimulation : Node2D
 				ChunkRendererParent.AddChild(Render);
 				ActiveChunkRenderers.Add(Render);
 
-				Chunks[LoopPos].Renderer = Render;
+				Chunks[ChunkListPos].Renderer = Render;
 			}
 		}
 
-		ChunkKeys = new Vector2I[Chunks.Count];
-		Chunks.Keys.CopyTo(ChunkKeys, 0);
 	}
 
 	public void UpdateChunks(int tick)
@@ -143,24 +148,24 @@ public partial class PowderSimulation : Node2D
 		UpdateTime = Time.GetTicksUsec() / 1000.0f;
 		// ----------------------------------------------------------------------------
 		if(tick == 1){
-			for(int i = 0; i < ChunkKeys.Length; i++)
+			for(int i = 0; i < Chunks.Count; i++)
 			{
-				Chunks[ChunkKeys[i]].UpdateCells(this, tick);
+				Chunks[i].UpdateCells(this, tick);
 			}
 
 		}
 		else
 		{
 			
-			for(int i = ChunkKeys.Length - 1; i >= 0; i--)
+			for(int i = Chunks.Count - 1; i >= 0; i--)
 			{
-				Chunks[ChunkKeys[i]].UpdateCells(this, tick);
+				Chunks[i].UpdateCells(this, tick);
 			}
 		}
 
 		if (UseDirtyRects)
 		{
-			foreach(SandInfoCS.Chunk chunk in Chunks.Values)
+			foreach(SandInfoCS.Chunk chunk in Chunks)
 			{
 				chunk.UpdateDirtyRect();
 			}
@@ -174,12 +179,91 @@ public partial class PowderSimulation : Node2D
 		}
 	}
 
+	/// <summary>
+	/// <b>DOES NOT WORK</b> Equivalent to <c>UpdateChunks(int tick)</c> except instead of looping over a chunk's cells, then the next one, etc., it instead loops over the whole simulation like it's a single chunk.
+	/// </summary>
+	public void UpdateCells(int tick)
+	{
+		UpdateTime = Time.GetTicksUsec() / 1000.0f;
+		// ----------------------------------------------------------------------------
+		if(tick == 1){
+			
+			Vector2I ChunkPos = new Vector2I(0, 0);
+
+			for(int y = 0; y < SimulationSize.Y; y++)
+			{
+				for(int x = 0; x < SimulationSize.X; x++)
+				{
+					ChunkPos.X = x / IndividualChunkSize;
+					ChunkPos.Y = y / IndividualChunkSize;
+
+					SandInfoCS.Chunk chunk = Chunks[GetChunkIndexFromPos(ChunkPos)];
+
+					chunk.UpdateCell(chunk.Cells[SandInfoCS.WorldPosToChunkPos(new Vector2I(x, y), IndividualChunkSize)], this);
+
+				}
+			}
+
+		}
+		else
+		{
+			
+			Vector2I ChunkPos = new Vector2I(0, 0);
+
+			for(int y = SimulationSize.Y; y >= 0; y--)
+			{
+				for(int x = SimulationSize.X; x >= 0; x--)
+				{
+					ChunkPos.X = x / IndividualChunkSize;
+					ChunkPos.Y = y / IndividualChunkSize;
+
+					SandInfoCS.Chunk chunk = Chunks[GetChunkIndexFromPos(ChunkPos)];
+
+					chunk.UpdateCell(chunk.Cells[SandInfoCS.WorldPosToChunkPos(new Vector2I(x, y), IndividualChunkSize)], this);
+
+				}
+			}
+		}
+
+		if (UseDirtyRects)
+		{
+			foreach(SandInfoCS.Chunk chunk in Chunks)
+			{
+				chunk.UpdateDirtyRect();
+				chunk.DecideSleepState();
+			}
+		}
+		else
+		{
+			DecideSleepingChunks();	
+		}
+
+		//-----------------------------------------------------------------------------
+		UpdateTime = Time.GetTicksUsec() / 1000.0f - UpdateTime;
+		if(DebugMode)
+		{
+			QueueRedraw();
+		}
+	}
+
+	/// <summary>
+	/// Should only need to be called after <c>UpdateCells(int tick)</c> is finished, <b>NOT</b> <c>UpdateChunks(int tick)</c>.
+	/// it is automatically called in <c>UpdateCells(int tick)</c>.
+	/// </summary>
+	public void DecideSleepingChunks()
+	{
+		foreach(SandInfoCS.Chunk chunk in Chunks)
+		{
+			chunk.DecideSleepState();
+		}
+	}
+
 
 	public void RenderChunkUpdates()
 	{
 		DrawTime = Time.GetTicksUsec() / 1000.0f;
 		// -----------------------------------------------------------------
-		foreach(SandInfoCS.Chunk chunk in Chunks.Values)
+		foreach(SandInfoCS.Chunk chunk in Chunks)
 		{
 			chunk.SendDrawInfoToRenderer();
 		}
@@ -198,8 +282,6 @@ public partial class PowderSimulation : Node2D
 
 	public override void _Ready()
 	{
-		InvChunkSize = 1.0f / IndividualChunkSize;
-
 
 		ChunkRendererParent = new Node2D();
 		AddChild(ChunkRendererParent);
@@ -225,7 +307,7 @@ public partial class PowderSimulation : Node2D
 
 		//dirty rects
 		Vector2I CenteringVal = new Vector2I(PixelScale, PixelScale);
-		foreach(SandInfoCS.Chunk chunk in Chunks.Values)
+		foreach(SandInfoCS.Chunk chunk in Chunks)
 		{
 
 			//dirty rects
@@ -261,10 +343,11 @@ public partial class PowderSimulation : Node2D
 
 			TicksPassed += 1;
 			TicksPassed %= 2;
-			Accumulator -= SimDt;
+			Accumulator = 0;
 		}
 
 	}
+
 
 	// ************************ World Manipulation -----------------------------------
 
@@ -279,7 +362,7 @@ public partial class PowderSimulation : Node2D
 
 		// pos of chunk the cell is being placed in
 		Vector2I ChunkPosition = new Vector2I(pos.X / IndividualChunkSize, pos.Y / IndividualChunkSize);
-		SandInfoCS.Chunk chunk = Chunks[ChunkPosition];
+		SandInfoCS.Chunk chunk = Chunks[GetChunkIndexFromPos(ChunkPosition)];
 		int LocalCellIdx = SandInfoCS.WorldPosToChunkPos(pos, IndividualChunkSize);
 		chunk.Wake();
 
@@ -315,7 +398,7 @@ public partial class PowderSimulation : Node2D
 	/// <param name="with"></param>
 	public void FillWorld(AllElements with)
 	{
-		foreach(SandInfoCS.Chunk chunk in Chunks.Values)
+		foreach(SandInfoCS.Chunk chunk in Chunks)
 		{
 			chunk.ReplaceAll(with);
 		}
@@ -326,7 +409,7 @@ public partial class PowderSimulation : Node2D
 	/// </summary>
 	public void ClearWorld()
 	{
-		foreach(SandInfoCS.Chunk chunk in Chunks.Values)
+		foreach(SandInfoCS.Chunk chunk in Chunks)
 		{
 			chunk.ClearAll();
 		}

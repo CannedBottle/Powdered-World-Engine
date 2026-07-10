@@ -32,6 +32,17 @@ public partial class ElementAttributes : Resource
 
 	}
 
+
+
+	public struct Reaction
+	{
+		/// <summary>
+		/// The neighbors the reaction checks to find if the it meets the criteria to cause the reaction.
+		/// </summary>
+		public Godot.Collections.Array<string> CheckedNeighbors;
+
+	}
+
 	// ----------------------------------------------------------------------------------
 
     [Export] public AllElements Id {get; set;}

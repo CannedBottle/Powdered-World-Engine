@@ -93,6 +93,20 @@ public partial class SandInfoCS : Node
 
 	// -------------------------------------------------------------------------------------
 	
+	/// <summary>
+	/// Names to make the neighbor positions more readable.
+	/// </summary>
+	public enum Neighbors
+	{
+		TOPLEFT,
+		TOPMIDDLE,
+		TOPRIGHT,
+		LEFTMIDDLE,
+		RIGHTMIDDLE,
+		BOTTOMLEFT,
+		BOTTOMMIDDLE,
+		BOTTOMRIGHT
+	}
 
 
 	// in the random values, a Vector2i is used for min/max values since constants cannot use random functions.
@@ -137,7 +151,7 @@ public partial class SandInfoCS : Node
 
 					if(PosAddition != Vector2.Zero)
 					{
-						Chunk NeighborChunk = simRef.Chunks[cell.CellChunk.ChunkPosition + PosAddition];
+						Chunk NeighborChunk = simRef.Chunks[simRef.GetChunkIndexFromPos(cell.CellChunk.ChunkPosition + PosAddition)];
 
 						NeighborChunk.Wake();
 						//Inflate DirtyRect across chunk borders, fixes liquids not falling when dirtyrect is stuck on the other side of the chunk
@@ -177,20 +191,20 @@ public partial class SandInfoCS : Node
 		{
 			case MoveTypes.SAND: // ---------------------------------------
 
-				if(cell.TryMove("bottommiddle", simRef) == false)
+				if(cell.TryMove(Neighbors.BOTTOMMIDDLE, simRef) == false)
 				{
 					if(cell.TypeAttributes["random"] == 0)
 					{
-						if(cell.TryMove("bottomright", simRef) == false)
+						if(cell.TryMove(Neighbors.BOTTOMRIGHT, simRef) == false)
 						{
-							cell.TryMove("bottomleft", simRef);
+							cell.TryMove(Neighbors.BOTTOMLEFT, simRef);
 						}
 					}
 					else
 					{
-						if(cell.TryMove("bottomleft", simRef) == false)
+						if(cell.TryMove(Neighbors.BOTTOMLEFT, simRef) == false)
 						{
-							cell.TryMove("bottomright", simRef);
+							cell.TryMove(Neighbors.BOTTOMRIGHT, simRef);
 						}
 					}
 				}
@@ -198,23 +212,23 @@ public partial class SandInfoCS : Node
 			
 			case MoveTypes.LIQUID: // ---------------------------------------
 
-				if(cell.TryMove("bottommiddle", simRef) == false)
+				if(cell.TryMove(Neighbors.BOTTOMMIDDLE, simRef) == false)
 				{
 					bool success;
 					if(cell.TypeAttributes["random"] == 0)
 					{
-						success = cell.TryMove("bottomright", simRef);
+						success = cell.TryMove(Neighbors.BOTTOMRIGHT, simRef);
 						if(success == false)
 						{
-							success = cell.TryMove("bottomleft", simRef);
+							success = cell.TryMove(Neighbors.BOTTOMLEFT, simRef);
 						}
 					}
 					else
 					{
-						success = cell.TryMove("bottomleft", simRef);
+						success = cell.TryMove(Neighbors.BOTTOMLEFT, simRef);
 						if(success == false)
 						{
-							success = cell.TryMove("bottomright", simRef);
+							success = cell.TryMove(Neighbors.BOTTOMRIGHT, simRef);
 						}
 					}
 
@@ -222,22 +236,22 @@ public partial class SandInfoCS : Node
 					{
 						if(cell.TypeAttributes["direction"] == 1)
 						{
-							success = cell.TryMove("rightmiddle", simRef);
+							success = cell.TryMove(Neighbors.RIGHTMIDDLE, simRef);
 							cell.TypeAttributes["direction"] = success ? 1 : 0;
 
 							if(success == false)
 							{
-								cell.TryMove("leftmiddle", simRef);
+								cell.TryMove(Neighbors.LEFTMIDDLE, simRef);
 							}
 						}
 						else
 						{
-							success = cell.TryMove("leftmiddle", simRef);
+							success = cell.TryMove(Neighbors.LEFTMIDDLE, simRef);
 							cell.TypeAttributes["direction"] = success ? 0 : 1;
 
 							if(success == false)
 							{
-								cell.TryMove("rightmiddle", simRef);
+								cell.TryMove(Neighbors.RIGHTMIDDLE, simRef);
 							}
 						}
 					}
@@ -247,7 +261,7 @@ public partial class SandInfoCS : Node
 
 			case MoveTypes.STONE: // ----------------------------------------
 
-				cell.TryMove("bottommiddle", simRef);
+				cell.TryMove(Neighbors.BOTTOMMIDDLE, simRef);
 				break;
 		}
 
@@ -260,7 +274,11 @@ public partial class SandInfoCS : Node
 
 	public class Cell
 	{
-		
+
+		public Vector2I SimSize = new Vector2I();
+
+		public int ChunkSize;
+
 		public Vector2I Position = new Vector2I();
 	
 		private AllElements _element;
@@ -283,17 +301,12 @@ public partial class SandInfoCS : Node
 		public ElementAttributes Attributes;
 
 		public Dictionary<string, int> TypeAttributes;
-		public Dictionary<string, Vector2I?> Neighbors = new Dictionary<string, Vector2I?>(); // if neighbor is an edge, will show up as (-1, -1)
+		public Dictionary<Neighbors, Vector2I?> Neighbors = new Dictionary<Neighbors, Vector2I?>(); // if neighbor is an edge, will show up as (-1, -1)
 
 		public List<AllElements> NeighborElements = new List<AllElements>();
-		public readonly List<string> NeighborStrings = new List<string>([
-			"topleft", "topmiddle", "topright", "leftmiddle", "rightmiddle", "bottomleft", "bottommiddle", "bottomright"
-		]);
 
 		public float Brightness;
-		public int ChunkSize;
 		public Chunk CellChunk;
-		public Vector2I SimSize = new Vector2I();
 
 		// idx of cell inside the chunk's own cells list, basically local position
 		public int ChunkIdx;
@@ -348,14 +361,14 @@ public partial class SandInfoCS : Node
 						continue;
 					}
 
-					Neighbors.Add(NeighborStrings[LoopNum], new Vector2I(Position.X + x, Position.Y + y));
+					Neighbors.Add((Neighbors)LoopNum, new Vector2I(Position.X + x, Position.Y + y));
 
 
 					// edge checking
 					if(Position.X + x > SimSize.X || Position.X + x < 0 ||
 					Position.Y + y > SimSize.Y || Position.Y + y < 0)
 					{
-						Neighbors[NeighborStrings[LoopNum]] = null;
+						Neighbors[(Neighbors)LoopNum] = null;
 					}
 
 
@@ -378,7 +391,7 @@ public partial class SandInfoCS : Node
 				{
 					Vector2I NewChunkPos = new Vector2I(pos.X / CellChunk.ChunkSize, pos.Y / CellChunk.ChunkSize);
 
-					ActualChunk = simRef.Chunks[NewChunkPos];
+					ActualChunk = simRef.Chunks[simRef.GetChunkIndexFromPos(NewChunkPos)];
 				}
 
 				int NeighborIdx = WorldPosToChunkPos(pos, ChunkSize);
@@ -408,7 +421,7 @@ public partial class SandInfoCS : Node
 				{
 					Vector2I NewChunkPos = new Vector2I(neighborPos.X / CellChunk.ChunkSize, neighborPos.Y / CellChunk.ChunkSize);
 
-					ActualChunk = simRef.Chunks[NewChunkPos];
+					ActualChunk = simRef.Chunks[simRef.GetChunkIndexFromPos(NewChunkPos)];
 				}
 				
 				int NeighborIdx = WorldPosToChunkPos(neighborPos, ChunkSize);
@@ -454,7 +467,7 @@ public partial class SandInfoCS : Node
 		///<summary>
 		///returns whether the move that successful or not.
 		/// <summary>
-		public bool TryMove(string ToNeighbor, PowderSimulation simRef)
+		public bool TryMove(Neighbors ToNeighbor, PowderSimulation simRef)
 		{
 			Vector2I? NeighborExist = Neighbors[ToNeighbor];
 			Vector2I NeighborPos;
@@ -473,10 +486,12 @@ public partial class SandInfoCS : Node
 			{
 				Vector2I NewChunkPos = new Vector2I(NeighborPos.X / CellChunk.ChunkSize, NeighborPos.Y / CellChunk.ChunkSize);
 
-				WriteChunk = simRef.Chunks[NewChunkPos];
+				WriteChunk = simRef.Chunks[simRef.GetChunkIndexFromPos(NewChunkPos)];
+
 			}
 
 			int NeighborIdx = WorldPosToChunkPos(NeighborPos, ChunkSize);
+
 
 			//valid cell to move checking (per type check)
 			bool ValidMove;
@@ -494,15 +509,16 @@ public partial class SandInfoCS : Node
 			if (ValidMove)
 			{
 				
-				CellChunk.MarkCellUpdated(this);
-				WriteChunk.MarkCellUpdated(NeighborCell);
-
-
-				UpdateCloseChunks(this, simRef);
-				
 
 				CellChunk.SwapCells(this, NeighborCell);
 				WriteChunk.Wake();
+
+
+				CellChunk.MarkCellUpdated(this);
+				WriteChunk.MarkCellUpdated(NeighborCell);
+				
+
+				UpdateCloseChunks(this, simRef);
 
 				
 				return true;
@@ -520,7 +536,7 @@ public partial class SandInfoCS : Node
 
 	public class Chunk
 	{
-		
+
 		public int ChunkSize;
 		//reference to simulation node
 		public PowderSimulation SimRef;
@@ -609,9 +625,55 @@ public partial class SandInfoCS : Node
 
 		}
 
+		/// <summary>
+		/// Updates a single cell in the chunk.
+		/// </summary>
+		/// <param name="cell"></param>
+		/// <param name="simRef"></param>
+		public bool UpdateCell(Cell cell, PowderSimulation simRef)
+		{
+			if (Sleeping)
+			{
+				return false;
+			}
 
+
+			if (HasValidDirtyRect)
+			{
+					{
+						if(!(cell.Position <= DirtyRectMax + new Vector2I(2, 2) && cell.Position >= DirtyRectMin - new Vector2I(2, 2)))
+						{
+							return false;
+						}
+					}
+
+					if(UpdatedCellsMask[cell.ChunkIdx] == true || cell.Element == AllElements.AIR)
+					{
+						return false;
+					}
+
+					OnUpdate(cell, simRef);
+					return true;
+
+			}
+			else
+			{
+				return false;
+			}
+		}
+
+		/// <summary>
+		/// Updates every cell in the chunk. if <c>tick</c> is 1, it loops from front to back of the cells list. If <c>tick</c> is 0, it does the opposite.
+		/// </summary>
+		/// <param name="simRef"></param>
+		/// <param name="tick"></param>
 		public void UpdateCells(PowderSimulation simRef, int tick)
 		{
+			if (Sleeping)
+			{
+				return;
+			}
+
 
 			if (tick == 1)
 			{
@@ -619,22 +681,10 @@ public partial class SandInfoCS : Node
 				{
 					Cell cell = Cells[i];
 
-					if (HasValidDirtyRect)
-					{
-						if(!(cell.Position <= DirtyRectMax + new Vector2I(2, 2) && cell.Position >= DirtyRectMin - new Vector2I(2, 2)))
-						{
-							continue;
-						}
-					}
-
-					if(UpdatedCellsMask[cell.ChunkIdx] == true || cell.Element == AllElements.AIR)
-					{
-						continue;
-					}
-
-					OnUpdate(cell, simRef);
+					UpdateCell(cell, simRef);
 
 				}
+					
 			}
 			else
 			{
@@ -642,25 +692,21 @@ public partial class SandInfoCS : Node
 				{
 					Cell cell = Cells[i];
 
-					if (HasValidDirtyRect)
-					{
-						if(!(cell.Position <= DirtyRectMax + new Vector2I(2, 2) && cell.Position >= DirtyRectMin - new Vector2I(2, 2)))
-						{
-							continue;
-						}
-					}
-
-					if(UpdatedCellsMask[cell.ChunkIdx] == true || cell.Element == AllElements.AIR)
-					{
-						continue;
-					}
-
-					OnUpdate(cell, simRef);
+					UpdateCell(cell, simRef);
 
 				}
 			}
 
 
+			DecideSleepState();
+
+		}
+
+		/// <summary>
+		/// Sleeps chunk if no cells were updated, taking <c>Insomnia</c> into account. <b>Should be called AFTER updating the chunk.</b>
+		/// </summary>
+		public void DecideSleepState()
+		{
 			//sleeps chunk if no cells are updated
 			if(UpdatedCellsIndexes.Count == 0)
 			{
@@ -679,7 +725,6 @@ public partial class SandInfoCS : Node
 			{
 				InsomniaCount = 0;
 			}
-
 		}
 
 		public void MarkCellUpdated(Cell cell)
@@ -691,7 +736,7 @@ public partial class SandInfoCS : Node
 
 		public void UpdateDirtyRect()
 		{
-			HasValidDirtyRect = false;
+			HasValidDirtyRect = UpdatedCellsIndexes.Count > 0;
 			DirtyRectMax = MinExtents;
 			DirtyRectMin = MaxExtents;
 
@@ -705,10 +750,6 @@ public partial class SandInfoCS : Node
 				DirtyRectMin.Y = Math.Min(DirtyRectMin.Y, Pos.Y);
 			}
 
-			if(DirtyRectMax != MinExtents && DirtyRectMin != MaxExtents)
-			{
-				HasValidDirtyRect = true;
-			}
 
 		}
 
