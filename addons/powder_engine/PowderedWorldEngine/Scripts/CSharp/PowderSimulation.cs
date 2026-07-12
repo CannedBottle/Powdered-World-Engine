@@ -226,18 +226,18 @@ public partial class PowderSimulation : Node2D
 		// ----------------------------------------------------------------------------
 		if(tick == 1){
 			
-			Vector2I ChunkPos = new Vector2I(0, 0);
+			Vector2I CellPos = new Vector2I(0, 0);
 
 			for(int y = 0; y < SimulationSize.Y; y++)
 			{
 				for(int x = 0; x < SimulationSize.X; x++)
 				{
-					ChunkPos.X = x / IndividualChunkSize;
-					ChunkPos.Y = y / IndividualChunkSize;
+					CellPos.X = x;
+					CellPos.Y = y;					
 
-					SandInfoCS.Chunk chunk = GetChunk(ChunkPos);
+					SandInfoCS.Cell cell = GetCell(CellPos);
 
-					chunk.UpdateCell(chunk.Cells[SandInfoCS.WorldPosToChunkPos(new Vector2I(x, y), IndividualChunkSize)], this);
+					cell.CellChunk.UpdateCell(cell, this);
 
 				}
 			}
@@ -246,18 +246,18 @@ public partial class PowderSimulation : Node2D
 		else
 		{
 			
-			Vector2I ChunkPos = new Vector2I(0, 0);
+			Vector2I CellPos = new Vector2I(0, 0);
 
 			for(int y = SimulationSize.Y; y >= 0; y--)
 			{
 				for(int x = SimulationSize.X; x >= 0; x--)
 				{
-					ChunkPos.X = x / IndividualChunkSize;
-					ChunkPos.Y = y / IndividualChunkSize;
+					CellPos.X = x;
+					CellPos.Y = y;					
 
-					SandInfoCS.Chunk chunk = GetChunk(ChunkPos);
+					SandInfoCS.Cell cell = GetCell(CellPos);
 
-					chunk.UpdateCell(chunk.Cells[SandInfoCS.WorldPosToChunkPos(new Vector2I(x, y), IndividualChunkSize)], this);
+					cell.CellChunk.UpdateCell(cell, this);
 
 				}
 			}
