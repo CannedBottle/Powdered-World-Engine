@@ -122,7 +122,7 @@ public partial class SandInfoCS : Node
 		{
 			{"random", 1},
 			{"direction", 0},
-			{"density", 0},
+			{"bumps", 0},
 		}},
 		
 		{MoveTypes.GAS, new Dictionary<string, int>{{"random", 7}}},
@@ -255,7 +255,9 @@ public partial class SandInfoCS : Node
 						if(cell.TypeAttributes["direction"] == 1)
 						{
 							success = cell.TryMove(Neighbors.RIGHTMIDDLE, simRef);
-							tempAtts["direction"] = success ? 1 : 0;
+							tempAtts["bumps"] += success ? 0 : 1;
+							tempAtts["direction"] = tempAtts["bumps"] >= 3 ? 0 : 1;
+							tempAtts["bumps"] = tempAtts["direction"] == 1 ? tempAtts["bumps"] : 0;
 
 							if(success == false)
 							{
@@ -265,7 +267,9 @@ public partial class SandInfoCS : Node
 						else
 						{
 							success = cell.TryMove(Neighbors.LEFTMIDDLE, simRef);
-							tempAtts["direction"] = success ? 0 : 1;
+							tempAtts["bumps"] += success ? 0 : 1;
+							tempAtts["direction"] = tempAtts["bumps"] >= 3 ? 1 : 0;
+							tempAtts["bumps"] = tempAtts["direction"] == 0 ? tempAtts["bumps"] : 0;
 
 							if(success == false)
 							{
@@ -274,6 +278,7 @@ public partial class SandInfoCS : Node
 						}
 					}
 				}
+				
 
 				break;
 
