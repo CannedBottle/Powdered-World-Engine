@@ -15,7 +15,10 @@ public partial class TestPlaygroundCS : Node2D
 	private Label UTime;
 	private Label DTime;
 	private CheckButton DebugSwitch;
+	private Button PauseButton;
+	private Button NextFrameButton;
 
+	private bool SimPaused = false;
 
 	[Export] public int brushSize = 2;
 
@@ -39,12 +42,16 @@ public partial class TestPlaygroundCS : Node2D
 		UTime = GetNode<Label>("ui/update time");
 		DTime = GetNode<Label>("ui/draw time");
 		DebugSwitch = GetNode<CheckButton>("ui/debugswitch");
+		PauseButton = GetNode<Button>("ui/pause");
+		NextFrameButton = GetNode<Button>("ui/forward");
 
 		DisplayServer.WindowSetSize(DisplayServer.ScreenGetSize());
 
 		DebugSwitch.ButtonPressed = Sim.DebugMode;
 
 		DebugSwitch.Pressed += OnDebugSwitched;
+		PauseButton.Toggled += Pause;
+		NextFrameButton.Pressed += ProgressFrame;
 	}
 
 
@@ -85,17 +92,15 @@ public partial class TestPlaygroundCS : Node2D
 		UTime.Text = "u: " + Sim.UpdateTime.ToString();
 		DTime.Text = "d: " + Sim.DrawTime.ToString();
 
-		if (Input.IsActionPressed("Place"))
-		{
-			Sim.PlaceGroupElements(brushSize, MousePos / Sim.PixelScale, AllElements.SAND, false);
-		}
-
 		if (Input.IsActionPressed("Exit"))
 		{
 			GetTree().Quit();
 		}
 
-		Sim.UpdateSimulation();
+		if(!SimPaused)
+		{
+			Sim.UpdateSimulation();
+		}
 
 	}
 
@@ -103,6 +108,19 @@ public partial class TestPlaygroundCS : Node2D
 	{
 		Sim.DebugMode = DebugSwitch.ButtonPressed;
 		Sim.QueueRedraw();
+	}
+
+	private void Pause(bool on)
+	{
+		SimPaused = on;
+	}
+
+	private void ProgressFrame()
+	{
+		if (SimPaused)
+		{
+			Sim.UpdateSimulation(false);
+		}
 	}
 
 }

@@ -94,6 +94,8 @@ alignment = 1
 [node name="SelectElementLabel" type="Label" parent="Element" unique_id=1512852163]
 layout_mode = 2
 size_flags_horizontal = 3
+tooltip_text = "Due to how Godot handles Dictionaries, these will be automatically sorted alphabetically upon every restart of the engine."
+mouse_filter = 1
 text = "Select Element to Edit"
 
 [node name="ElementSelection" type="OptionButton" parent="Element" unique_id=469543168]
@@ -204,7 +206,6 @@ folded = true
 title = "Reactions"
 
 [node name="MovementSection" type="FoldableContainer" parent="." unique_id=1814600024]
-visible = false
 layout_mode = 2
 folded = true
 title = "Movement"

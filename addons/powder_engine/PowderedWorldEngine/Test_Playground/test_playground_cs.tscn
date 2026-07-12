@@ -3,6 +3,8 @@
 [ext_resource type="Script" uid="uid://c6kb7kabsigl2" path="res://addons/powder_engine/PowderedWorldEngine/Test_Playground/TestPlaygroundCS.cs" id="1_q510b"]
 [ext_resource type="Script" uid="uid://b5ufmvvm0i4bm" path="res://addons/powder_engine/PowderedWorldEngine/Scripts/CSharp/PowderSimulation.cs" id="2_sl452"]
 [ext_resource type="Script" uid="uid://d2qdk4il2fgb5" path="res://addons/powder_engine/PowderedWorldEngine/Test_Playground/cameraController.gd" id="3_q510b"]
+[ext_resource type="Texture2D" uid="uid://1qu0gcqovs3r" path="res://addons/powder_engine/PowderedWorldEngine/Test_Playground/Pause.svg" id="4_r0ubx"]
+[ext_resource type="Texture2D" uid="uid://fkaei5up58co" path="res://addons/powder_engine/PowderedWorldEngine/Test_Playground/ArrowRight.svg" id="5_65cau"]
 
 [sub_resource type="Curve" id="Curve_q510b"]
 _data = [Vector2(0.011235952, 0), 0.0, 0.0, 0, 0, Vector2(0.23220974, 1), 0.0, 0.0, 0, 0, Vector2(0.8052435, 1), 0.0, 0.0, 0, 0, Vector2(1, 0), 0.0, 0.0, 0, 0]
@@ -91,3 +93,18 @@ offset_right = 44.0
 offset_bottom = 170.0
 scale = Vector2(2, 2)
 text = "Debug"
+
+[node name="pause" type="Button" parent="ui" unique_id=1651608771]
+offset_top = 240.0
+offset_right = 24.0
+offset_bottom = 264.0
+scale = Vector2(3, 3)
+toggle_mode = true
+icon = ExtResource("4_r0ubx")
+
+[node name="forward" type="Button" parent="ui" unique_id=1525633258]
+offset_top = 320.0
+offset_right = 24.0
+offset_bottom = 344.0
+scale = Vector2(3, 3)
+icon = ExtResource("5_65cau")

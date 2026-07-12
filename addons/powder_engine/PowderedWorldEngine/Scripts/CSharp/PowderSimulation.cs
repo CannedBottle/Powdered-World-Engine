@@ -87,6 +87,9 @@ public partial class PowderSimulation : Node2D
 
 	public Vector2I SimulationSize;
 
+	public Vector2I SimulationMaxExtents;
+	public Vector2I SimulationMinExtents;
+
 	// the amount of time it takes to update and draw, respectively. used for debug purposes.
 	public float UpdateTime = 0.0f;
 	public float DrawTime = 0.0f;
@@ -101,11 +104,27 @@ public partial class PowderSimulation : Node2D
 	public List<ChunkRendererCS> ActiveChunkRenderers = new List<ChunkRendererCS>();
 	public Node2D ChunkRendererParent;
 
+	/// <summary>
+	/// 
+	/// </summary>
+	public Dictionary<SandInfoCS.Neighbors, int> NeighborIndexOffsets;
+
 	// ***************** Misc ---------------------------------------
 
-	public int GetChunkIndexFromPos(Vector2I pos)
+	public SandInfoCS.Chunk GetChunk(Vector2I pos)
 	{
-		return pos.Y * ChunkGridSize.X + pos.X;
+		return Chunks[pos.Y * ChunkGridSize.X + pos.X];
+	}
+
+	/// <summary>
+	/// 
+	/// </summary>
+	/// <param name="pos"></param>
+	/// <returns>Whether the given <c>pos</c> corresponds to a cell in the simulation.</returns>
+	public bool SimContains(Vector2I pos)
+	{
+		return !(pos.X < SimulationMinExtents.X || pos.Y < SimulationMinExtents.Y
+			|| pos.X > SimulationMaxExtents.X || pos.Y > SimulationMaxExtents.Y);
 	}
 
 
@@ -113,6 +132,8 @@ public partial class PowderSimulation : Node2D
 
 	public void InitGrid()
 	{
+		_FindIndexOffsets();
+
 		Chunks.Clear();
 
 		for(int y = 0; y < ChunkGridSize.Y; y++)
@@ -141,6 +162,23 @@ public partial class PowderSimulation : Node2D
 			}
 		}
 
+		UpdateSimulationSize();
+
+	}
+
+	public void _FindIndexOffsets()
+	{
+		NeighborIndexOffsets = new Dictionary<SandInfoCS.Neighbors, int>
+		{
+			{SandInfoCS.Neighbors.TOPLEFT, -(IndividualChunkSize + 1)},
+			{SandInfoCS.Neighbors.TOPMIDDLE, -IndividualChunkSize},
+			{SandInfoCS.Neighbors.TOPRIGHT, -(IndividualChunkSize - 1)},
+			{SandInfoCS.Neighbors.LEFTMIDDLE, -1},
+			{SandInfoCS.Neighbors.RIGHTMIDDLE, 1},
+			{SandInfoCS.Neighbors.BOTTOMLEFT, IndividualChunkSize - 1},
+			{SandInfoCS.Neighbors.BOTTOMMIDDLE, IndividualChunkSize},
+			{SandInfoCS.Neighbors.BOTTOMRIGHT, IndividualChunkSize + 1},	
+		};
 	}
 
 	public void UpdateChunks(int tick)
@@ -197,7 +235,7 @@ public partial class PowderSimulation : Node2D
 					ChunkPos.X = x / IndividualChunkSize;
 					ChunkPos.Y = y / IndividualChunkSize;
 
-					SandInfoCS.Chunk chunk = Chunks[GetChunkIndexFromPos(ChunkPos)];
+					SandInfoCS.Chunk chunk = GetChunk(ChunkPos);
 
 					chunk.UpdateCell(chunk.Cells[SandInfoCS.WorldPosToChunkPos(new Vector2I(x, y), IndividualChunkSize)], this);
 
@@ -217,7 +255,7 @@ public partial class PowderSimulation : Node2D
 					ChunkPos.X = x / IndividualChunkSize;
 					ChunkPos.Y = y / IndividualChunkSize;
 
-					SandInfoCS.Chunk chunk = Chunks[GetChunkIndexFromPos(ChunkPos)];
+					SandInfoCS.Chunk chunk = GetChunk(ChunkPos);
 
 					chunk.UpdateCell(chunk.Cells[SandInfoCS.WorldPosToChunkPos(new Vector2I(x, y), IndividualChunkSize)], this);
 
@@ -277,7 +315,32 @@ public partial class PowderSimulation : Node2D
 	/// </summary>
 	public void UpdateSimulationSize()
 	{
-		SimulationSize = new Vector2I(ChunkGridSize.X * IndividualChunkSize - 1, ChunkGridSize.Y * IndividualChunkSize - 1);
+
+		if(Chunks.Count == 0)
+		{
+			SimulationSize = new Vector2I(ChunkGridSize.X * IndividualChunkSize - 1, ChunkGridSize.Y * IndividualChunkSize - 1);
+			SimulationMaxExtents = Vector2I.Zero;
+			SimulationMinExtents = Vector2I.Zero;
+			return;
+		}
+
+
+		SimulationMaxExtents = new Vector2I(int.MinValue, int.MinValue);
+		SimulationMinExtents = new Vector2I(int.MaxValue, int.MaxValue);
+
+		foreach(SandInfoCS.Chunk chunk in Chunks)
+		{
+			
+			SimulationMinExtents.X = Math.Min(SimulationMinExtents.X, chunk.MinExtents.X);
+			SimulationMinExtents.Y = Math.Min(SimulationMinExtents.Y, chunk.MinExtents.Y);
+
+			SimulationMaxExtents.X = Math.Max(SimulationMaxExtents.X, chunk.MaxExtents.X);
+			SimulationMaxExtents.Y = Math.Max(SimulationMaxExtents.Y, chunk.MaxExtents.Y);
+
+		}
+
+		SimulationSize = SimulationMaxExtents - SimulationMinExtents;
+
 	}
 
 	public override void _Ready()
@@ -289,7 +352,7 @@ public partial class PowderSimulation : Node2D
 		InitGrid();
 	}
 
-	// used to draw dirty rects for debug purposes.
+	// used to draw dirty rects, chunk borders and the sim border for debug purposes.
     public override void _Draw()
     {
         base._Draw();
@@ -331,12 +394,17 @@ public partial class PowderSimulation : Node2D
 
     }
 
-	public void UpdateSimulation()
+	/// <summary>
+	/// Updates the simulation while being safe to put in <c>_Process</c>/<c>_PhysicsProcess</c> because if <c>wait</c> is set to <c>true</c>, it will not tick until the right amount of time has passed specified in <c>SimulationSpeed</c>.
+	/// If <c>wait</c> is set to <c>false</c>, runs one tick of the simulation regardless.
+	/// </summary>
+	/// <param name="wait"></param>
+	public void UpdateSimulation(bool wait = true)
 	{
 		
 		Accumulator += (float)GetProcessDeltaTime() * SimulationSpeed;
 
-		if(Accumulator >= SimDt)
+		if(wait == false || Accumulator >= SimDt)
 		{
 			UpdateChunks(TicksPassed);
 			RenderChunkUpdates();
@@ -351,6 +419,44 @@ public partial class PowderSimulation : Node2D
 
 	// ************************ World Manipulation -----------------------------------
 
+	/// <summary>
+	/// 
+	/// </summary>
+	/// <param name="pos"></param>
+	/// <returns>The cell at the specified <c>pos</c>.</returns>
+	public SandInfoCS.Cell GetCell(Vector2I pos)
+	{
+		int chunkPosX = pos.X / IndividualChunkSize;
+		int chunkPosY = pos.Y / IndividualChunkSize;
+
+		SandInfoCS.Chunk chunk = Chunks[chunkPosY * ChunkGridSize.X + chunkPosX];
+
+		int localX = pos.X - chunk.MinExtents.X;
+		int localY = pos.Y - chunk.MinExtents.Y;
+
+		return chunk.Cells[localY * IndividualChunkSize + localX];
+
+	}
+
+	/// <summary>
+	/// Replaces the element at <c>pos</c> with <c>element</c>.
+	/// </summary>
+	/// <param name="pos"></param>
+	/// <param name="element"></param>
+	public void SetCell(Vector2I pos, AllElements element)
+	{
+		SetCell(GetCell(pos), element);
+	}
+
+	public void SetCell(SandInfoCS.Cell cell, AllElements element)
+	{
+		cell.Element = element;
+
+		cell.ReplaceTypeAttributesWithDefault();
+
+		cell.CellChunk.Wake();
+		cell.CellChunk.MarkCellUpdated(cell);
+	}
 
 	public bool PlaceElement(Vector2I pos, AllElements element, bool overRide = false)
 	{
@@ -360,13 +466,7 @@ public partial class PowderSimulation : Node2D
 		}
 		
 
-		// pos of chunk the cell is being placed in
-		Vector2I ChunkPosition = new Vector2I(pos.X / IndividualChunkSize, pos.Y / IndividualChunkSize);
-		SandInfoCS.Chunk chunk = Chunks[GetChunkIndexFromPos(ChunkPosition)];
-		int LocalCellIdx = SandInfoCS.WorldPosToChunkPos(pos, IndividualChunkSize);
-		chunk.Wake();
-
-		SandInfoCS.Cell cell = chunk.Cells[LocalCellIdx];
+		SandInfoCS.Cell cell = GetCell(pos);
 
 		if(overRide == false && cell.Element != AllElements.AIR)
 		{
@@ -374,8 +474,7 @@ public partial class PowderSimulation : Node2D
 		}
 		else
 		{
-			cell.Element = element;
-			chunk.MarkCellUpdated(cell);
+			SetCell(cell, element);
 			return true;
 		}
 	}
