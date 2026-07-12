@@ -34,7 +34,7 @@ alpha_curve = SubResource("CurveTexture_ew800")
 
 [node name="Test_Playground CS" type="Node2D" unique_id=1643439571]
 script = ExtResource("1_q510b")
-brushSize = 1
+brushSize = 10
 
 [node name="PowderSimulation" type="Node2D" parent="." unique_id=215125392]
 script = ExtResource("2_sl452")
@@ -42,6 +42,7 @@ DebugMode = true
 ShowSimBorder = true
 SimBorderWidth = 10
 PixelScale = 6
+SimulationSpeed = 1.25
 IndividualChunkSize = 64
 ChunkGridSize = Vector2i(5, 4)
 ChunkInsomnia = 3

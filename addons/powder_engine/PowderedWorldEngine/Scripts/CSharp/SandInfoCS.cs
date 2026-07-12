@@ -162,6 +162,21 @@ public partial class SandInfoCS : Node
 		}
 	}
 
+	// a function to put all the necessary variables to carry over when moving cells
+	public static void SwapCells(Cell copyCell, Cell pasteCell)
+	{
+		AllElements PasteCellElement = pasteCell.Element;
+		Dictionary<string, int> PasteCellTypeAttributes = pasteCell.TypeAttributes;
+
+		pasteCell.Element = copyCell.Element;
+		pasteCell.TypeAttributes = copyCell.TypeAttributes;
+
+		copyCell.Element = PasteCellElement;
+		copyCell.TypeAttributes = PasteCellTypeAttributes;
+
+		copyCell.CellChunk.MarkCellUpdated(copyCell);
+		pasteCell.CellChunk.MarkCellUpdated(pasteCell);
+	}
 
 	// --------------------------------- ELEMENT MOVEMENT RULESETS ----------------------- //
 
@@ -434,7 +449,7 @@ public partial class SandInfoCS : Node
 
 			Cell NeighborCell;
 
-
+			
 			if (CellChunk.Contains(NeighborPos))
 			{
 				NeighborCell = CellChunk.Cells[ChunkIdx + simRef.NeighborIndexOffsets[neighbor]];
@@ -443,7 +458,7 @@ public partial class SandInfoCS : Node
 			{
 				NeighborCell = simRef.GetCell(NeighborPos);
 			}
-
+			
 			return NeighborCell;
 		}
 
@@ -487,6 +502,11 @@ public partial class SandInfoCS : Node
 				return false;
 			}
 
+			if (NeighborCell.CellChunk.UpdatedCellsMask[NeighborCell.ChunkIdx])
+			{
+				return false;
+			}
+
 			//valid cell to move checking (per type check)
 			bool ValidMove;
 
@@ -504,9 +524,8 @@ public partial class SandInfoCS : Node
 			{
 				
 
-				CellChunk.SwapCells(this, NeighborCell);
+				simRef.QueueSwap(this, NeighborCell);
 				NeighborCell.CellChunk.Wake();
-
 
 				CellChunk.MarkCellUpdated(this);
 				NeighborCell.CellChunk.MarkCellUpdated(NeighborCell);
@@ -730,6 +749,7 @@ public partial class SandInfoCS : Node
 		/// <param name="blockUpdates"></param>
 		public void MarkCellUpdated(Cell cell, bool blockUpdates = true)
 		{
+			Wake();
 
 			if (UpdatedCellsMask[cell.ChunkIdx] == true)
 			{
@@ -790,23 +810,6 @@ public partial class SandInfoCS : Node
 			UpdatedCellsIndexes.Clear();
 			Array.Clear(UpdatedCellsMask, 0, UpdatedCellsMask.Length);
 
-		}
-
-
-		// a function to put all the necessary variables to carry over when moving cells
-		public void SwapCells(Cell copyCell, Cell pasteCell)
-		{
-			AllElements PasteCellElement = pasteCell.Element;
-			Dictionary<string, int> PasteCellTypeAttributes = pasteCell.TypeAttributes;
-
-			pasteCell.Element = copyCell.Element;
-			pasteCell.TypeAttributes = copyCell.TypeAttributes;
-
-			copyCell.Element = PasteCellElement;
-			copyCell.TypeAttributes = PasteCellTypeAttributes;
-
-			copyCell.CellChunk.MarkCellUpdated(copyCell);
-			pasteCell.CellChunk.MarkCellUpdated(pasteCell);
 		}
 
 

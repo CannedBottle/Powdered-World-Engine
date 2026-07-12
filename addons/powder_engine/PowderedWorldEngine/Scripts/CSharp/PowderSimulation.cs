@@ -59,6 +59,23 @@ public partial class PowderSimulation : Node2D
 		}
 	}
 
+	// ---------- SWAP BUFFER
+	public struct Swap
+	{
+		public SandInfoCS.Cell Cell1;
+		public SandInfoCS.Cell Cell2;
+
+		public Swap(SandInfoCS.Cell cell1, SandInfoCS.Cell cell2)
+		{
+			Cell1 = cell1;
+			Cell2 = cell2;
+		}
+		
+	}
+
+	public List<Swap> SwapQueue = new List<Swap>{};
+
+	// ---------------------------------
 
 	private Vector2I _chunkGridSize;
 	/// <summary>
@@ -127,6 +144,26 @@ public partial class PowderSimulation : Node2D
 			|| pos.X > SimulationMaxExtents.X || pos.Y > SimulationMaxExtents.Y);
 	}
 
+	// ***************** Swap Buffer ----------------------------------------
+
+
+	public void QueueSwap(SandInfoCS.Cell Cell1, SandInfoCS.Cell Cell2)
+	{
+		SwapQueue.Add(new Swap(Cell1, Cell2));
+	}
+
+	/// <summary>
+	/// writes all the buffered swaps onto the simulation.
+	/// </summary>
+	public void CommitSwapQueue()
+	{
+		foreach(Swap swap in SwapQueue)
+		{
+			SandInfoCS.SwapCells(swap.Cell1, swap.Cell2);
+		}
+
+		SwapQueue.Clear();
+	}
 
 	// ***************** Updating + Initialization --------------------------
 
@@ -183,8 +220,6 @@ public partial class PowderSimulation : Node2D
 
 	public void UpdateChunks(int tick)
 	{
-		UpdateTime = Time.GetTicksUsec() / 1000.0f;
-		// ----------------------------------------------------------------------------
 		if(tick == 1){
 			for(int i = 0; i < Chunks.Count; i++)
 			{
@@ -209,8 +244,6 @@ public partial class PowderSimulation : Node2D
 			}
 		}
 
-		//-----------------------------------------------------------------------------
-		UpdateTime = Time.GetTicksUsec() / 1000.0f - UpdateTime;
 		if(DebugMode)
 		{
 			QueueRedraw();
@@ -222,8 +255,6 @@ public partial class PowderSimulation : Node2D
 	/// </summary>
 	public void UpdateCells(int tick)
 	{
-		UpdateTime = Time.GetTicksUsec() / 1000.0f;
-		// ----------------------------------------------------------------------------
 		if(tick == 1){
 			
 			Vector2I CellPos = new Vector2I(0, 0);
@@ -276,8 +307,6 @@ public partial class PowderSimulation : Node2D
 			DecideSleepingChunks();	
 		}
 
-		//-----------------------------------------------------------------------------
-		UpdateTime = Time.GetTicksUsec() / 1000.0f - UpdateTime;
 		if(DebugMode)
 		{
 			QueueRedraw();
@@ -406,7 +435,12 @@ public partial class PowderSimulation : Node2D
 
 		if(wait == false || Accumulator >= SimDt)
 		{
+			UpdateTime = Time.GetTicksUsec() / 1000.0f;
+			// ----------------------------------------------------------------------------
 			UpdateChunks(TicksPassed);
+			CommitSwapQueue();
+			//-----------------------------------------------------------------------------
+			UpdateTime = Time.GetTicksUsec() / 1000.0f - UpdateTime;
 			RenderChunkUpdates();
 
 			TicksPassed += 1;
@@ -455,7 +489,7 @@ public partial class PowderSimulation : Node2D
 		cell.ReplaceTypeAttributesWithDefault();
 
 		cell.CellChunk.Wake();
-		cell.CellChunk.MarkCellUpdated(cell);
+		cell.CellChunk.MarkCellUpdated(cell, false);
 	}
 
 	public bool PlaceElement(Vector2I pos, AllElements element, bool overRide = false)
