@@ -9,6 +9,9 @@ using static ElementAttributes;
 public partial class ElementStorage : Resource
 {
 
+	[Signal]
+	public delegate void ElementsSavedEventHandler();
+
 	public static readonly ElementAttributes DefaultElement = new ElementAttributes(AllElements.AIR, ElementTypes.STATIC, MoveTypes.NONE, new Color(1.0f, 0.0f, 0.0f, 1.0f), 0.1f, null);
 
 	public static ElementAttributes GetDefaultElement()
@@ -42,6 +45,8 @@ public partial class ElementStorage : Resource
 		foreach(StringName name in DefaultAttributes.Keys)
 		{
 			ReturnDict.Add(name, DefaultAttributes[name].Clone());
+
+			ElementsSaved += ReturnDict[name].OnSave;
 		}
 
 		AllElementAttributes = ReturnDict.Duplicate(true);

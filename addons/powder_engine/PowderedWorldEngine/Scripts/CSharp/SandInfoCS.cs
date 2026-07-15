@@ -23,6 +23,8 @@ public partial class SandInfoCS : Node
 
 	public static void SaveElementStorage()
 	{
+		ElementResource.EmitSignal(ElementStorage.SignalName.ElementsSaved);
+
 		Error error = ResourceSaver.Save(ElementResource, ElementResourcePath, ResourceSaver.SaverFlags.None);
 		if(error == Error.Ok)
 		{
@@ -109,26 +111,6 @@ public partial class SandInfoCS : Node
 	}
 
 
-	// in the random values, a Vector2i is used for min/max values since constants cannot use random functions.
-	public static readonly Dictionary<MoveTypes, Dictionary<string, int>> ElementTypeDefaults = new Dictionary<MoveTypes, Dictionary<string, int>>
-	{
-		{MoveTypes.NONE, new Dictionary<string, int>{{"none", 0}}},
-		
-		{MoveTypes.SAND, new Dictionary<string, int>{{"random", 1}}},
-		
-		{MoveTypes.STONE, new Dictionary<string, int>{{"none", 0}}},
-		
-		{MoveTypes.LIQUID, new Dictionary<string, int> 
-		{
-			{"random", 1},
-			{"direction", 0},
-			{"bumps", 0},
-		}},
-		
-		{MoveTypes.GAS, new Dictionary<string, int>{{"random", 7}}},
-	};
-
-
 	// ------------------------------------ USEFUL FUNCTIONS ----------------------------- //
 	public static int WorldPosToChunkPos(Vector2I worldPos, int chunkSize)
 	{
@@ -141,15 +123,15 @@ public partial class SandInfoCS : Node
 	public static void UpdateCloseChunks(Cell cell, PowderSimulation simRef)
 	{
 		// if on edge of chunk and successfully updates, wake chunk next to it
-		if(cell.ChunkEdge && !cell.SimEdge)
+		if(cell.ChunkEdge)
 		{
 			//wake chunk nearest to cell   (no bool to int now i have to use ternary ops :[ )
 			Vector2I PosAddition = new Vector2I(
 				(cell.Position.X == cell.CellChunk.MaxExtents.X ? 1 : 0) - (cell.Position.X == cell.CellChunk.MinExtents.X ? 1 : 0),
 				(cell.Position.Y == cell.CellChunk.MaxExtents.Y ? 1 : 0) - (cell.Position.Y == cell.CellChunk.MinExtents.Y ? 1 : 0)
 			);
-
-			if(PosAddition != Vector2.Zero)
+			
+			if(PosAddition != Vector2.Zero && simRef.SimContainsChunk(cell.CellChunk.ChunkPosition + PosAddition))
 			{
 				Chunk NeighborChunk = simRef.GetChunk(cell.CellChunk.ChunkPosition + PosAddition);
 
@@ -166,13 +148,13 @@ public partial class SandInfoCS : Node
 	public static void SwapCells(Cell copyCell, Cell pasteCell)
 	{
 		AllElements PasteCellElement = pasteCell.Element;
-		Dictionary<string, int> PasteCellTypeAttributes = pasteCell.TypeAttributes;
+		int[] PasteCellFields = pasteCell.Fields;
 
 		pasteCell.Element = copyCell.Element;
-		pasteCell.TypeAttributes = copyCell.TypeAttributes;
+		pasteCell.Fields = copyCell.Fields;
 
 		copyCell.Element = PasteCellElement;
-		copyCell.TypeAttributes = PasteCellTypeAttributes;
+		copyCell.Fields = PasteCellFields;
 
 		copyCell.CellChunk.MarkCellUpdated(copyCell);
 		pasteCell.CellChunk.MarkCellUpdated(pasteCell);
@@ -209,7 +191,7 @@ public partial class SandInfoCS : Node
 
 				if(cell.TryMove(Neighbors.BOTTOMMIDDLE, simRef) == false)
 				{
-					if(cell.TypeAttributes["random"] == 0)
+					if(cell.Fields[cell.GetFieldIndex("R#random")] == 0)
 					{
 						if(cell.TryMove(Neighbors.BOTTOMRIGHT, simRef) == false)
 						{
@@ -231,7 +213,7 @@ public partial class SandInfoCS : Node
 				if(cell.TryMove(Neighbors.BOTTOMMIDDLE, simRef) == false)
 				{
 					bool success;
-					if(cell.TypeAttributes["random"] == 0)
+					if(cell.Fields[cell.GetFieldIndex("R#random")] == 0)
 					{
 						success = cell.TryMove(Neighbors.BOTTOMRIGHT, simRef);
 						if(success == false)
@@ -250,14 +232,14 @@ public partial class SandInfoCS : Node
 
 					if(success == false)
 					{
-						Dictionary<string, int> tempAtts = cell.TypeAttributes;
+						int[] tempAtts = cell.Fields;
 
-						if(cell.TypeAttributes["direction"] == 1)
+						if(cell.Fields[cell.GetFieldIndex("R#direction")] == 1)
 						{
 							success = cell.TryMove(Neighbors.RIGHTMIDDLE, simRef);
-							tempAtts["bumps"] += success ? 0 : 1;
-							tempAtts["direction"] = tempAtts["bumps"] >= 3 ? 0 : 1;
-							tempAtts["bumps"] = tempAtts["direction"] == 1 ? tempAtts["bumps"] : 0;
+							tempAtts[cell.GetFieldIndex("bumps")] += success ? 0 : 1;
+							tempAtts[cell.GetFieldIndex("R#direction")] = tempAtts[cell.GetFieldIndex("bumps")] >= 3 ? 0 : 1;
+							tempAtts[cell.GetFieldIndex("bumps")] = tempAtts[cell.GetFieldIndex("R#direction")] == 1 ? tempAtts[cell.GetFieldIndex("bumps")] : 0;
 
 							if(success == false)
 							{
@@ -267,9 +249,9 @@ public partial class SandInfoCS : Node
 						else
 						{
 							success = cell.TryMove(Neighbors.LEFTMIDDLE, simRef);
-							tempAtts["bumps"] += success ? 0 : 1;
-							tempAtts["direction"] = tempAtts["bumps"] >= 3 ? 1 : 0;
-							tempAtts["bumps"] = tempAtts["direction"] == 0 ? tempAtts["bumps"] : 0;
+							tempAtts[cell.GetFieldIndex("bumps")] += success ? 0 : 1;
+							tempAtts[cell.GetFieldIndex("R#direction")] = tempAtts[cell.GetFieldIndex("bumps")] >= 3 ? 1 : 0;
+							tempAtts[cell.GetFieldIndex("bumps")] = tempAtts[cell.GetFieldIndex("R#direction")] == 0 ? tempAtts[cell.GetFieldIndex("bumps")] : 0;
 
 							if(success == false)
 							{
@@ -338,7 +320,7 @@ public partial class SandInfoCS : Node
 
 		public ElementAttributes Attributes;
 
-		public Dictionary<string, int> TypeAttributes;
+		public int[] Fields = new int[8];
 
 		public AllElements[] NeighborElements = new AllElements[8];
 
@@ -350,7 +332,6 @@ public partial class SandInfoCS : Node
 
 		// if on the edge of a chunk, so can decide whether to update a chunk beside it / cross over to another chunk
 		public bool ChunkEdge = false;
-		public bool SimEdge = false;
 
 
 		public Cell(Vector2I cellPosition, int chunkSize, AllElements cellElement, Vector2I simulationSize, Chunk cellChunk, int cellChunkIdx)
@@ -366,25 +347,12 @@ public partial class SandInfoCS : Node
 
 			ChunkEdge = Position.X == CellChunk.MaxExtents.X || Position.Y == CellChunk.MaxExtents.Y || Position.X == CellChunk.MinExtents.X || Position.Y == CellChunk.MinExtents.Y;
 
-			SimEdge = Position.X == 0 || Position.Y == 0 || Position.X == SimSize.X || Position.Y == SimSize.Y;
 		}
 
 
 		public void ReplaceTypeAttributesWithDefault()
 		{
-			MoveTypes newType = Attributes.MovementType;
-
-			TypeAttributes = new Dictionary<string, int>(ElementTypeDefaults[newType]);
-
-			if(TypeAttributes.TryGetValue("random", out int randVal) == true)
-			{
-				TypeAttributes["random"] = GD.RandRange(0, randVal);
-			}
-
-			if(TypeAttributes.TryGetValue("direction", out int directVal) == true)
-			{
-				TypeAttributes["direction"] = TypeAttributes["random"];
-			}
+			Attributes.GetDefaultFieldArray().CopyTo(Fields, 0);
 		}
 
 		public void FindNeighborElements(PowderSimulation simRef)
@@ -447,7 +415,7 @@ public partial class SandInfoCS : Node
 		{
 			Vector2I NeighborPos = Position + NeighborOffsets[neighbor];
 			
-			if(!simRef.SimContains(NeighborPos))
+			if(!simRef.SimContainsCell(NeighborPos))
 			{
 				return null;
 			}
@@ -468,6 +436,11 @@ public partial class SandInfoCS : Node
 		}
 
 		#nullable disable
+
+		public int GetFieldIndex(string field)
+		{
+			return Attributes.FieldGetIndex(field);
+		}
 
 		// ---------------------------------======= Movement Stuff =======--------------------------------------- //
 
