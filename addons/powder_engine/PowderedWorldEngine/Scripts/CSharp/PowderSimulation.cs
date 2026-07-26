@@ -157,6 +157,16 @@ public partial class PowderSimulation : Node2D
 			|| pos.X > SimulationMaxChunkExtents.X || pos.Y > SimulationMaxChunkExtents.Y);
 	}
 
+	/// <summary>
+	/// 
+	/// </summary>
+	/// <param name="from_world"></param>
+	/// <returns>the given world position (Godot's regular <c>global_position</c> for nodes) translated into local simulation position.</returns>
+	public Vector2I GetLocal(Vector2I from_world)
+	{
+		return from_world / PixelScale - (Vector2I)(Position / PixelScale);
+	}
+
 	// ***************** Swap Buffer ----------------------------------------
 
 

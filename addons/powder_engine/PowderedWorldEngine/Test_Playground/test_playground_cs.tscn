@@ -34,7 +34,7 @@ alpha_curve = SubResource("CurveTexture_ew800")
 
 [node name="Test_Playground CS" type="Node2D" unique_id=1643439571]
 script = ExtResource("1_q510b")
-brushSize = 5
+brushSize = 3
 
 [node name="PowderSimulation" type="Node2D" parent="." unique_id=215125392]
 script = ExtResource("2_sl452")
