@@ -1,6 +1,7 @@
 using Godot;
 using System;
 using System.Collections.Generic;
+using System.Data.Common;
 using System.Linq;
 using static Elements;
 
@@ -24,6 +25,11 @@ public partial class PowderSimulation : Node2D
 	[Export] public int SimBorderWidth = 5;
 
 	[ExportGroup("")]
+
+	/// <summary>
+	/// Whether the simulation appears at the center of this Node's <c>position</c> or offset like Control Nodes are.
+	/// </summary>
+	[Export] public bool SimCentered = false;
 	/// <summary>
 	/// How big the pixels appear on the screen.
 	/// </summary>
@@ -140,9 +146,7 @@ public partial class PowderSimulation : Node2D
 		return Chunks[pos];
 	}
 
-	/// <summary>
-	/// 
-	/// </summary>
+	/// <summary></summary>
 	/// <param name="pos"></param>
 	/// <returns>Whether the given <c>pos</c> corresponds to a cell in the simulation.</returns>
 	public bool SimContainsCell(Vector2I pos)
@@ -157,15 +161,34 @@ public partial class PowderSimulation : Node2D
 			|| pos.X > SimulationMaxChunkExtents.X || pos.Y > SimulationMaxChunkExtents.Y);
 	}
 
-	/// <summary>
-	/// 
-	/// </summary>
+
+	// **************** Helpers ----------------------------------------------
+
+
+	/// <summary></summary>
 	/// <param name="from_world"></param>
 	/// <returns>the given world position (Godot's regular <c>global_position</c> for nodes) translated into local simulation position.</returns>
-	public Vector2I GetLocal(Vector2I from_world)
+	public Vector2I WorldToLocal(Vector2 from_world)
 	{
-		return from_world / PixelScale - (Vector2I)(Position / PixelScale);
+		return (Vector2I)from_world / PixelScale - (Vector2I)(Position / PixelScale);
 	}
+
+
+	/// <summary></summary>
+	/// <returns>the converted local simulation coordinates to chunk coordinates.</returns>
+	public Vector2I LocalToChunk(Vector2I local_pos)
+	{
+		return new Vector2I(
+			(int)Math.Floor((decimal)local_pos.X / (decimal)IndividualChunkSize),
+			(int)Math.Floor((decimal)local_pos.Y / (decimal)IndividualChunkSize)
+		);
+	}
+
+	public Vector2I WorldToChunk(Vector2 world_pos)
+	{
+		return LocalToChunk(WorldToLocal(world_pos));
+	}
+
 
 	// ***************** Swap Buffer ----------------------------------------
 
@@ -188,6 +211,21 @@ public partial class PowderSimulation : Node2D
 		SwapQueue.Clear();
 	}
 
+
+	// ***************** Chunk Addition + Removal ----------------------------
+
+
+	/// <summary>
+	/// Adds an empty chunk at the specified coordinates.
+	/// </summary>
+	/// <param name="at"></param>
+	/// <returns>Whether or not the chunk already exists in the simulation, and by extenstion, returns <c>true</c> if the chunk could not be added, otherwise <c>false</c>.</returns>
+	public bool AddChunk(Vector2I at)
+	{
+		return !Chunks.TryAdd(at, new SandInfoCS.Chunk(IndividualChunkSize, at, ChunkInsomnia));
+	}
+
+
 	// ***************** Updating + Initialization --------------------------
 
 	public void InitGrid()
@@ -196,15 +234,25 @@ public partial class PowderSimulation : Node2D
 
 		Chunks.Clear();
 
+		// if centered, find offset
+		Vector2I offset = new Vector2I(0, 0);
+
+		if (SimCentered)
+		{
+			offset.X = (int)Math.Floor((decimal)ChunkGridSize.X / 2);
+			offset.Y = (int)Math.Floor((decimal)ChunkGridSize.Y / 2);
+		}
+
+		// create grid
 		for(int y = 0; y < ChunkGridSize.Y; y++)
 		{
 			for(int x = 0; x < ChunkGridSize.X; x++)
 			{
-				Vector2I LoopPos = new Vector2I(x, y);
+				Vector2I LoopPos = new Vector2I(x, y) - offset;
 
 				//int ChunkListPos = y * ChunkGridSize.X + x;
 
-				Chunks.Add(LoopPos, new SandInfoCS.Chunk(IndividualChunkSize, LoopPos, SimulationSize, ChunkInsomnia));
+				AddChunk(LoopPos);
 
 				ChunkRendererCS Render = new ChunkRendererCS();
 				Render.ChunkSize = IndividualChunkSize;
@@ -223,7 +271,6 @@ public partial class PowderSimulation : Node2D
 		}
 
 		UpdateSimulationSize();
-
 	}
 
 	public void _FindIndexOffsets()
@@ -246,9 +293,9 @@ public partial class PowderSimulation : Node2D
 		if(tick == 1){
 
 			Vector2I pos = new Vector2I(0, 0);
-			for(int y = 0; y < ChunkGridSize.Y; y++)
+			for(int y = SimulationMinChunkExtents.Y; y <= SimulationMaxChunkExtents.Y; y++)
 			{
-				for(int x = 0; x < ChunkGridSize.X; x++)
+				for(int x = SimulationMinChunkExtents.X; x <= SimulationMaxChunkExtents.X; x++)
 				{
 					pos.X = x;
 					pos.Y = y;
@@ -261,9 +308,9 @@ public partial class PowderSimulation : Node2D
 		{
 			
 			Vector2I pos = new Vector2I(0, 0);
-			for(int y = ChunkGridSize.Y - 1; y >= 0; y--)
+			for(int y = SimulationMaxChunkExtents.Y; y >= SimulationMinChunkExtents.Y; y--)
 			{
-				for(int x = ChunkGridSize.X - 1; x >= 0; x--)
+				for(int x = SimulationMaxChunkExtents.X; x >= SimulationMinChunkExtents.X; x--)
 				{
 					pos.X = x;
 					pos.Y = y;
@@ -400,7 +447,6 @@ public partial class PowderSimulation : Node2D
 
 		foreach(SandInfoCS.Chunk chunk in Chunks.Values)
 		{
-			
 			SimulationMinExtents.X = Math.Min(SimulationMinExtents.X, chunk.MinExtents.X);
 			SimulationMinExtents.Y = Math.Min(SimulationMinExtents.Y, chunk.MinExtents.Y);
 
@@ -435,9 +481,13 @@ public partial class PowderSimulation : Node2D
     {
         base._Draw();
 
+		// draw sim border
 		if(ShowSimBorder)
 		{
-			DrawRect(new Rect2(new Vector2(-SimBorderWidth / 2, -SimBorderWidth / 2), SimulationSize * PixelScale + new Vector2(PixelScale + SimBorderWidth, PixelScale + SimBorderWidth)), new Color(0, 0, 0, 1.0f), false, SimBorderWidth, false);
+			// position offset created by how big the width of the border is
+			Vector2 widthOffset = new Vector2(-SimBorderWidth / 2, -SimBorderWidth / 2);
+
+			DrawRect(new Rect2(SimulationMinExtents * PixelScale + widthOffset, SimulationSize * PixelScale + new Vector2(PixelScale + SimBorderWidth, PixelScale + SimBorderWidth)), new Color(0, 0, 0, 1.0f), false, SimBorderWidth, false);
 		}
 
 
@@ -509,11 +559,10 @@ public partial class PowderSimulation : Node2D
 	/// <returns>The cell at the specified <c>pos</c>.</returns>
 	public SandInfoCS.Cell GetCell(Vector2I pos)
 	{
-		int chunkPosX = pos.X / IndividualChunkSize;
-		int chunkPosY = pos.Y / IndividualChunkSize;
+		Vector2I chunkPos = LocalToChunk(pos);
 
 		//SandInfoCS.Chunk chunk = Chunks[chunkPosY * ChunkGridSize.X + chunkPosX];
-		SandInfoCS.Chunk chunk = Chunks[new Vector2I(chunkPosX, chunkPosY)];
+		SandInfoCS.Chunk chunk = Chunks[new Vector2I(chunkPos.X, chunkPos.Y)];
 
 		int localX = pos.X - chunk.MinExtents.X;
 		int localY = pos.Y - chunk.MinExtents.Y;
@@ -544,7 +593,7 @@ public partial class PowderSimulation : Node2D
 
 	public bool PlaceElement(Vector2I pos, AllElements element, bool overRide = false)
 	{
-		if(pos.X < 0 || pos.Y < 0 || pos.X > SimulationSize.X || pos.Y > SimulationSize.Y)
+		if(!SimContainsCell(pos))
 		{
 			return false;
 		}

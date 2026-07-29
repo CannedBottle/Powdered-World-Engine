@@ -28,6 +28,7 @@ public partial class Elements : Resource
        ACID,
        STONE,
        WALL,
+       ELEMENT0,
 
     }
 }

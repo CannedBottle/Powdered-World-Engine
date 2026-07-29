@@ -112,11 +112,13 @@ public partial class SandInfoCS : Node
 
 
 	// ------------------------------------ USEFUL FUNCTIONS ----------------------------- //
-	public static int WorldPosToChunkPos(Vector2I worldPos, int chunkSize)
+	public static int CellPosToChunkPos(Vector2I cellPos, int chunkSize)
 	{
-		Vector2I ChunkPos = new Vector2I(worldPos.X / chunkSize, worldPos.Y / chunkSize);
-		int LocalX = worldPos.X - (ChunkPos.X * chunkSize);
-		int LocalY = worldPos.Y - (ChunkPos.Y * chunkSize);
+		Vector2I ChunkPos = new Vector2I((int)Math.Floor((decimal)cellPos.X / (decimal)chunkSize),
+		(int)Math.Floor((decimal)cellPos.Y / (decimal)chunkSize));
+		
+		int LocalX = cellPos.X - (ChunkPos.X * chunkSize);
+		int LocalY = cellPos.Y - (ChunkPos.Y * chunkSize);
 		return LocalY * chunkSize + LocalX;
 	}
 
@@ -137,7 +139,7 @@ public partial class SandInfoCS : Node
 
 				NeighborChunk.Wake();
 				//Inflate DirtyRect across chunk borders, fixes liquids not falling when dirtyrect is stuck on the other side of the chunk
-				NeighborChunk.MarkCellUpdated(NeighborChunk.Cells[WorldPosToChunkPos(cell.Position + PosAddition, cell.ChunkSize)], false);
+				NeighborChunk.MarkCellUpdated(NeighborChunk.Cells[CellPosToChunkPos(cell.Position + PosAddition, cell.ChunkSize)], false);
 
 			}
 
@@ -295,9 +297,6 @@ public partial class SandInfoCS : Node
 
 		// ------------------------------------
 
-
-		public Vector2I SimSize = new Vector2I();
-
 		public int ChunkSize;
 
 		public Vector2I Position = new Vector2I();
@@ -334,15 +333,13 @@ public partial class SandInfoCS : Node
 		public bool ChunkEdge = false;
 
 
-		public Cell(Vector2I cellPosition, int chunkSize, AllElements cellElement, Vector2I simulationSize, Chunk cellChunk, int cellChunkIdx)
+		public Cell(Vector2I cellPosition, int chunkSize, AllElements cellElement, Chunk cellChunk, int cellChunkIdx)
 		{
 			Position = cellPosition;
 			ChunkSize = chunkSize;
 			Element = cellElement;
 			CellChunk = cellChunk;
 			ChunkIdx = cellChunkIdx;
-
-			SimSize = simulationSize;
 
 
 			ChunkEdge = Position.X == CellChunk.MaxExtents.X || Position.Y == CellChunk.MaxExtents.Y || Position.X == CellChunk.MinExtents.X || Position.Y == CellChunk.MinExtents.Y;
@@ -559,17 +556,14 @@ public partial class SandInfoCS : Node
 		public bool HasValidDirtyRect;
 
 		
-
-		public Vector2I SimSize;
 		public bool Sleeping = false;
 
 		public ChunkRendererCS Renderer;
 
-		public Chunk(int chunkSize, Vector2I chunkPosition, Vector2I simulationSize, int insomnia)
+		public Chunk(int chunkSize, Vector2I chunkPosition, int insomnia)
 		{
 			ChunkSize = chunkSize;
 			ChunkPosition = chunkPosition;
-			SimSize = simulationSize;
 			Insomnia = insomnia;
 
 			UpdatedCellsMask = new bool[ChunkSize * ChunkSize];
@@ -608,7 +602,7 @@ public partial class SandInfoCS : Node
 						y + MinExtents.Y
 					);
 
-					Cells[Idx] = new Cell(Pos, ChunkSize, AllElements.AIR, SimSize, this, Idx);
+					Cells[Idx] = new Cell(Pos, ChunkSize, AllElements.AIR, this, Idx);
 
 					Idx += 1;
 				}

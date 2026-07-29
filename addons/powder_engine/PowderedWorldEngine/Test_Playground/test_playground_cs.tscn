@@ -41,10 +41,11 @@ script = ExtResource("2_sl452")
 DebugMode = true
 ShowSimBorder = true
 SimBorderWidth = 10
+SimCentered = true
 PixelScale = 6
 SimulationSpeed = 1.25
 IndividualChunkSize = 64
-ChunkGridSize = Vector2i(5, 4)
+ChunkGridSize = Vector2i(4, 2)
 ChunkInsomnia = 3
 metadata/_custom_type_script = "uid://b5ufmvvm0i4bm"
 
@@ -109,3 +110,7 @@ offset_right = 24.0
 offset_bottom = 344.0
 scale = Vector2(3, 3)
 icon = ExtResource("5_65cau")
+
+[node name="ColorRect" type="ColorRect" parent="." unique_id=572700014]
+offset_right = 9.0
+offset_bottom = 6.0

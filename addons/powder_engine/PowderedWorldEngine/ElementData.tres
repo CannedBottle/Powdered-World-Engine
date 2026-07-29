@@ -27,6 +27,17 @@ FieldToIndex = Dictionary[String, int]({
 "none": 0
 })
 
+[sub_resource type="Resource" id="Resource_ot7ed"]
+script = ExtResource("1_b1pp6")
+StringName = "ELEMENT0"
+MovementType = 4
+Flags = Array[int]([])
+BaseColor = Color(1, 0, 0, 1)
+NoiseStrength = 0.1
+FieldToIndex = Dictionary[String, int]({
+"none": 0
+})
+
 [sub_resource type="Resource" id="Resource_u0hdg"]
 script = ExtResource("1_b1pp6")
 Id = 1
@@ -83,6 +94,7 @@ script = ExtResource("1_dvpe1")
 AllElementAttributes = Dictionary[StringName, ExtResource("1_b1pp6")]({
 &"ACID": SubResource("Resource_bucba"),
 &"AIR": SubResource("Resource_b1pp6"),
+&"ELEMENT0": SubResource("Resource_ot7ed"),
 &"SAND": SubResource("Resource_u0hdg"),
 &"STONE": SubResource("Resource_tw7t8"),
 &"WALL": SubResource("Resource_icetj"),

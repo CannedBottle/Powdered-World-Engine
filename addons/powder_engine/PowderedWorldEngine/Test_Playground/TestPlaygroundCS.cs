@@ -85,7 +85,7 @@ public partial class TestPlaygroundCS : Node2D
 		// spawn elements using keys
 		if(KeysPressed.Count > 0)
 		{
-			Sim.PlaceGroupElements(brushSize, Sim.GetLocal(MousePos), ElementKeys[KeysPressed[0]], ElementKeys[KeysPressed[0]] == AllElements.AIR);
+			Sim.PlaceGroupElements(brushSize, Sim.WorldToLocal(MousePos), ElementKeys[KeysPressed[0]], ElementKeys[KeysPressed[0]] == AllElements.AIR);
 		}
 
 		Fps.Text = "fps: " + Engine.GetFramesPerSecond().ToString();
