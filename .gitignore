@@ -20,4 +20,5 @@ mono_crash.*.json
 docs/_build
 
 # whatever sln is
+Powdered World Engine.sln
 .sln
