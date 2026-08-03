@@ -14,6 +14,7 @@ public partial class TestPlaygroundCS : Node2D
 	private Label Fps;
 	private Label UTime;
 	private Label DTime;
+	private Label MTime;
 	private CheckButton DebugSwitch;
 	private Button PauseButton;
 	private Button NextFrameButton;
@@ -21,6 +22,10 @@ public partial class TestPlaygroundCS : Node2D
 	private SpinBox Yedit;
 	private Button AddChunk;
 	private Button RemoveChunk;
+
+	private Sprite2D Player;
+
+	private static readonly float PLAYER_SPEED = 750.0f;
 
 	private bool SimPaused = false;
 
@@ -45,6 +50,7 @@ public partial class TestPlaygroundCS : Node2D
 		Fps = GetNode<Label>("ui/VBoxContainer/fps");
 		UTime = GetNode<Label>("ui/VBoxContainer/update time");
 		DTime = GetNode<Label>("ui/VBoxContainer/draw time");
+		MTime = GetNode<Label>("ui/VBoxContainer/misc time");
 		DebugSwitch = GetNode<CheckButton>("ui/VBoxContainer/debugswitch");
 		PauseButton = GetNode<Button>("ui/VBoxContainer/pause");
 		NextFrameButton = GetNode<Button>("ui/VBoxContainer/forward");
@@ -52,6 +58,8 @@ public partial class TestPlaygroundCS : Node2D
 		Yedit = GetNode<SpinBox>("ui/VBoxContainer/CoordEdit/Yedit");
 		AddChunk = GetNode<Button>("ui/VBoxContainer/ChunkEdit/AddChunk");
 		RemoveChunk = GetNode<Button>("ui/VBoxContainer/ChunkEdit/RemoveChunk");
+
+		Player = GetNode<Sprite2D>("player");
 
 		
 
@@ -86,7 +94,9 @@ public partial class TestPlaygroundCS : Node2D
 				KeysPressed.Remove(inputKey.Keycode);
 			}
 
+
 		}
+		
     }
 
 	
@@ -103,6 +113,7 @@ public partial class TestPlaygroundCS : Node2D
 		Fps.Text = "fps: " + Engine.GetFramesPerSecond().ToString();
 		UTime.Text = "u: " + Sim.UpdateTime.ToString();
 		DTime.Text = "d: " + Sim.DrawTime.ToString();
+		MTime.Text = "misc: " + Sim.MiscTime.ToString();
 
 		if (Input.IsActionPressed("Exit"))
 		{
@@ -114,7 +125,19 @@ public partial class TestPlaygroundCS : Node2D
 			Sim.UpdateSimulation();
 		}
 
+
 	}
+
+    public override void _PhysicsProcess(double delta)
+    {
+        base._PhysicsProcess(delta);
+
+		// handle player movement
+		Vector2 velo = Input.GetVector("ui_left", "ui_right", "ui_up", "ui_down");
+		Player.Position += new Vector2(velo.X * PLAYER_SPEED * (float)delta,
+		velo.Y * PLAYER_SPEED * (float)delta);
+    }
+
 
 	private void OnDebugSwitched()
 	{

@@ -1,6 +1,7 @@
 using Godot;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using static Elements;
 
 
@@ -111,10 +112,16 @@ public partial class PowderSimulation : Node2D
 	[Export(PropertyHint.GroupEnable)]
 	public bool FollowEnabled = false;
 	[Export] public Node2D FollowNode;
-	[Export] public Rect2 FollowAreaConstraint;
+	[Export] public Rect2 FollowAreaConstraint = new Rect2(Vector2.Zero, new Vector2(20, 20));
+	[Export] public bool FollowCenterConstraintsOnFollowedNode = true;
 
 
-	//public Dictionary<Vector2I, SandInfoCS.Chunk> Chunks = new Dictionary<Vector2I, SandInfoCS.Chunk>();
+	// STATICS ----------------------------
+
+	private static Vector2I[] CardinalNeighborOffsets = [Vector2I.Up, Vector2I.Right, Vector2I.Down, Vector2I.Left];
+
+	// ------------------------------------
+
 	public Dictionary<Vector2I, SandInfoCS.Chunk> Chunks = new Dictionary<Vector2I, SandInfoCS.Chunk>{};
 
 	public Vector2I SimulationSize;
@@ -129,6 +136,9 @@ public partial class PowderSimulation : Node2D
 	public float UpdateTime = 0.0f;
 	public float DrawTime = 0.0f;
 	
+	// moved around various functions for testing.
+	public float MiscTime = 0.0f;
+
 	// update 60 times/sec
 	private float SimDt = 1.0f / 60.0f;
 	// time passed since startup
@@ -204,17 +214,143 @@ public partial class PowderSimulation : Node2D
 	}
 
 
+	// ******************* Automagic chunk loading section with magic did i mention that already pretty magical am i right or am i right with the whole magic thing its pretty cool right i swear it is please i need this pleaseeeeeeeee
+
+
+	private bool PointInsideConstraints(Vector2 LocalPoint)
+	{
+		return FollowAreaConstraint.HasPoint(LocalPoint);
+	}
+
+	/// <summary>
+	/// sets the follow mode of the simulation.
+	/// </summary>
+	/// <param name="to"></param>
+	public void SetFollowMode(bool to)
+	{
+		FollowEnabled = to;
+	}
+
+	/// <summary>
+	/// Sets the node for the simulation to follow. Only effective if <c>FollowEnabled</c> is set to <c>true</c>.
+	/// </summary>
+	/// <param name="what"></param>
+	public void SetFollowNode(Node2D what)
+	{
+		FollowNode = what;
+	}
+
+	/// <summary>
+	/// Sets the constraints for the simulation. Only effective if <c>FollowEnabled</c> is set to <c>true</c>.
+	/// </summary>
+	/// <param name="to"></param>
+	public void SetConstraints(Rect2 to)
+	{
+		FollowAreaConstraint = to;
+
+		if (FollowCenterConstraintsOnFollowedNode)
+		{
+			FollowAreaConstraint.Position = -(FollowAreaConstraint.Size / 2.0f);
+		}
+	}
+
+	// alright actual magic part i swear ------- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+
+	/// <summary>
+	/// Deletes all chunks outside and adds chunks inside of the constraints defined in <c>FollowAreaConstraints</c> around <c>FollowNode.Position</c>.
+	/// </summary>
+	private void ConstrainChunks()
+	{
+		// shrink first to reduce number of checks needed in GrowChunks
+
+		Vector2I[] chunkPositions = new Vector2I[Chunks.Count];
+		Chunks.Keys.CopyTo(chunkPositions, 0);
+
+		foreach(Vector2I cPosition in chunkPositions)
+		{
+			ShrinkChunk(cPosition);
+
+			GrowChunk(cPosition);
+		}
+	}
+
+	/// <summary>
+	/// Checks all chunks grown outward by one chunk to see if they need to be added to the world.
+	/// </summary>
+	private void GrowChunk(Vector2I pos)
+	{
+		// loop over neighbors to check if they need to be added
+		foreach(Vector2I offset in CardinalNeighborOffsets)
+		{
+			
+			if(Chunks.Keys.Contains<Vector2I>(pos + offset))
+			{
+				continue;
+			}
+
+			// find the position to check in constraints, with offset and world transforms
+			Vector2 targetPos = ChunkLocalToWorld(pos + offset, false) - FollowNode.Position;
+			
+			if (PointInsideConstraints(targetPos))
+			{
+				// add chunk
+				AddChunk(pos + offset);
+			}
+			
+
+		}
+	}
+
+	/// <summary>
+	/// Checks specified chunk to find if it needs to be removed.
+	/// </summary>
+	private void ShrinkChunk(Vector2I pos)
+	{
+		// get the chunk position offset by the FollowNode's position, since the constraining Rect2 is centered at the origin
+		Vector2 testPosition = ChunkLocalToWorld(pos, false) - FollowNode.Position;
+		// only deletes chunks that aren't inside the constraints
+		if (PointInsideConstraints(testPosition))
+		{
+			return;
+		}
+
+		RemoveChunk(pos);
+		
+	
+	}
+
+
 	// **************** Helpers ----------------------------------------------
 
 
 	/// <summary></summary>
 	/// <param name="from_world"></param>
-	/// <returns>the given world position (Godot's regular <c>global_position</c> for nodes) translated into local simulation position.</returns>
+	/// <returns>the given cell world position (Godot's regular <c>global_position</c> for nodes) translated into local simulation position.</returns>
 	public Vector2I WorldToLocal(Vector2 from_world)
 	{
 		return (Vector2I)from_world / PixelScale - (Vector2I)(Position / PixelScale);
 	}
 
+	/// <summary></summary>
+	/// <param name="fromLocal"></param>
+	/// <param name="includeParentOffset"></param>
+	/// <returns>the given cell local simulation position translated into world position.</returns>
+	public Vector2 LocalToWorld(Vector2I fromLocal, bool includeParentOffset = true)
+	{
+		return fromLocal * PixelScale + (Position * (includeParentOffset ? 1 : 0));
+	}
+
+	/// <summary></summary>
+	/// <param name="fromLocal"></param>
+	/// <param name="includeParentOffset"></param>
+	/// <returns>the given chunk local simulation position translated into world position.</returns>
+	public Vector2 ChunkLocalToWorld(Vector2I fromLocal, bool includeParentOffset = true)
+	{
+		Vector2 centerOffset = new Vector2(IndividualChunkSize, IndividualChunkSize) / 2.0f * PixelScale;
+
+		return fromLocal * PixelScale * IndividualChunkSize + centerOffset + (Position * (includeParentOffset ? 1 : 0));
+	}
 
 	/// <summary></summary>
 	/// <returns>the converted local simulation coordinates to chunk coordinates.</returns>
@@ -289,6 +425,7 @@ public partial class PowderSimulation : Node2D
 
 			RemoveChunkRenderer(chunk.Renderer);
 			Chunks.Remove(at);
+			UpdateSimulationSize();
 
 			return true;
 		}
@@ -432,7 +569,7 @@ public partial class PowderSimulation : Node2D
 			}
 		}
 
-		if(DebugMode)
+		if(DebugMode || ShowSimBorder)
 		{
 			QueueRedraw();
 		}
@@ -574,6 +711,8 @@ public partial class PowderSimulation : Node2D
 	public override void _Ready()
 	{
 
+		SetConstraints(FollowAreaConstraint);
+
 		ChunkRendererParent = new Node2D();
 		ChunkRendererParent.Name = "ChunkRendererParent";
 		AddChild(ChunkRendererParent);
@@ -642,6 +781,13 @@ public partial class PowderSimulation : Node2D
 		{
 			UpdateTime = Time.GetTicksUsec() / 1000.0f;
 			// ----------------------------------------------------------------------------
+
+			// constrains chunks if FollowEnabled is true 
+			if (FollowEnabled)
+			{
+				ConstrainChunks();
+			}
+
 			UpdateChunks(TicksPassed);
 			CommitSwapQueue();
 			//-----------------------------------------------------------------------------

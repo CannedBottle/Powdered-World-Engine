@@ -2,6 +2,7 @@
 
 [ext_resource type="Script" uid="uid://c6kb7kabsigl2" path="res://addons/powder_engine/PowderedWorldEngine/Test_Playground/TestPlaygroundCS.cs" id="1_q510b"]
 [ext_resource type="Script" uid="uid://b5ufmvvm0i4bm" path="res://addons/powder_engine/PowderedWorldEngine/Scripts/CSharp/PowderSimulation.cs" id="2_sl452"]
+[ext_resource type="Texture2D" uid="uid://b0ol6juljiyfp" path="res://addons/powder_engine/PowderedWorldEngine/Assets/PowderedWorldIcon.png" id="3_6jmkn"]
 [ext_resource type="Script" uid="uid://d2qdk4il2fgb5" path="res://addons/powder_engine/PowderedWorldEngine/Test_Playground/cameraController.gd" id="3_q510b"]
 [ext_resource type="Script" uid="uid://bor3cnwg1stod" path="res://addons/powder_engine/PowderedWorldEngine/Scripts/CSharp/ChunkPosVisualizer.cs" id="3_rvngg"]
 [ext_resource type="Texture2D" uid="uid://1qu0gcqovs3r" path="res://addons/powder_engine/PowderedWorldEngine/Test_Playground/Pause.svg" id="4_r0ubx"]
@@ -39,23 +40,29 @@ alpha_curve = SubResource("CurveTexture_ew800")
 script = ExtResource("1_q510b")
 brushSize = 3
 
-[node name="PowderSimulation" type="Node2D" parent="." unique_id=215125392]
+[node name="PowderSimulation" type="Node2D" parent="." unique_id=215125392 node_paths=PackedStringArray("FollowNode")]
 script = ExtResource("2_sl452")
 DebugMode = true
 ShowSimBorder = true
 SimBorderWidth = 10
 SimCentered = true
-PixelScale = 6
+PixelScale = 3
 SimulationSpeed = 1.25
 IndividualChunkSize = 64
 ChunkGridSize = Vector2i(4, 3)
 ChunkInsomnia = 3
+FollowEnabled = true
+FollowNode = NodePath("../player")
+FollowAreaConstraint = Rect2(0, 0, 750, 500)
 metadata/_custom_type_script = "uid://b5ufmvvm0i4bm"
+
+[node name="player" type="Sprite2D" parent="." unique_id=421318543]
+texture = ExtResource("3_6jmkn")
 
 [node name="ChunkPosVisualizer" type="Node2D" parent="." unique_id=1331985921 node_paths=PackedStringArray("Simulation")]
 script = ExtResource("3_rvngg")
 Simulation = NodePath("../PowderSimulation")
-LabelScale = 2.0
+LabelScale = 1.5
 metadata/_custom_type_script = "uid://bor3cnwg1stod"
 
 [node name="camera" type="Camera2D" parent="." unique_id=1204493082]
@@ -94,6 +101,10 @@ text = "u:"
 [node name="draw time" type="Label" parent="ui/VBoxContainer" unique_id=1184156084]
 layout_mode = 2
 text = "d:"
+
+[node name="misc time" type="Label" parent="ui/VBoxContainer" unique_id=327662920]
+layout_mode = 2
+text = "misc:"
 
 [node name="debugswitch" type="CheckButton" parent="ui/VBoxContainer" unique_id=21945265]
 layout_mode = 2
