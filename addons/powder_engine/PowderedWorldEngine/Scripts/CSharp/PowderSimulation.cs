@@ -1,8 +1,6 @@
 using Godot;
 using System;
 using System.Collections.Generic;
-using System.Data.Common;
-using System.Linq;
 using static Elements;
 
 
@@ -44,6 +42,7 @@ public partial class PowderSimulation : Node2D
 	/// Recommended for chunk sizes 32 and above.
 	/// </summary>
 	[Export] public bool UseDirtyRects = true;
+
 
 	private int _individualChunkSize;
 	/// <summary>
@@ -106,6 +105,15 @@ public partial class PowderSimulation : Node2D
 	[Export] public int ChunkInsomnia = 2;
 
 
+	// ------------------------ Follow
+	[ExportGroup("Follow", "Follow")]
+	
+	[Export(PropertyHint.GroupEnable)]
+	public bool FollowEnabled = false;
+	[Export] public Node2D FollowNode;
+	[Export] public Rect2 FollowAreaConstraint;
+
+
 	//public Dictionary<Vector2I, SandInfoCS.Chunk> Chunks = new Dictionary<Vector2I, SandInfoCS.Chunk>();
 	public Dictionary<Vector2I, SandInfoCS.Chunk> Chunks = new Dictionary<Vector2I, SandInfoCS.Chunk>{};
 
@@ -136,7 +144,39 @@ public partial class PowderSimulation : Node2D
 	/// </summary>
 	public Dictionary<SandInfoCS.Neighbors, int> NeighborIndexOffsets;
 
+	// ------------ Signals
+
+	[Signal]
+	public delegate void ChunkAddedEventHandler(Vector2I position);
+	[Signal]
+	public delegate void ChunkRemovedEventHandler(Vector2I position);
+
+
 	// ***************** Misc ---------------------------------------
+
+
+	private ChunkRendererCS CreateChunkRenderer(Vector2I at)
+	{
+		ChunkRendererCS Render = new ChunkRendererCS();
+		Render.ChunkSize = IndividualChunkSize;
+		Render.PixelScale = PixelScale;
+		Render.Position = at * IndividualChunkSize * PixelScale;
+		if (DebugMode)
+		{
+			Render.ShowDebugInfo = true;
+		}
+
+		ChunkRendererParent.AddChild(Render);
+		ActiveChunkRenderers.Add(Render);
+
+		return Render;
+	}
+
+	private void RemoveChunkRenderer(ChunkRendererCS renderer)
+	{
+		ActiveChunkRenderers.Remove(renderer);
+		renderer.QueueFree();	
+	}
 
 	public SandInfoCS.Chunk GetChunk(Vector2I pos)
 	{
@@ -151,14 +191,16 @@ public partial class PowderSimulation : Node2D
 	/// <returns>Whether the given <c>pos</c> corresponds to a cell in the simulation.</returns>
 	public bool SimContainsCell(Vector2I pos)
 	{
-		return !(pos.X < SimulationMinExtents.X || pos.Y < SimulationMinExtents.Y
-			|| pos.X > SimulationMaxExtents.X || pos.Y > SimulationMaxExtents.Y);
+		//return !(pos.X < SimulationMinExtents.X || pos.Y < SimulationMinExtents.Y
+		//	|| pos.X > SimulationMaxExtents.X || pos.Y > SimulationMaxExtents.Y);
+		return Chunks.TryGetValue(LocalToChunk(pos), out SandInfoCS.Chunk chunk);
 	}
 
 	public bool SimContainsChunk(Vector2I pos)
 	{
-		return !(pos.X < SimulationMinChunkExtents.X || pos.Y < SimulationMinChunkExtents.Y
-			|| pos.X > SimulationMaxChunkExtents.X || pos.Y > SimulationMaxChunkExtents.Y);
+		//return !(pos.X < SimulationMinChunkExtents.X || pos.Y < SimulationMinChunkExtents.Y
+		//	|| pos.X > SimulationMaxChunkExtents.X || pos.Y > SimulationMaxChunkExtents.Y);
+		return Chunks.TryGetValue(pos, out SandInfoCS.Chunk chunk);
 	}
 
 
@@ -219,12 +261,79 @@ public partial class PowderSimulation : Node2D
 	/// Adds an empty chunk at the specified coordinates.
 	/// </summary>
 	/// <param name="at"></param>
-	/// <returns>Whether or not the chunk already exists in the simulation, and by extenstion, returns <c>true</c> if the chunk could not be added, otherwise <c>false</c>.</returns>
+	/// <returns>Whether or not the chunk was successfully added.</returns>
 	public bool AddChunk(Vector2I at)
 	{
-		return !Chunks.TryAdd(at, new SandInfoCS.Chunk(IndividualChunkSize, at, ChunkInsomnia));
+		if(Chunks.TryAdd(at, new SandInfoCS.Chunk(IndividualChunkSize, at, ChunkInsomnia))){
+			EmitSignal(SignalName.ChunkAdded, at);
+
+			UpdateSimulationSize();
+			Chunks[at].Renderer = CreateChunkRenderer(at);
+
+			UpdateAdjacent(at);
+			return true;
+		}
+		else
+		{
+			return false;
+		}
+		
 	}
 
+	
+	public bool RemoveChunk(Vector2I at)
+	{
+		if (Chunks.TryGetValue(at, out SandInfoCS.Chunk chunk))
+		{
+			EmitSignal(SignalName.ChunkRemoved, at);
+
+			RemoveChunkRenderer(chunk.Renderer);
+			Chunks.Remove(at);
+
+			return true;
+		}
+		else
+		{
+			return false;
+		}
+
+	}
+
+	/// <summary>
+	/// Wakes and resets the dirty rect from the chunks adjacent to the one at <c>from</c>.
+	/// </summary>
+	/// <param name="from"></param>
+	private void UpdateAdjacent(Vector2I from)
+	{
+		// + (0, -1)
+		if(Chunks.TryGetValue(from + new Vector2I(0, -1), out SandInfoCS.Chunk uChunk))
+		{
+			uChunk.ResetDirtyRect();
+			uChunk.Wake();
+		}
+
+		// + (0, 1)
+		if(Chunks.TryGetValue(from + new Vector2I(0, 1), out SandInfoCS.Chunk dChunk))
+		{
+			dChunk.ResetDirtyRect();
+			dChunk.Wake();
+		}
+
+		// + (-1, 0)
+		if(Chunks.TryGetValue(from + new Vector2I(-1, 0), out SandInfoCS.Chunk lChunk))
+		{
+			lChunk.ResetDirtyRect();
+			lChunk.Wake();
+		}
+
+		// + (1, 0)
+		if(Chunks.TryGetValue(from + new Vector2I(1, 0), out SandInfoCS.Chunk rChunk))
+		{
+			rChunk.ResetDirtyRect();
+			rChunk.Wake();
+		}
+		
+	}
 
 	// ***************** Updating + Initialization --------------------------
 
@@ -254,19 +363,7 @@ public partial class PowderSimulation : Node2D
 
 				AddChunk(LoopPos);
 
-				ChunkRendererCS Render = new ChunkRendererCS();
-				Render.ChunkSize = IndividualChunkSize;
-				Render.PixelScale = PixelScale;
-				Render.Position = LoopPos * IndividualChunkSize * PixelScale;
-				if (DebugMode)
-				{
-					Render.ShowDebugInfo = true;
-				}
-
-				ChunkRendererParent.AddChild(Render);
-				ActiveChunkRenderers.Add(Render);
-
-				Chunks[LoopPos].Renderer = Render;
+				Chunks[LoopPos].Renderer = CreateChunkRenderer(LoopPos);
 			}
 		}
 
@@ -299,7 +396,11 @@ public partial class PowderSimulation : Node2D
 				{
 					pos.X = x;
 					pos.Y = y;
-					Chunks[pos].UpdateCells(this, tick);
+					Chunks.TryGetValue(pos, out SandInfoCS.Chunk chunk);
+					if(chunk != null)
+					{
+						chunk.UpdateCells(this, tick);
+					}
 				}
 			}
 
@@ -314,7 +415,11 @@ public partial class PowderSimulation : Node2D
 				{
 					pos.X = x;
 					pos.Y = y;
-					Chunks[pos].UpdateCells(this, tick);
+					Chunks.TryGetValue(pos, out SandInfoCS.Chunk chunk);
+					if(chunk != null)
+					{
+						chunk.UpdateCells(this, tick);
+					}
 				}
 			}
 		}
@@ -470,6 +575,7 @@ public partial class PowderSimulation : Node2D
 	{
 
 		ChunkRendererParent = new Node2D();
+		ChunkRendererParent.Name = "ChunkRendererParent";
 		AddChild(ChunkRendererParent);
 
 		InitGrid();

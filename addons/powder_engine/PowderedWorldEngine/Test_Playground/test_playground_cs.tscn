@@ -3,8 +3,11 @@
 [ext_resource type="Script" uid="uid://c6kb7kabsigl2" path="res://addons/powder_engine/PowderedWorldEngine/Test_Playground/TestPlaygroundCS.cs" id="1_q510b"]
 [ext_resource type="Script" uid="uid://b5ufmvvm0i4bm" path="res://addons/powder_engine/PowderedWorldEngine/Scripts/CSharp/PowderSimulation.cs" id="2_sl452"]
 [ext_resource type="Script" uid="uid://d2qdk4il2fgb5" path="res://addons/powder_engine/PowderedWorldEngine/Test_Playground/cameraController.gd" id="3_q510b"]
+[ext_resource type="Script" uid="uid://bor3cnwg1stod" path="res://addons/powder_engine/PowderedWorldEngine/Scripts/CSharp/ChunkPosVisualizer.cs" id="3_rvngg"]
 [ext_resource type="Texture2D" uid="uid://1qu0gcqovs3r" path="res://addons/powder_engine/PowderedWorldEngine/Test_Playground/Pause.svg" id="4_r0ubx"]
 [ext_resource type="Texture2D" uid="uid://fkaei5up58co" path="res://addons/powder_engine/PowderedWorldEngine/Test_Playground/ArrowRight.svg" id="5_65cau"]
+[ext_resource type="Texture2D" uid="uid://0wfxwmclxoui" path="res://addons/powder_engine/PowderedWorldEngine/Assets/Add.svg" id="7_pme4i"]
+[ext_resource type="Texture2D" uid="uid://f74vflvc1qcr" path="res://addons/powder_engine/PowderedWorldEngine/Assets/Remove.svg" id="8_typh4"]
 
 [sub_resource type="Curve" id="Curve_q510b"]
 _data = [Vector2(0.011235952, 0), 0.0, 0.0, 0, 0, Vector2(0.23220974, 1), 0.0, 0.0, 0, 0, Vector2(0.8052435, 1), 0.0, 0.0, 0, 0, Vector2(1, 0), 0.0, 0.0, 0, 0]
@@ -45,9 +48,15 @@ SimCentered = true
 PixelScale = 6
 SimulationSpeed = 1.25
 IndividualChunkSize = 64
-ChunkGridSize = Vector2i(4, 2)
+ChunkGridSize = Vector2i(4, 3)
 ChunkInsomnia = 3
 metadata/_custom_type_script = "uid://b5ufmvvm0i4bm"
+
+[node name="ChunkPosVisualizer" type="Node2D" parent="." unique_id=1331985921 node_paths=PackedStringArray("Simulation")]
+script = ExtResource("3_rvngg")
+Simulation = NodePath("../PowderSimulation")
+LabelScale = 2.0
+metadata/_custom_type_script = "uid://bor3cnwg1stod"
 
 [node name="camera" type="Camera2D" parent="." unique_id=1204493082]
 anchor_mode = 0
@@ -69,48 +78,65 @@ process_material = SubResource("ParticleProcessMaterial_q510b")
 
 [node name="ui" type="CanvasLayer" parent="." unique_id=1609312808]
 
-[node name="fps" type="Label" parent="ui" unique_id=232957929]
+[node name="VBoxContainer" type="VBoxContainer" parent="ui" unique_id=1016697764]
 offset_right = 40.0
-offset_bottom = 23.0
+offset_bottom = 40.0
 scale = Vector2(2, 2)
+
+[node name="fps" type="Label" parent="ui/VBoxContainer" unique_id=232957929]
+layout_mode = 2
 text = "121"
 
-[node name="update time" type="Label" parent="ui" unique_id=2105030211]
-offset_top = 40.0
-offset_right = 40.0
-offset_bottom = 63.0
-scale = Vector2(2, 2)
+[node name="update time" type="Label" parent="ui/VBoxContainer" unique_id=2105030211]
+layout_mode = 2
 text = "u:"
 
-[node name="draw time" type="Label" parent="ui" unique_id=1184156084]
-offset_top = 90.0
-offset_right = 40.0
-offset_bottom = 113.0
-scale = Vector2(2, 2)
+[node name="draw time" type="Label" parent="ui/VBoxContainer" unique_id=1184156084]
+layout_mode = 2
 text = "d:"
 
-[node name="debugswitch" type="CheckButton" parent="ui" unique_id=21945265]
-offset_top = 146.0
-offset_right = 44.0
-offset_bottom = 170.0
-scale = Vector2(2, 2)
+[node name="debugswitch" type="CheckButton" parent="ui/VBoxContainer" unique_id=21945265]
+layout_mode = 2
+size_flags_horizontal = 0
 text = "Debug"
 
-[node name="pause" type="Button" parent="ui" unique_id=1651608771]
-offset_top = 240.0
-offset_right = 24.0
-offset_bottom = 264.0
-scale = Vector2(3, 3)
+[node name="pause" type="Button" parent="ui/VBoxContainer" unique_id=1651608771]
+layout_mode = 2
+size_flags_horizontal = 0
 toggle_mode = true
 icon = ExtResource("4_r0ubx")
 
-[node name="forward" type="Button" parent="ui" unique_id=1525633258]
-offset_top = 320.0
-offset_right = 24.0
-offset_bottom = 344.0
-scale = Vector2(3, 3)
+[node name="forward" type="Button" parent="ui/VBoxContainer" unique_id=1525633258]
+layout_mode = 2
+size_flags_horizontal = 0
 icon = ExtResource("5_65cau")
 
-[node name="ColorRect" type="ColorRect" parent="." unique_id=572700014]
-offset_right = 9.0
-offset_bottom = 6.0
+[node name="CoordEdit" type="HBoxContainer" parent="ui/VBoxContainer" unique_id=1987531941]
+layout_mode = 2
+
+[node name="Xedit" type="SpinBox" parent="ui/VBoxContainer/CoordEdit" unique_id=491239784]
+layout_mode = 2
+size_flags_horizontal = 0
+focus_mode = 1
+rounded = true
+allow_greater = true
+allow_lesser = true
+
+[node name="Yedit" type="SpinBox" parent="ui/VBoxContainer/CoordEdit" unique_id=569978378]
+layout_mode = 2
+size_flags_horizontal = 0
+focus_mode = 1
+rounded = true
+allow_greater = true
+allow_lesser = true
+
+[node name="ChunkEdit" type="HBoxContainer" parent="ui/VBoxContainer" unique_id=1279800701]
+layout_mode = 2
+
+[node name="AddChunk" type="Button" parent="ui/VBoxContainer/ChunkEdit" unique_id=1300499991]
+layout_mode = 2
+icon = ExtResource("7_pme4i")
+
+[node name="RemoveChunk" type="Button" parent="ui/VBoxContainer/ChunkEdit" unique_id=640149746]
+layout_mode = 2
+icon = ExtResource("8_typh4")

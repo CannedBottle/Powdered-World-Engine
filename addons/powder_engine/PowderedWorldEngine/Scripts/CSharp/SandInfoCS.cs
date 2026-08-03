@@ -785,6 +785,14 @@ public partial class SandInfoCS : Node
 		}
 
 
+		// ************* Helpers ------------------
+
+		public void ResetDirtyRect()
+		{
+			DirtyRectMax = MinExtents;
+			DirtyRectMin = MaxExtents;
+		}
+
 		/// <summary>
 		/// </summary>
 		/// <param name="pos"></param>

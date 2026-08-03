@@ -17,6 +17,10 @@ public partial class TestPlaygroundCS : Node2D
 	private CheckButton DebugSwitch;
 	private Button PauseButton;
 	private Button NextFrameButton;
+	private SpinBox Xedit;
+	private SpinBox Yedit;
+	private Button AddChunk;
+	private Button RemoveChunk;
 
 	private bool SimPaused = false;
 
@@ -38,12 +42,18 @@ public partial class TestPlaygroundCS : Node2D
 	public override void _Ready()
 	{
 		Sim = GetNode<PowderSimulation>("PowderSimulation");
-		Fps = GetNode<Label>("ui/fps");
-		UTime = GetNode<Label>("ui/update time");
-		DTime = GetNode<Label>("ui/draw time");
-		DebugSwitch = GetNode<CheckButton>("ui/debugswitch");
-		PauseButton = GetNode<Button>("ui/pause");
-		NextFrameButton = GetNode<Button>("ui/forward");
+		Fps = GetNode<Label>("ui/VBoxContainer/fps");
+		UTime = GetNode<Label>("ui/VBoxContainer/update time");
+		DTime = GetNode<Label>("ui/VBoxContainer/draw time");
+		DebugSwitch = GetNode<CheckButton>("ui/VBoxContainer/debugswitch");
+		PauseButton = GetNode<Button>("ui/VBoxContainer/pause");
+		NextFrameButton = GetNode<Button>("ui/VBoxContainer/forward");
+		Xedit = GetNode<SpinBox>("ui/VBoxContainer/CoordEdit/Xedit");
+		Yedit = GetNode<SpinBox>("ui/VBoxContainer/CoordEdit/Yedit");
+		AddChunk = GetNode<Button>("ui/VBoxContainer/ChunkEdit/AddChunk");
+		RemoveChunk = GetNode<Button>("ui/VBoxContainer/ChunkEdit/RemoveChunk");
+
+		
 
 		DisplayServer.WindowSetSize(DisplayServer.ScreenGetSize());
 
@@ -52,6 +62,8 @@ public partial class TestPlaygroundCS : Node2D
 		DebugSwitch.Pressed += OnDebugSwitched;
 		PauseButton.Toggled += Pause;
 		NextFrameButton.Pressed += ProgressFrame;
+		AddChunk.Pressed += OnChunkAddPressed;
+		RemoveChunk.Pressed += OnChunkRemovePressed;
 	}
 
 
@@ -122,5 +134,27 @@ public partial class TestPlaygroundCS : Node2D
 			Sim.UpdateSimulation(false);
 		}
 	}
+
+
+	// Chunk Addition + Removal UI ------------------------------
+
+
+	private void OnChunkAddPressed()
+	{
+		Sim.AddChunk(GetTypedCoords());
+	}
+
+
+	private void OnChunkRemovePressed()
+	{
+		Sim.RemoveChunk(GetTypedCoords());
+	}
+
+
+	private Vector2I GetTypedCoords()
+	{
+		return new Vector2I((int)Xedit.Value, (int)Yedit.Value);
+	}
+
 
 }
