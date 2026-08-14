@@ -8,31 +8,7 @@ using static Elements;
 [GlobalClass, Icon("uid://b0ol6juljiyfp")]
 public partial class PowderSimulation : Node2D
 {
-	[ExportGroup("Debug Visuals")]
-	/// <summary>
-	/// shows a visual of chunk borders and dirty rects.
-	/// </summary>
-	[Export] public bool DebugMode = false;
-	/// <summary>
-	/// The color of the chunk borders if DebugMode is turned on. 
-	/// </summary>
-	[Export] public Color DebugChunkBorderColor = new Color(1f, 0f, 0f, 0.9f);
-	/// <summary>
-	/// draws a border around the simulation.
-	/// </summary>
-	[Export] public bool ShowSimBorder = false;
-	[Export] public int SimBorderWidth = 5;
-
-	[ExportGroup("")]
-
-	/// <summary>
-	/// Whether the simulation appears at the center of this Node's <c>position</c> or offset like Control Nodes are.
-	/// </summary>
-	[Export] public bool SimCentered = false;
-	/// <summary>
-	/// How big the pixels appear on the screen.
-	/// </summary>
-	[Export] public int PixelScale = 5;
+	
 	/// <summary>
 	/// How fast the simulation runs, with 1.0 corresponding with 60 updates/second.
 	/// </summary>
@@ -84,6 +60,7 @@ public partial class PowderSimulation : Node2D
 
 	// ---------------------------------
 
+
 	private Vector2I _chunkGridSize;
 	/// <summary>
 	/// how many chunks to be used in the entire simulation.
@@ -95,7 +72,7 @@ public partial class PowderSimulation : Node2D
 		{
 			_chunkGridSize = value;
 			UpdateSimulationSize();
-
+			
 		}
 	}
 
@@ -105,6 +82,28 @@ public partial class PowderSimulation : Node2D
 	/// </summary>
 	[Export] public int ChunkInsomnia = 2;
 
+
+	[ExportGroup("Appearance")]
+	/// <summary>
+	/// Whether the simulation appears at the center of this Node's <c>position</c> or offset like Control Nodes are.
+	/// </summary>
+	[Export] public bool Centered = false;
+	/// <summary>
+	/// How big the pixels appear on the screen.
+	/// </summary>
+	[Export] public int PixelScale = 5;
+	
+	[ExportGroup("File", "file_")]
+	
+	/// <summary>
+	/// The default designated path for where to save world data onto the disk.
+	/// </summary>
+	[Export(PropertyHint.GlobalDir)] 
+	public string file_DefaultPath = "user://pwengine/worlds/";
+	/// <summary>
+	/// the default name to assign when creating new world data files.
+	/// </summary>
+	[Export] public string file_DefaultName = "world";
 
 	// ------------------------ Follow
 	[ExportGroup("Follow", "Follow")]
@@ -116,11 +115,33 @@ public partial class PowderSimulation : Node2D
 	[Export] public bool FollowCenterConstraintsOnFollowedNode = true;
 
 
+
+	[ExportGroup("Debug")]
+	/// <summary>
+	/// shows a visual of chunk borders and dirty rects.
+	/// </summary>
+	[Export] public bool DebugMode = false;
+	/// <summary>
+	/// The color of the chunk borders if DebugMode is turned on. 
+	/// </summary>
+	[Export] public Color DebugChunkBorderColor = new Color(1f, 0f, 0f, 0.9f);
+	/// <summary>
+	/// draws a border around the simulation.
+	/// </summary>
+	[Export] public bool ShowSimBorder = false;
+	[Export] public int SimBorderWidth = 5;
+
+	[ExportGroup("")]
+
+
 	// STATICS ----------------------------
 
 	private static Vector2I[] CardinalNeighborOffsets = [Vector2I.Up, Vector2I.Right, Vector2I.Down, Vector2I.Left];
 
-	// ------------------------------------
+	public static readonly string DefaultFileExtension = "pwdr";
+
+
+	// ------------------------------------------------------------
 
 	public Dictionary<Vector2I, SandInfoCS.Chunk> Chunks = new Dictionary<Vector2I, SandInfoCS.Chunk>{};
 
@@ -212,6 +233,7 @@ public partial class PowderSimulation : Node2D
 		//	|| pos.X > SimulationMaxChunkExtents.X || pos.Y > SimulationMaxChunkExtents.Y);
 		return Chunks.TryGetValue(pos, out SandInfoCS.Chunk chunk);
 	}
+
 
 
 	// ******************* Automagic chunk loading section with magic did i mention that already pretty magical am i right or am i right with the whole magic thing its pretty cool right i swear it is please i need this pleaseeeeeeeee
@@ -483,7 +505,7 @@ public partial class PowderSimulation : Node2D
 		// if centered, find offset
 		Vector2I offset = new Vector2I(0, 0);
 
-		if (SimCentered)
+		if (Centered)
 		{
 			offset.X = (int)Math.Floor((decimal)ChunkGridSize.X / 2);
 			offset.Y = (int)Math.Floor((decimal)ChunkGridSize.Y / 2);
@@ -718,6 +740,9 @@ public partial class PowderSimulation : Node2D
 		AddChild(ChunkRendererParent);
 
 		InitGrid();
+
+		WorldStreamer worldSave = WorldStreamer.Open("user://pwengine/worlds/WorldTest.pwdr", this);
+		worldSave.SaveWorld(true);
 		
 	}
 
@@ -783,7 +808,7 @@ public partial class PowderSimulation : Node2D
 			// ----------------------------------------------------------------------------
 
 			// constrains chunks if FollowEnabled is true 
-			if (FollowEnabled)
+			if (FollowEnabled && TicksPassed == 1)
 			{
 				ConstrainChunks();
 			}

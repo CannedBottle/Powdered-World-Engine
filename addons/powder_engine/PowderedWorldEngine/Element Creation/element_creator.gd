@@ -133,7 +133,7 @@ func update_button_states():
 
 func set_temp_to_actual():
 	if E_storage_ref.AllElementAttributes.size() > 0:
-		temp_element_names = E_storage_ref.AllElementAttributes.keys()
+		temp_element_names = E_storage_ref.ElementOrder
 		
 		temp_attributes = E_storage_ref.AllElementAttributes.duplicate(true)
 	
@@ -141,6 +141,8 @@ func set_temp_to_actual():
 
 func set_actual_to_temp():
 	E_storage_ref.AllElementAttributes = temp_attributes.duplicate_deep()
+	
+	E_storage_ref.ElementOrder = temp_element_names
 
 func _reset_defaults():
 	

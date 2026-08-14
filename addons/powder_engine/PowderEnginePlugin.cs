@@ -27,6 +27,8 @@ public partial class PowderEnginePlugin : EditorPlugin
     {
         base._EnterTree();
         AddAutoloadSingleton("SandInfoCS", "res://addons/powder_engine/PowderedWorldEngine/Scripts/CSharp/SandInfoCS.cs");
+        SandInfoCS.PluginVersion = GetPluginVersion();
+
 
         var _dock_scene = GD.Load<PackedScene>("res://addons/powder_engine/PowderedWorldEngine/Element Creation/ElementDockScene.tscn").Instantiate<Control>();
 
@@ -40,6 +42,7 @@ public partial class PowderEnginePlugin : EditorPlugin
         _elementDock.AvailableLayouts = EditorDock.DockLayout.Floating | EditorDock.DockLayout.Vertical;
 
         AddDock(_elementDock);
+
 
     }
 

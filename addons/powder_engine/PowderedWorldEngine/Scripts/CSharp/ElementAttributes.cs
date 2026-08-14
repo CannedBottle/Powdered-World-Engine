@@ -36,22 +36,22 @@ public partial class ElementAttributes : Resource
 	}
 
 
-	public static Dictionary<MoveTypes, Dictionary<string, int>> MoveTypeDefaultFields = new Dictionary<MoveTypes, Dictionary<string, int>>
+	public static Dictionary<MoveTypes, Dictionary<string, byte>> MoveTypeDefaultFields = new Dictionary<MoveTypes, Dictionary<string, byte>>
 	{
-		{MoveTypes.NONE, new Dictionary<string, int>{{"none", 0}}},
+		{MoveTypes.NONE, new Dictionary<string, byte>{{"none", 0}}},
 		
-		{MoveTypes.SAND, new Dictionary<string, int>{{"R#random", 1}}},
+		{MoveTypes.SAND, new Dictionary<string, byte>{{"R#random", 1}}},
 		
-		{MoveTypes.STONE, new Dictionary<string, int>{{"none", 0}}},
+		{MoveTypes.STONE, new Dictionary<string, byte>{{"none", 0}}},
 		
-		{MoveTypes.LIQUID, new Dictionary<string, int> 
+		{MoveTypes.LIQUID, new Dictionary<string, byte> 
 		{
 			{"R#random", 1},
 			{"R#direction", 0},
 			{"bumps", 0},
 		}},
 		
-		{MoveTypes.GAS, new Dictionary<string, int>{{"R#random", 7}}},
+		{MoveTypes.GAS, new Dictionary<string, byte>{{"R#random", 7}}},
 	};
 
 
@@ -70,9 +70,9 @@ public partial class ElementAttributes : Resource
 	/// 
 	/// </summary>
 	/// <returns>the default array of the element-specific fields needed for its movement.</returns>
-	public int[] GetDefaultFieldArray()
+	public byte[] GetDefaultFieldArray()
 	{
-		int[] arr = new int[FieldToIndex.Count];
+		byte[] arr = new byte[FieldToIndex.Count];
 
 		arr = MoveTypeDefaultFields[MovementType].Values.ToArray();
 
@@ -81,7 +81,7 @@ public partial class ElementAttributes : Resource
 		{
 			if (field.StartsWith("R#"))
 			{
-				arr[FieldToIndex[field]] = GD.RandRange(0, arr[FieldToIndex[field]]);
+				arr[FieldToIndex[field]] = (byte)GD.RandRange(0, arr[FieldToIndex[field]]);
 			}
 
 			i++;
@@ -128,7 +128,7 @@ public partial class ElementAttributes : Resource
 
 	// -------- Custom Fields ----------------------
 
-	[Export] public Godot.Collections.Dictionary<string, int> FieldToIndex = new Godot.Collections.Dictionary<string, int>{};
+	[Export] public Godot.Collections.Dictionary<string, byte> FieldToIndex = new Godot.Collections.Dictionary<string, byte>{};
 
 	public struct FieldProperties
 	{
@@ -173,12 +173,12 @@ public partial class ElementAttributes : Resource
 	{
 		if(MovementType != MoveTypes.CUSTOM)
 		{ 
-			FieldToIndex = new Godot.Collections.Dictionary<string, int>(MoveTypeDefaultFields[MovementType]);
+			FieldToIndex = new Godot.Collections.Dictionary<string, byte>(MoveTypeDefaultFields[MovementType]);
 			
 			int i = 0;
 			foreach(string field in FieldToIndex.Keys)
 			{
-				FieldToIndex[field] = i;
+				FieldToIndex[field] = (byte)i;
 
 				i++;
 			}

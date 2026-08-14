@@ -20,6 +20,11 @@ public partial class Elements : Resource
         return ReturnList.Duplicate();
     }
 
+    public static AllElements GetFromName(StringName name)
+    {
+        return (AllElements)Array.IndexOf(Enum.GetNames<AllElements>(), name);
+    }
+
     public enum AllElements
     {
        AIR,
@@ -28,7 +33,6 @@ public partial class Elements : Resource
        ACID,
        STONE,
        WALL,
-       ELEMENT0,
 
     }
 }

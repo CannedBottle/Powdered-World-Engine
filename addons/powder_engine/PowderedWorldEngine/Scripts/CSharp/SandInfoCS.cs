@@ -38,6 +38,8 @@ public partial class SandInfoCS : Node
 
 	// ----------------------------------------------------------------------------------------------------------------------------------- //
 
+	public static string PluginVersion = "1.0";
+
 
 	// a way of determining what special attributes an element has.
 	public enum ElementTypes
@@ -150,7 +152,7 @@ public partial class SandInfoCS : Node
 	public static void SwapCells(Cell copyCell, Cell pasteCell)
 	{
 		AllElements PasteCellElement = pasteCell.Element;
-		int[] PasteCellFields = pasteCell.Fields;
+		byte[] PasteCellFields = pasteCell.Fields;
 
 		pasteCell.Element = copyCell.Element;
 		pasteCell.Fields = copyCell.Fields;
@@ -234,14 +236,14 @@ public partial class SandInfoCS : Node
 
 					if(success == false)
 					{
-						int[] tempAtts = cell.Fields;
+						byte[] tempAtts = cell.Fields;
 
 						if(cell.Fields[cell.GetFieldIndex("R#direction")] == 1)
 						{
 							success = cell.TryMove(Neighbors.RIGHTMIDDLE, simRef);
-							tempAtts[cell.GetFieldIndex("bumps")] += success ? 0 : 1;
-							tempAtts[cell.GetFieldIndex("R#direction")] = tempAtts[cell.GetFieldIndex("bumps")] >= 3 ? 0 : 1;
-							tempAtts[cell.GetFieldIndex("bumps")] = tempAtts[cell.GetFieldIndex("R#direction")] == 1 ? tempAtts[cell.GetFieldIndex("bumps")] : 0;
+							tempAtts[cell.GetFieldIndex("bumps")] += success ? (byte)0 : (byte)1;
+							tempAtts[cell.GetFieldIndex("R#direction")] = tempAtts[cell.GetFieldIndex("bumps")] >= 3 ? (byte)0 : (byte)1;
+							tempAtts[cell.GetFieldIndex("bumps")] = tempAtts[cell.GetFieldIndex("R#direction")] == 1 ? tempAtts[cell.GetFieldIndex("bumps")] : (byte)0;
 
 							if(success == false)
 							{
@@ -251,9 +253,9 @@ public partial class SandInfoCS : Node
 						else
 						{
 							success = cell.TryMove(Neighbors.LEFTMIDDLE, simRef);
-							tempAtts[cell.GetFieldIndex("bumps")] += success ? 0 : 1;
-							tempAtts[cell.GetFieldIndex("R#direction")] = tempAtts[cell.GetFieldIndex("bumps")] >= 3 ? 1 : 0;
-							tempAtts[cell.GetFieldIndex("bumps")] = tempAtts[cell.GetFieldIndex("R#direction")] == 0 ? tempAtts[cell.GetFieldIndex("bumps")] : 0;
+							tempAtts[cell.GetFieldIndex("bumps")] += success ? (byte)0 : (byte)1;
+							tempAtts[cell.GetFieldIndex("R#direction")] = tempAtts[cell.GetFieldIndex("bumps")] >= 3 ? (byte)1 : (byte)0;
+							tempAtts[cell.GetFieldIndex("bumps")] = tempAtts[cell.GetFieldIndex("R#direction")] == 0 ? tempAtts[cell.GetFieldIndex("bumps")] : (byte)0;
 
 							if(success == false)
 							{
@@ -319,7 +321,7 @@ public partial class SandInfoCS : Node
 
 		public ElementAttributes Attributes;
 
-		public int[] Fields = new int[8];
+		public byte[] Fields = new byte[8];
 
 		public AllElements[] NeighborElements = new AllElements[8];
 
@@ -530,8 +532,6 @@ public partial class SandInfoCS : Node
 	{
 
 		public int ChunkSize;
-		//reference to simulation node
-		public PowderSimulation SimRef;
 
 		//how many updates of no change before sleeping
 		public int Insomnia = 1;

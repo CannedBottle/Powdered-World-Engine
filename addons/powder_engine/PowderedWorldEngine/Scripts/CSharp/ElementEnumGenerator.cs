@@ -33,6 +33,11 @@ public partial class Elements : Resource
         return ReturnList.Duplicate();
     }
 
+    public static AllElements GetFromName(StringName name)
+    {
+        return (AllElements)Array.IndexOf(Enum.GetNames<AllElements>(), name);
+    }
+
     public enum AllElements
     {
 
@@ -82,7 +87,7 @@ public static string codeEnd =
     {
         string enumContents = "";
 
-        foreach(string name in SandInfoCS.ElementResource.AllElementAttributes.Keys)
+        foreach(string name in SandInfoCS.ElementResource.ElementOrder)
         {
             enumContents += "       " + name + """
             ,

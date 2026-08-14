@@ -42,18 +42,16 @@ brushSize = 3
 
 [node name="PowderSimulation" type="Node2D" parent="." unique_id=215125392 node_paths=PackedStringArray("FollowNode")]
 script = ExtResource("2_sl452")
-DebugMode = true
-ShowSimBorder = true
-SimBorderWidth = 10
-SimCentered = true
-PixelScale = 3
-SimulationSpeed = 1.25
 IndividualChunkSize = 64
 ChunkGridSize = Vector2i(4, 3)
 ChunkInsomnia = 3
+PixelScale = 6
 FollowEnabled = true
 FollowNode = NodePath("../player")
-FollowAreaConstraint = Rect2(0, 0, 750, 500)
+FollowAreaConstraint = Rect2(0, 0, 1500, 1100)
+DebugMode = true
+ShowSimBorder = true
+SimBorderWidth = 10
 metadata/_custom_type_script = "uid://b5ufmvvm0i4bm"
 
 [node name="player" type="Sprite2D" parent="." unique_id=421318543]

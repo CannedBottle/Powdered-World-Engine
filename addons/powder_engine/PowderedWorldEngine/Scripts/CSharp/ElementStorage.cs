@@ -32,6 +32,8 @@ public partial class ElementStorage : Resource
 
 	[Export] public Godot.Collections.Dictionary<StringName, ElementAttributes> AllElementAttributes = new Godot.Collections.Dictionary<StringName, ElementAttributes>{};
 
+	// a list of all of the names of the elements. Required because Dictionaried get sorted alphabetically by Godot on engine reload.
+	[Export] public Godot.Collections.Array<StringName> ElementOrder = new Godot.Collections.Array<StringName>{};
 
 	public static Godot.Collections.Dictionary<StringName, ElementAttributes> GetDefaultElementDict()
 	{
@@ -42,14 +44,18 @@ public partial class ElementStorage : Resource
 	{
 		Godot.Collections.Dictionary<StringName, ElementAttributes> ReturnDict = new Godot.Collections.Dictionary<StringName, ElementAttributes>{};
 
+		Godot.Collections.Array<StringName> OrderArray = new Godot.Collections.Array<StringName>{};
+
 		foreach(StringName name in DefaultAttributes.Keys)
 		{
 			ReturnDict.Add(name, DefaultAttributes[name].Clone());
+			OrderArray.Add(name);
 
 			ElementsSaved += ReturnDict[name].OnSave;
 		}
 
 		AllElementAttributes = ReturnDict.Duplicate(true);
+		ElementOrder = OrderArray.Duplicate(true);
 	}
 
 }
