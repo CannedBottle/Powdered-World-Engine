@@ -1,9 +1,7 @@
 using Godot;
-using System;
 using static SandInfo;
 using static Elements;
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
 using System.Linq;
 
 [Tool]

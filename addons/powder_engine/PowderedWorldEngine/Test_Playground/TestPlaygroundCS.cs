@@ -22,6 +22,9 @@ public partial class TestPlaygroundCS : Node2D
 	private SpinBox Yedit;
 	private Button AddChunk;
 	private Button RemoveChunk;
+	private Button SaveButton;
+	private Button LoadButton;
+	private Button FlushButton;
 
 	private Sprite2D Player;
 
@@ -61,11 +64,15 @@ public partial class TestPlaygroundCS : Node2D
 		Yedit = GetNode<SpinBox>("ui/VBoxContainer/CoordEdit/Yedit");
 		AddChunk = GetNode<Button>("ui/VBoxContainer/ChunkEdit/AddChunk");
 		RemoveChunk = GetNode<Button>("ui/VBoxContainer/ChunkEdit/RemoveChunk");
+		SaveButton = GetNode<Button>("ui/VBoxContainer/SaveWorld");
+		LoadButton = GetNode<Button>("ui/VBoxContainer/LoadWorld");
+		FlushButton = GetNode<Button>("ui/VBoxContainer/Flush");
+
 
 		Player = GetNode<Sprite2D>("player");
 
 		
-		WorldSave = WorldStreamer.Open("user://pwengine/worlds/", Sim);
+		WorldSave = WorldStreamer.Open("user://pwengine/worlds/WorldTest.pwdr", Sim);
 
 		DisplayServer.WindowSetSize(DisplayServer.ScreenGetSize());
 
@@ -76,6 +83,9 @@ public partial class TestPlaygroundCS : Node2D
 		NextFrameButton.Pressed += ProgressFrame;
 		AddChunk.Pressed += OnChunkAddPressed;
 		RemoveChunk.Pressed += OnChunkRemovePressed;
+		SaveButton.Pressed += SaveWorld;
+		LoadButton.Pressed += LoadWorld;
+		FlushButton.Pressed += FlushFile;
 	}
 
 
@@ -165,6 +175,16 @@ public partial class TestPlaygroundCS : Node2D
 	private void SaveWorld()
 	{
 		WorldSave.SaveWorld(true);
+	}
+
+	private void LoadWorld()
+	{
+		WorldSave.LoadWorld();
+	}
+
+	private void FlushFile()
+	{
+		WorldSave.FlushDeadChunks();
 	}
 
 	// Chunk Addition + Removal UI ------------------------------

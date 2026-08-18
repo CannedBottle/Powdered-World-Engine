@@ -22,7 +22,12 @@ public partial class Elements : Resource
 
     public static AllElements GetFromName(StringName name)
     {
-        return (AllElements)Array.IndexOf(Enum.GetNames<AllElements>(), name);
+        if(!Enum.TryParse<AllElements>(name, out AllElements result))
+        {
+            GD.Print("failed to get " + name);
+        }
+
+        return result;
     }
 
     public enum AllElements

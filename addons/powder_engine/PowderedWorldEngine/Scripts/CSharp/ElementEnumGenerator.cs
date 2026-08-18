@@ -35,7 +35,7 @@ public partial class Elements : Resource
 
     public static AllElements GetFromName(StringName name)
     {
-        return (AllElements)Array.IndexOf(Enum.GetNames<AllElements>(), name);
+        return Enum.Parse<AllElements>(name);
     }
 
     public enum AllElements

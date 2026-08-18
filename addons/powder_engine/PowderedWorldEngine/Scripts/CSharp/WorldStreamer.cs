@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
 using Godot;
 using static Elements;
 
@@ -124,8 +125,11 @@ public partial class WorldStreamer : RefCounted
 		Sim.ChunkChanged += FilterChangedChunk;
 
         WorldFile = FileAccess.Open(Path, FileAccess.ModeFlags.ReadWrite);
+
+		ElementLookup = GetElementLookup();
     }
 
+	public Dictionary<int, AllElements> ElementLookup;
 
 	private List<Vector2I> ChunksChangedSinceSave = new List<Vector2I>{};
 
@@ -249,7 +253,8 @@ public partial class WorldStreamer : RefCounted
 			WorldFile.GetPascalString();
 			// get file offset dict position
 			ulong dictOffset = WorldFile.Get32();
-			for(int i = 0; i < WorldFile.Get16(); i++)
+			ushort elementNum = WorldFile.Get16();
+			for(int i = 0; i < elementNum; i++)
 			{
 				WorldFile.GetPascalString();
 			}
@@ -291,7 +296,8 @@ public partial class WorldStreamer : RefCounted
 		WorldFile.GetPascalString();
 		// get file offset dict position
 		ulong dictOffset = WorldFile.Get32();
-		for (int i = 0; i < WorldFile.Get16(); i++)
+		ushort elementNum = WorldFile.Get16();
+		for (int i = 0; i < elementNum; i++)
 		{
 			WorldFile.GetPascalString();
 		}
@@ -320,10 +326,25 @@ public partial class WorldStreamer : RefCounted
 	/// <summary>
 	/// Replaces the current active chunks in the simulation with the corresponding saved chunks in the file. <b>Does not create chunks.</b>
 	/// </summary>
-	/// <returns>Whether or not there was any curerntly loaded chunks saved in the file.</returns>
+	/// <returns>Whether or not there were any currently loaded chunks saved in the file.</returns>
 	public bool LoadWorld()
 	{
-		return false;
+		// make sure the lookup is up to date
+		ElementLookup = GetElementLookup();
+
+		int ChunksInFile = 0;
+
+		foreach(Vector2I chunkPos in Sim.Chunks.Keys)
+		{
+			if (ChunkFileOffsets.ContainsKey(chunkPos))
+			{
+				ChunksInFile++;
+			}
+
+			LoadChunk(chunkPos);
+		}
+
+		return ChunksInFile > 0;
 	}
 
 	/// <summary>
@@ -333,14 +354,63 @@ public partial class WorldStreamer : RefCounted
 	/// <returns>Whether the specified chunk position exists in the file.</returns>
 	public bool LoadChunk(Vector2I ChunkPosition)
 	{
-		return false;
+		// check if the position exists in the file
+		if(!ChunkFileOffsets.TryGetValue(ChunkPosition, out ulong filePos))
+		{
+			return false;
+		}
+		
+		SandInfo.Chunk editChunk;
+
+		// set editChunk to an existing chunk, otherwise create one
+		if (Sim.Chunks.ContainsKey(ChunkPosition))
+		{
+			editChunk = Sim.GetChunk(ChunkPosition);
+		}
+		else
+		{
+			Sim.AddChunk(ChunkPosition);
+			editChunk = Sim.GetChunk(ChunkPosition);
+		}
+
+		storedChunkInfo chunkData = GetChunkData(ChunkPosition).Value;
+
+		// edit cell data
+		int cellIndex = 0;
+		foreach (storedCellRun run in chunkData.CellRuns)
+		{
+			
+			for(int i = 0; i < run.RunLength; i++)
+			{
+				SandInfo.Cell cell = editChunk.Cells[cellIndex];
+
+				GD.Print(ElementLookup[0]);
+				GD.Print(ElementLookup[run.ElementIndex]);
+				cell.Element = ElementLookup[run.ElementIndex];
+				cell.Fields = run.CellFields;
+
+				cellIndex++;
+			}
+		}
+
+		return true;
+
 	}
 
 	/// <summary></summary>
 	/// <returns>A Godot Array containing the positions of all chunks saved in the file.</returns>
 	public Godot.Collections.Array<Vector2I> GetAvailableChunks()
 	{
-		return null;
+		storedWorldInfo worldData = GetFileData().Value;
+
+		Godot.Collections.Array<Vector2I> returnArr = new Godot.Collections.Array<Vector2I>{};
+
+		foreach(storedChunkInfo chunkData in worldData.Chunks)
+		{
+			returnArr.Add(new Vector2I(chunkData.X, chunkData.Y));
+		}
+
+		return returnArr;
 	}
 
     // OVERRIDE ----------------------------------------------------------
@@ -421,7 +491,8 @@ public partial class WorldStreamer : RefCounted
 
 		List<string> elementNames = new List<string>();
 
-		for (int i = 0; i < WorldFile.Get16(); i++)
+		ushort elementNum = WorldFile.Get16();
+		for (int i = 0; i < elementNum; i++)
 		{
 			string element = WorldFile.GetPascalString();
 			IdxToElement.Add(i, Elements.GetFromName(element));
@@ -433,8 +504,9 @@ public partial class WorldStreamer : RefCounted
 		byte cellFields = WorldFile.Get8();
 
 		List<storedChunkInfo> chunkData = new List<storedChunkInfo>();
+		uint chunkNum = WorldFile.Get32();
 		// loop over chunks
-		for (int i = 0; i < WorldFile.Get32(); i++)
+		for (int i = 0; i < chunkNum; i++)
 		{
 			ulong filePos = WorldFile.GetPosition();
 
@@ -471,6 +543,82 @@ public partial class WorldStreamer : RefCounted
 
 		return new storedWorldInfo(header, elementNames, cellFields, chunkData, IdxToElement);
 
+	}
+
+
+	private storedChunkInfo? GetChunkData(Vector2I ChunkPosition)
+	{
+		if (!ChunkFileOffsets.TryGetValue(ChunkPosition, out ulong filePos))
+		{
+			return null;
+		}
+
+		byte cellFields = GetCellFields();
+
+		WorldFile.Seek(filePos);
+
+		uint xPos = WorldFile.Get32();
+		uint yPos = WorldFile.Get32();
+
+		List<storedCellRun> cellRuns = new List<storedCellRun>();
+		// get cell runs
+		for (int run = 0; run < WorldFile.Get32(); run++)
+		{
+			uint runLength = WorldFile.Get32();
+			ushort elementIndex = WorldFile.Get16();
+			byte[] fields = new byte[cellFields];
+
+			// get the cell-specific fields
+			for (int field = 0; field < cellFields; field++)
+			{
+				fields[field] = WorldFile.Get8();
+			}
+
+			cellRuns.Add(new storedCellRun((int)runLength, (short)elementIndex, fields));
+			
+		}
+
+
+			// add chunk data instance
+			return new storedChunkInfo((int)xPos, (int)yPos, cellRuns, filePos);
+
+	}
+
+	/// <summary></summary>
+	/// <returns>The number of cell-specific fields each cell has in the file.</returns>
+	private byte GetCellFields()
+	{
+		// advance to it
+		WorldFile.Seek(0);
+		WorldFile.GetPascalString();
+		WorldFile.Get32();
+		ushort elementNum = WorldFile.Get16();
+		for(int i = 0; i < elementNum; i++)
+		{
+			WorldFile.GetPascalString();
+		}
+
+		return WorldFile.Get8();
+
+	}
+
+	private Dictionary<int, AllElements> GetElementLookup()
+	{
+		WorldFile.Seek(0);
+		WorldFile.GetPascalString();
+		WorldFile.Get32();
+
+		Dictionary<int, AllElements> returnDict = new Dictionary<int, AllElements>{};
+		
+		ushort elementNum = WorldFile.Get16();
+
+		for(int i = 0; i < elementNum; i++)
+		{
+			returnDict.Add(i, Elements.GetFromName(WorldFile.GetPascalString()));
+		}
+
+
+		return returnDict;
 	}
 
 	/// <summary>
@@ -624,6 +772,7 @@ public partial class WorldStreamer : RefCounted
 	{
 		// add the number of elements
 		WorldFile.Store16((ushort)SandInfo.ElementResource.ElementOrder.Count);
+		
 		//add the element names
 		foreach(string element in SandInfo.ElementResource.ElementOrder)
 		{
@@ -673,8 +822,10 @@ public partial class WorldStreamer : RefCounted
 
 		uint offsetDictPos = WorldFile.Get32();
 
+		ushort elementNum = WorldFile.Get16();
+
 		// get to the chunk num save
-		for(int i = 0; i < WorldFile.Get16(); i++)
+		for(int i = 0; i < elementNum; i++)
 		{
 			WorldFile.GetPascalString();
 		}

@@ -179,7 +179,7 @@ public partial class PowderSimulation : Node2D
 
 	private void OnChunkChanged(Vector2I at)
 	{
-		ChunkChanged.Invoke(at);
+		ChunkChanged?.Invoke(at);
 	}
 
 	// ***************** Misc ---------------------------------------

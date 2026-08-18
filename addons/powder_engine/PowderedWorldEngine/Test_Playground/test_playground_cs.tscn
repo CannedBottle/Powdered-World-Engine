@@ -149,3 +149,18 @@ icon = ExtResource("7_pme4i")
 [node name="RemoveChunk" type="Button" parent="ui/VBoxContainer/ChunkEdit" unique_id=640149746]
 layout_mode = 2
 icon = ExtResource("8_typh4")
+
+[node name="SaveWorld" type="Button" parent="ui/VBoxContainer" unique_id=648552309]
+layout_mode = 2
+size_flags_horizontal = 0
+text = "SaveWorld"
+
+[node name="LoadWorld" type="Button" parent="ui/VBoxContainer" unique_id=1872653066]
+layout_mode = 2
+size_flags_horizontal = 0
+text = "LoadWorld"
+
+[node name="Flush" type="Button" parent="ui/VBoxContainer" unique_id=1438193679]
+layout_mode = 2
+size_flags_horizontal = 0
+text = "FlushDeadChunks"
