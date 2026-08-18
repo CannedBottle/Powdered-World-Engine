@@ -45,10 +45,10 @@ public partial class PowderSimulation : Node2D
 	// ---------- SWAP BUFFER
 	public struct Swap
 	{
-		public SandInfoCS.Cell Cell1;
-		public SandInfoCS.Cell Cell2;
+		public SandInfo.Cell Cell1;
+		public SandInfo.Cell Cell2;
 
-		public Swap(SandInfoCS.Cell cell1, SandInfoCS.Cell cell2)
+		public Swap(SandInfo.Cell cell1, SandInfo.Cell cell2)
 		{
 			Cell1 = cell1;
 			Cell2 = cell2;
@@ -92,18 +92,6 @@ public partial class PowderSimulation : Node2D
 	/// How big the pixels appear on the screen.
 	/// </summary>
 	[Export] public int PixelScale = 5;
-	
-	[ExportGroup("File", "file_")]
-	
-	/// <summary>
-	/// The default designated path for where to save world data onto the disk.
-	/// </summary>
-	[Export(PropertyHint.GlobalDir)] 
-	public string file_DefaultPath = "user://pwengine/worlds/";
-	/// <summary>
-	/// the default name to assign when creating new world data files.
-	/// </summary>
-	[Export] public string file_DefaultName = "world";
 
 	// ------------------------ Follow
 	[ExportGroup("Follow", "Follow")]
@@ -143,7 +131,7 @@ public partial class PowderSimulation : Node2D
 
 	// ------------------------------------------------------------
 
-	public Dictionary<Vector2I, SandInfoCS.Chunk> Chunks = new Dictionary<Vector2I, SandInfoCS.Chunk>{};
+	public Dictionary<Vector2I, SandInfo.Chunk> Chunks = new Dictionary<Vector2I, SandInfo.Chunk>{};
 
 	public Vector2I SimulationSize;
 
@@ -173,7 +161,7 @@ public partial class PowderSimulation : Node2D
 	/// <summary>
 	/// 
 	/// </summary>
-	public Dictionary<SandInfoCS.Neighbors, int> NeighborIndexOffsets;
+	public Dictionary<SandInfo.Neighbors, int> NeighborIndexOffsets;
 
 	// ------------ Signals
 
@@ -182,6 +170,17 @@ public partial class PowderSimulation : Node2D
 	[Signal]
 	public delegate void ChunkRemovedEventHandler(Vector2I position);
 
+	[Signal]
+	public delegate void SimulationTickEventHandler();
+
+	public event Action<Vector2I> ChunkChanged;
+
+	// Signal Recievers ------------------------------------------
+
+	private void OnChunkChanged(Vector2I at)
+	{
+		ChunkChanged.Invoke(at);
+	}
 
 	// ***************** Misc ---------------------------------------
 
@@ -209,7 +208,7 @@ public partial class PowderSimulation : Node2D
 		renderer.QueueFree();	
 	}
 
-	public SandInfoCS.Chunk GetChunk(Vector2I pos)
+	public SandInfo.Chunk GetChunk(Vector2I pos)
 	{
 		//old array-based chunk lookup
 		//return Chunks[pos.Y * ChunkGridSize.X + pos.X];
@@ -224,14 +223,14 @@ public partial class PowderSimulation : Node2D
 	{
 		//return !(pos.X < SimulationMinExtents.X || pos.Y < SimulationMinExtents.Y
 		//	|| pos.X > SimulationMaxExtents.X || pos.Y > SimulationMaxExtents.Y);
-		return Chunks.TryGetValue(LocalToChunk(pos), out SandInfoCS.Chunk chunk);
+		return Chunks.TryGetValue(LocalToChunk(pos), out SandInfo.Chunk chunk);
 	}
 
 	public bool SimContainsChunk(Vector2I pos)
 	{
 		//return !(pos.X < SimulationMinChunkExtents.X || pos.Y < SimulationMinChunkExtents.Y
 		//	|| pos.X > SimulationMaxChunkExtents.X || pos.Y > SimulationMaxChunkExtents.Y);
-		return Chunks.TryGetValue(pos, out SandInfoCS.Chunk chunk);
+		return Chunks.TryGetValue(pos, out SandInfo.Chunk chunk);
 	}
 
 
@@ -393,7 +392,7 @@ public partial class PowderSimulation : Node2D
 	// ***************** Swap Buffer ----------------------------------------
 
 
-	public void QueueSwap(SandInfoCS.Cell Cell1, SandInfoCS.Cell Cell2)
+	public void QueueSwap(SandInfo.Cell Cell1, SandInfo.Cell Cell2)
 	{
 		SwapQueue.Add(new Swap(Cell1, Cell2));
 	}
@@ -405,7 +404,7 @@ public partial class PowderSimulation : Node2D
 	{
 		foreach(Swap swap in SwapQueue)
 		{
-			SandInfoCS.SwapCells(swap.Cell1, swap.Cell2);
+			SandInfo.SwapCells(swap.Cell1, swap.Cell2);
 		}
 
 		SwapQueue.Clear();
@@ -422,8 +421,10 @@ public partial class PowderSimulation : Node2D
 	/// <returns>Whether or not the chunk was successfully added.</returns>
 	public bool AddChunk(Vector2I at)
 	{
-		if(Chunks.TryAdd(at, new SandInfoCS.Chunk(IndividualChunkSize, at, ChunkInsomnia))){
+		if(Chunks.TryAdd(at, new SandInfo.Chunk(IndividualChunkSize, at, ChunkInsomnia))){
 			EmitSignal(SignalName.ChunkAdded, at);
+
+			GetChunk(at).OnChange += OnChunkChanged;
 
 			UpdateSimulationSize();
 			Chunks[at].Renderer = CreateChunkRenderer(at);
@@ -441,11 +442,15 @@ public partial class PowderSimulation : Node2D
 	
 	public bool RemoveChunk(Vector2I at)
 	{
-		if (Chunks.TryGetValue(at, out SandInfoCS.Chunk chunk))
+		if (Chunks.TryGetValue(at, out SandInfo.Chunk chunk))
 		{
 			EmitSignal(SignalName.ChunkRemoved, at);
 
 			RemoveChunkRenderer(chunk.Renderer);
+			
+			// remove from signal group
+			GetChunk(at).OnChange -= OnChunkChanged;
+
 			Chunks.Remove(at);
 			UpdateSimulationSize();
 
@@ -465,28 +470,28 @@ public partial class PowderSimulation : Node2D
 	private void UpdateAdjacent(Vector2I from)
 	{
 		// + (0, -1)
-		if(Chunks.TryGetValue(from + new Vector2I(0, -1), out SandInfoCS.Chunk uChunk))
+		if(Chunks.TryGetValue(from + new Vector2I(0, -1), out SandInfo.Chunk uChunk))
 		{
 			uChunk.ResetDirtyRect();
 			uChunk.Wake();
 		}
 
 		// + (0, 1)
-		if(Chunks.TryGetValue(from + new Vector2I(0, 1), out SandInfoCS.Chunk dChunk))
+		if(Chunks.TryGetValue(from + new Vector2I(0, 1), out SandInfo.Chunk dChunk))
 		{
 			dChunk.ResetDirtyRect();
 			dChunk.Wake();
 		}
 
 		// + (-1, 0)
-		if(Chunks.TryGetValue(from + new Vector2I(-1, 0), out SandInfoCS.Chunk lChunk))
+		if(Chunks.TryGetValue(from + new Vector2I(-1, 0), out SandInfo.Chunk lChunk))
 		{
 			lChunk.ResetDirtyRect();
 			lChunk.Wake();
 		}
 
 		// + (1, 0)
-		if(Chunks.TryGetValue(from + new Vector2I(1, 0), out SandInfoCS.Chunk rChunk))
+		if(Chunks.TryGetValue(from + new Vector2I(1, 0), out SandInfo.Chunk rChunk))
 		{
 			rChunk.ResetDirtyRect();
 			rChunk.Wake();
@@ -531,16 +536,16 @@ public partial class PowderSimulation : Node2D
 
 	public void _FindIndexOffsets()
 	{
-		NeighborIndexOffsets = new Dictionary<SandInfoCS.Neighbors, int>
+		NeighborIndexOffsets = new Dictionary<SandInfo.Neighbors, int>
 		{
-			{SandInfoCS.Neighbors.TOPLEFT, -(IndividualChunkSize + 1)},
-			{SandInfoCS.Neighbors.TOPMIDDLE, -IndividualChunkSize},
-			{SandInfoCS.Neighbors.TOPRIGHT, -(IndividualChunkSize - 1)},
-			{SandInfoCS.Neighbors.LEFTMIDDLE, -1},
-			{SandInfoCS.Neighbors.RIGHTMIDDLE, 1},
-			{SandInfoCS.Neighbors.BOTTOMLEFT, IndividualChunkSize - 1},
-			{SandInfoCS.Neighbors.BOTTOMMIDDLE, IndividualChunkSize},
-			{SandInfoCS.Neighbors.BOTTOMRIGHT, IndividualChunkSize + 1},	
+			{SandInfo.Neighbors.TOPLEFT, -(IndividualChunkSize + 1)},
+			{SandInfo.Neighbors.TOPMIDDLE, -IndividualChunkSize},
+			{SandInfo.Neighbors.TOPRIGHT, -(IndividualChunkSize - 1)},
+			{SandInfo.Neighbors.LEFTMIDDLE, -1},
+			{SandInfo.Neighbors.RIGHTMIDDLE, 1},
+			{SandInfo.Neighbors.BOTTOMLEFT, IndividualChunkSize - 1},
+			{SandInfo.Neighbors.BOTTOMMIDDLE, IndividualChunkSize},
+			{SandInfo.Neighbors.BOTTOMRIGHT, IndividualChunkSize + 1},	
 		};
 	}
 
@@ -555,7 +560,7 @@ public partial class PowderSimulation : Node2D
 				{
 					pos.X = x;
 					pos.Y = y;
-					Chunks.TryGetValue(pos, out SandInfoCS.Chunk chunk);
+					Chunks.TryGetValue(pos, out SandInfo.Chunk chunk);
 					if(chunk != null)
 					{
 						chunk.UpdateCells(this, tick);
@@ -574,7 +579,7 @@ public partial class PowderSimulation : Node2D
 				{
 					pos.X = x;
 					pos.Y = y;
-					Chunks.TryGetValue(pos, out SandInfoCS.Chunk chunk);
+					Chunks.TryGetValue(pos, out SandInfo.Chunk chunk);
 					if(chunk != null)
 					{
 						chunk.UpdateCells(this, tick);
@@ -585,7 +590,7 @@ public partial class PowderSimulation : Node2D
 
 		if (UseDirtyRects)
 		{
-			foreach(SandInfoCS.Chunk chunk in Chunks.Values)
+			foreach(SandInfo.Chunk chunk in Chunks.Values)
 			{
 				chunk.UpdateDirtyRect();
 			}
@@ -613,7 +618,7 @@ public partial class PowderSimulation : Node2D
 					CellPos.X = x;
 					CellPos.Y = y;					
 
-					SandInfoCS.Cell cell = GetCell(CellPos);
+					SandInfo.Cell cell = GetCell(CellPos);
 
 					cell.CellChunk.UpdateCell(cell, this);
 
@@ -633,7 +638,7 @@ public partial class PowderSimulation : Node2D
 					CellPos.X = x;
 					CellPos.Y = y;					
 
-					SandInfoCS.Cell cell = GetCell(CellPos);
+					SandInfo.Cell cell = GetCell(CellPos);
 
 					cell.CellChunk.UpdateCell(cell, this);
 
@@ -643,7 +648,7 @@ public partial class PowderSimulation : Node2D
 
 		if (UseDirtyRects)
 		{
-			foreach(SandInfoCS.Chunk chunk in Chunks.Values)
+			foreach(SandInfo.Chunk chunk in Chunks.Values)
 			{
 				chunk.UpdateDirtyRect();
 				chunk.DecideSleepState();
@@ -666,7 +671,7 @@ public partial class PowderSimulation : Node2D
 	/// </summary>
 	public void DecideSleepingChunks()
 	{
-		foreach(SandInfoCS.Chunk chunk in Chunks.Values)
+		foreach(SandInfo.Chunk chunk in Chunks.Values)
 		{
 			chunk.DecideSleepState();
 		}
@@ -677,7 +682,7 @@ public partial class PowderSimulation : Node2D
 	{
 		DrawTime = Time.GetTicksUsec() / 1000.0f;
 		// -----------------------------------------------------------------
-		foreach(SandInfoCS.Chunk chunk in Chunks.Values)
+		foreach(SandInfo.Chunk chunk in Chunks.Values)
 		{
 			chunk.SendDrawInfoToRenderer();
 		}
@@ -709,7 +714,7 @@ public partial class PowderSimulation : Node2D
 		SimulationMaxChunkExtents = new Vector2I(int.MinValue, int.MinValue);
 		SimulationMinChunkExtents = new Vector2I(int.MaxValue, int.MaxValue);
 
-		foreach(SandInfoCS.Chunk chunk in Chunks.Values)
+		foreach(SandInfo.Chunk chunk in Chunks.Values)
 		{
 			SimulationMinExtents.X = Math.Min(SimulationMinExtents.X, chunk.MinExtents.X);
 			SimulationMinExtents.Y = Math.Min(SimulationMinExtents.Y, chunk.MinExtents.Y);
@@ -741,8 +746,6 @@ public partial class PowderSimulation : Node2D
 
 		InitGrid();
 
-		WorldStreamer worldSave = WorldStreamer.Open("user://pwengine/worlds/WorldTest.pwdr", this);
-		worldSave.SaveWorld(true);
 		
 	}
 
@@ -768,7 +771,7 @@ public partial class PowderSimulation : Node2D
 
 		//dirty rects
 		Vector2I CenteringVal = new Vector2I(PixelScale, PixelScale);
-		foreach(SandInfoCS.Chunk chunk in Chunks.Values)
+		foreach(SandInfo.Chunk chunk in Chunks.Values)
 		{
 
 			//dirty rects
@@ -807,6 +810,9 @@ public partial class PowderSimulation : Node2D
 			UpdateTime = Time.GetTicksUsec() / 1000.0f;
 			// ----------------------------------------------------------------------------
 
+			// emits signal when updated
+			EmitSignal(SignalName.SimulationTick);
+
 			// constrains chunks if FollowEnabled is true 
 			if (FollowEnabled && TicksPassed == 1)
 			{
@@ -834,12 +840,12 @@ public partial class PowderSimulation : Node2D
 	/// </summary>
 	/// <param name="pos"></param>
 	/// <returns>The cell at the specified <c>pos</c>.</returns>
-	public SandInfoCS.Cell GetCell(Vector2I pos)
+	public SandInfo.Cell GetCell(Vector2I pos)
 	{
 		Vector2I chunkPos = LocalToChunk(pos);
 
-		//SandInfoCS.Chunk chunk = Chunks[chunkPosY * ChunkGridSize.X + chunkPosX];
-		SandInfoCS.Chunk chunk = Chunks[new Vector2I(chunkPos.X, chunkPos.Y)];
+		//SandInfo.Chunk chunk = Chunks[chunkPosY * ChunkGridSize.X + chunkPosX];
+		SandInfo.Chunk chunk = Chunks[new Vector2I(chunkPos.X, chunkPos.Y)];
 
 		int localX = pos.X - chunk.MinExtents.X;
 		int localY = pos.Y - chunk.MinExtents.Y;
@@ -858,7 +864,7 @@ public partial class PowderSimulation : Node2D
 		SetCell(GetCell(pos), element);
 	}
 
-	public void SetCell(SandInfoCS.Cell cell, AllElements element)
+	public void SetCell(SandInfo.Cell cell, AllElements element)
 	{
 		cell.Element = element;
 
@@ -876,7 +882,7 @@ public partial class PowderSimulation : Node2D
 		}
 		
 
-		SandInfoCS.Cell cell = GetCell(pos);
+		SandInfo.Cell cell = GetCell(pos);
 
 		if(overRide == false && cell.Element != AllElements.AIR)
 		{
@@ -907,7 +913,7 @@ public partial class PowderSimulation : Node2D
 	/// <param name="with"></param>
 	public void FillWorld(AllElements with)
 	{
-		foreach(SandInfoCS.Chunk chunk in Chunks.Values)
+		foreach(SandInfo.Chunk chunk in Chunks.Values)
 		{
 			chunk.ReplaceAll(with);
 		}
@@ -918,7 +924,7 @@ public partial class PowderSimulation : Node2D
 	/// </summary>
 	public void ClearWorld()
 	{
-		foreach(SandInfoCS.Chunk chunk in Chunks.Values)
+		foreach(SandInfo.Chunk chunk in Chunks.Values)
 		{
 			chunk.ClearAll();
 		}

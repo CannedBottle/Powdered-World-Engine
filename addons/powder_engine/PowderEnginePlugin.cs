@@ -18,7 +18,7 @@ public partial class PowderEnginePlugin : EditorPlugin
     public override void _DisablePlugin()
     {
         base._DisablePlugin();
-        RemoveAutoloadSingleton("SandInfoCS");
+        RemoveAutoloadSingleton("SandInfo");
     }
 
     // ---------- Editor Dock ------------- //
@@ -26,8 +26,8 @@ public partial class PowderEnginePlugin : EditorPlugin
     public override void _EnterTree()
     {
         base._EnterTree();
-        AddAutoloadSingleton("SandInfoCS", "res://addons/powder_engine/PowderedWorldEngine/Scripts/CSharp/SandInfoCS.cs");
-        SandInfoCS.PluginVersion = GetPluginVersion();
+        AddAutoloadSingleton("SandInfo", "res://addons/powder_engine/PowderedWorldEngine/Scripts/CSharp/SandInfo.cs");
+        SandInfo.PluginVersion = GetPluginVersion();
 
 
         var _dock_scene = GD.Load<PackedScene>("res://addons/powder_engine/PowderedWorldEngine/Element Creation/ElementDockScene.tscn").Instantiate<Control>();

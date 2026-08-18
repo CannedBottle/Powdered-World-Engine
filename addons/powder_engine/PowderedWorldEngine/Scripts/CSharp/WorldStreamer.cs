@@ -7,31 +7,41 @@ using static Elements;
 
 
 /// <summary>
-/// A class that handles the file I/O of saving + loading worlds (files with the <c>.pwdr</c> extension).
+/// A class that handles the file I/O of saving + loading worlds (files with the <c>.pwdr</c> extension). Also contains helper functions for manipulating the connected <c>PowderSimulation</c> by loading chunks from the file.
 /// </summary>
-public partial class WorldStreamer : Object
+public partial class WorldStreamer : RefCounted
 {
     
     // STATICS ----------------------------
-
+	
     /// <summary>
     /// Creates a new WorldStreamer Object and assigns it the specified file.
     /// </summary>
     /// <returns>a new <c>WorldStreamer</c> object if the file is usable; otherwise returns <c>null</c>.</returns>
     public static WorldStreamer Open(string WorldPath, PowderSimulation Simulation)
     {
-
+		
         if (!IsFileUsable(WorldPath))
 		{
 			return null;
 		}
 
-        return new WorldStreamer(WorldPath, Simulation);
+		WorldStreamer newStreamer = new WorldStreamer(WorldPath, Simulation);
+
+		if (newStreamer.HasFileOffsetDict())
+		{
+			newStreamer.SetOffsetDict();
+
+			newStreamer.RemoveFileOffsetDict();
+		}
+
+        return newStreamer;
     }
 
 
     /// <summary>
     /// Creates a new WorldStreamer object and a <c>.pwdr</c>file with the given <c>FileName</c> assigned to it. <c>WorldDirPath</c> must point to a directory in which the file can be created. Usually starts with <c>user://</c>.
+	/// <b>FileName MUST be different than an already existing file. Otherwise it opens the existing file.</b>
     /// </summary>
     /// <param name="WorldPath"></param>
     /// <param name="FileName"></param>
@@ -42,7 +52,43 @@ public partial class WorldStreamer : Object
     }
 
 
-    /// <summary></summary>
+    /// <summary>
+	/// creates an empty save file. <c>Path</c> must point to a directory in which the new file can be added to. <c>Path</c> also must end with <c>/</c>. <b>Do not</b> include the file extension in <c>Name</c>.
+	/// </summary>
+	/// <param name="Name"></param>
+	/// <param name="Path"></param>
+    /// <returns>the path to the newly created file.</returns>
+	private static string SaveEmpty(string Name, string Path)
+	{
+
+        string fullPath = Path + Name + "." + PowderSimulation.DefaultFileExtension;
+
+		DirAccess.MakeDirRecursiveAbsolute(Path);
+
+		using var worldFile = FileAccess.Open(fullPath, FileAccess.ModeFlags.Write);
+
+		worldFile.StorePascalString("PWEngine " + SandInfo.PluginVersion);
+
+		// store file position placeholder for offset dict
+		worldFile.Store32(0);
+
+		// store element num placeholder (0)
+		worldFile.Store16(0);
+
+		// store cell field num placeholder (0)
+		worldFile.Store8(0);
+
+		// store chunk num placeholder (0)
+		worldFile.Store32(0);
+
+		worldFile.Close();
+		worldFile.Dispose();
+
+        return fullPath;
+	}
+
+
+	/// <summary></summary>
 	/// <returns>Whether the given file correctly contains the key and the correct file extension.</returns>
 	public static bool IsFileUsable(string Path)
 	{
@@ -69,67 +115,306 @@ public partial class WorldStreamer : Object
 	}
 
 
-    /// <summary>
-	/// creates an empty save file. <c>Path</c> must point to a directory in which the new file can be added to. <c>Path</c> also must end with <c>/</c>. <b>Do not</b> include the file extension in <c>Name</c>.
-	/// </summary>
-	/// <param name="Name"></param>
-	/// <param name="Path"></param>
-    /// <returns>the path to the newly created file.</returns>
-	private static string SaveEmpty(string Name, string Path)
-	{
-
-        string fullPath = Path + Name + "." + PowderSimulation.DefaultFileExtension;
-
-		DirAccess.MakeDirRecursiveAbsolute(Path);
-
-		using var worldFile = FileAccess.Open(fullPath, FileAccess.ModeFlags.Write);
-
-		worldFile.StorePascalString("PWEngine " + SandInfoCS.PluginVersion);
-
-		// store file position placeholder for offset dict
-		worldFile.Store32(0);
-
-		worldFile.Close();
-		worldFile.Dispose();
-
-        return fullPath;
-	}
-
-
     // --------------------------
 
     public WorldStreamer(string Path, PowderSimulation Simulation)
     {
         Sim = Simulation;
 
+		Sim.ChunkChanged += FilterChangedChunk;
+
         WorldFile = FileAccess.Open(Path, FileAccess.ModeFlags.ReadWrite);
     }
 
 
-
+	private List<Vector2I> ChunksChangedSinceSave = new List<Vector2I>{};
 
     private PowderSimulation Sim;
 
     private FileAccess WorldFile;
 
 
-
-    private Dictionary<Vector2I, int> ChunkFileOffsets = new Dictionary<Vector2I, int>{};
-
+    private Dictionary<Vector2I, ulong> ChunkFileOffsets = new Dictionary<Vector2I, ulong>{};
 
 
-    // ******************* Saving + Loading World -----------------------------------------------------
+
+	// PUBLIC ------------------------------------------------------
+
 
 	/// <summary>
-	/// Extracts the information from a <c>.pwdr</c> file, which <c>Path</c> must point to, into a <c>storedWorldInfo</c> struct so the information can be used.
+	/// Flushes dead chunks, closes the file, and disposes of this object.
+	/// <br/> <b>Note:</b> WorldStreamer will automatically close when it's freed, which happens when it goes out of scope or when it gets assigned with null. 
+	/// In C# the reference must be disposed after we are done using it, this can be done with the <c>using</c> statement or calling the <c>Dispose</c> method directly.
+	/// </summary>
+	public void Close()
+	{
+		FlushDeadChunks();
+
+		WorldFile.Close();
+
+		Dispose();		
+	}
+
+
+	/// <summary>
+	/// Reads through the file and removes saved chunks that are duplicates. Uses <c>ChunkFileOffsets</c> to determine duplicates. 
+	/// <br/>
+	/// <b>Will most likely fix a corrupted file.</b> 
+	/// <br/>
+	/// Automatically called when <c>Close</c> is called. Should not be called often, as it rewrites the whole file.
+	/// </summary>
+	/// <returns>Whether or not there were any dead chunks to remove.</returns>
+	public bool FlushDeadChunks()
+	{
+		// use GetFileData and check against the filePosition var i added to the chunk struct
+
+		storedWorldInfo worldData = GetFileData().Value;
+
+		// whether there were any dead chunks to remove. used for return val.
+		bool RemovedChunks = false;
+
+		Stack<int> idxToRemove = new Stack<int>{};
+
+		int idx = 0;
+		foreach (storedChunkInfo chunkInfo in worldData.Chunks)
+		{
+			Vector2I pos = new Vector2I(chunkInfo.X, chunkInfo.Y);
+
+			// check if value exists; otherwise continue
+			if(!ChunkFileOffsets.TryGetValue(pos, out ulong testFilePos))
+			{
+				idx++;
+				continue;
+			}
+
+			if (chunkInfo.filePosition != testFilePos)
+			{
+				idxToRemove.Push(idx);
+			}
+
+			idx++;
+		}
+
+		// remove the duplicate chunks
+		foreach (int index in idxToRemove)
+		{
+			worldData.Chunks.RemoveAt(index);
+		}
+
+		// save the file
+		SaveFromData(worldData);
+
+		return RemovedChunks;
+	}
+
+
+	/// <summary>
+	/// Saves the world to disk at the specified <c>Path</c>, only operating on the chunks currently active in the simulation. <c>Path</c> must point
+	/// to a file with the <c>.pwdr</c> extension.
+	/// </summary>
+	/// <param name="Override">Whether or not to override the contents of the file, essentially replacing the contents with the current ones.</param>
+	/// <returns>Whether the operation was successful or not.</returns>
+	public bool SaveWorld(bool Override)
+	{
+
+		if(Override)
+		{
+			WorldFile.Seek(0);
+
+			WorldFile.GetPascalString();
+			WorldFile.Get32();
+			WorldFile.Resize((long)WorldFile.GetPosition());
+
+			// element lookup table --------------
+			StoreElementLookup();
+
+			// store the number of cell-specific fields every cell has
+			WorldFile.Store8((byte)Sim.GetCell(new Vector2I(0, 0)).Fields.Count());
+
+			// store number of chunks
+			WorldFile.Store32((uint)Sim.Chunks.Count);
+			
+			// store chunks
+			foreach(SandInfo.Chunk chunk in Sim.Chunks.Values)
+			{
+				StoreChunk(chunk);
+			}
+
+			StoreFileOffsetDict();
+		}
+		else // --------------------------------------------------------------
+		{
+			WorldFile.Seek(0);
+			// advance to chunk num
+			WorldFile.GetPascalString();
+			// get file offset dict position
+			ulong dictOffset = WorldFile.Get32();
+			for(int i = 0; i < WorldFile.Get16(); i++)
+			{
+				WorldFile.GetPascalString();
+			}
+			WorldFile.Get8();
+
+			// update chunk num
+			ulong chunkNumFilePos = WorldFile.GetPosition();
+			uint oldChunkNum = WorldFile.Get32();
+			WorldFile.Seek(chunkNumFilePos);
+			// add newly changed chunks to the file chunk count
+			WorldFile.Store32(oldChunkNum + (uint)ChunksChangedSinceSave.Count);
+
+			// store changed chunks as new ones and reassign them in ChunkFileOffsets
+			WorldFile.Seek(dictOffset);
+			// remove chunk offset dict
+			WorldFile.Resize((long)dictOffset);
+			// store each new chunk, updating
+			foreach (Vector2I changedPos in ChunksChangedSinceSave)
+			{
+				StoreChunk(Sim.GetChunk(changedPos));
+			}
+
+			// add updated dict back
+			StoreFileOffsetDict();
+
+		}
+
+		return true;
+	}
+
+	/// <summary>
+	/// Saves the given chunk to the file. Creates a dead chunk in the file if there was an old version already saved. The dead chunk can be removed by calling <see cref="FlushDeadChunks"/>.
+	/// </summary>
+	/// <param name="chunk"></param>
+	public void SaveChunk(SandInfo.Chunk chunk)
+	{
+		WorldFile.Seek(0);
+		// advance to chunk num
+		WorldFile.GetPascalString();
+		// get file offset dict position
+		ulong dictOffset = WorldFile.Get32();
+		for (int i = 0; i < WorldFile.Get16(); i++)
+		{
+			WorldFile.GetPascalString();
+		}
+		WorldFile.Get8();
+
+		// update chunk num
+		ulong chunkNumFilePos = WorldFile.GetPosition();
+		uint oldChunkNum = WorldFile.Get32();
+		WorldFile.Seek(chunkNumFilePos);
+		// add newly changed chunks to the file chunk count
+		WorldFile.Store32(oldChunkNum + 1);
+
+		// store changed chunks as new ones and reassign them in ChunkFileOffsets
+		WorldFile.Seek(dictOffset);
+		// remove chunk offset dict
+		WorldFile.Resize((long)dictOffset);
+		// store new chunk
+		StoreChunk(chunk);
+
+		// add updated dict back
+		StoreFileOffsetDict();
+	}
+
+	// loading................
+
+	/// <summary>
+	/// Replaces the current active chunks in the simulation with the corresponding saved chunks in the file. <b>Does not create chunks.</b>
+	/// </summary>
+	/// <returns>Whether or not there was any curerntly loaded chunks saved in the file.</returns>
+	public bool LoadWorld()
+	{
+		return false;
+	}
+
+	/// <summary>
+	/// 
+	/// </summary>
+	/// <param name="ChunkPosition"></param>
+	/// <returns>Whether the specified chunk position exists in the file.</returns>
+	public bool LoadChunk(Vector2I ChunkPosition)
+	{
+		return false;
+	}
+
+	/// <summary></summary>
+	/// <returns>A Godot Array containing the positions of all chunks saved in the file.</returns>
+	public Godot.Collections.Array<Vector2I> GetAvailableChunks()
+	{
+		return null;
+	}
+
+    // OVERRIDE ----------------------------------------------------------
+
+
+    public override void _Notification(int what)
+    {
+
+		// close before object is freed
+		if(what == NotificationPredelete)
+		{
+			Close();
+		}
+
+        base._Notification(what);
+    }
+
+
+	// PRIVATE -----------------------------------------------------------
+
+	/// <summary>
+	/// connected to PowderSim Action OnChunkChanged
+	/// </summary>
+	/// <param name="chunkPos"></param>
+	private void FilterChangedChunk(Vector2I chunkPos)
+	{
+		if (!ChunksChangedSinceSave.Contains(chunkPos))
+		{
+			ChunksChangedSinceSave.Add(chunkPos);
+		}
+	}
+
+	private bool HasFileOffsetDict()
+	{
+		WorldFile.Seek(0);
+
+		WorldFile.GetPascalString();
+
+		return WorldFile.Get32() != 0;
+	}
+
+
+	private void RemoveFileOffsetDict()
+	{
+
+		if (!HasFileOffsetDict())
+		{
+			return;
+		}
+
+		WorldFile.Seek(0);
+
+		WorldFile.GetPascalString();
+
+		long offset = WorldFile.Get32();
+
+		WorldFile.Resize(offset);
+
+	}
+
+	/// <summary>
+	/// Extracts the information from a <c>.pwdr</c> file into a <c>storedWorldInfo</c> struct so the information can be used.
 	/// </summary>
 	/// <param name="Path"></param>
-	/// <returns>A <c>storedWorldInfo</c> struct that represents the entire contents of the file specified in <c>Path</c>. Returns <c>null</c> if the file at <c>Path</c> is unusable.</returns>
+	/// <returns>A <c>storedWorldInfo</c> struct that represents the entire contents of the file. Returns <c>null</c> if the file is unusable.</returns>
 	private storedWorldInfo? GetFileData()
 	{
+		WorldFile.Seek(0);
 
 		// get header
 		string header = WorldFile.GetPascalString();
+
+		// advance past the offest dict location integer
+		WorldFile.Get32();
 
 		// generate element lookup
 		Dictionary<int, AllElements> IdxToElement = new Dictionary<int, AllElements>{};
@@ -151,6 +436,8 @@ public partial class WorldStreamer : Object
 		// loop over chunks
 		for (int i = 0; i < WorldFile.Get32(); i++)
 		{
+			ulong filePos = WorldFile.GetPosition();
+
 			uint xPos = WorldFile.Get32();
 			uint yPos = WorldFile.Get32();
 
@@ -173,9 +460,12 @@ public partial class WorldStreamer : Object
 
 
 			// add chunk data instance
-			chunkData.Add(new storedChunkInfo((int)xPos, (int)yPos, cellRuns));
+			chunkData.Add(new storedChunkInfo((int)xPos, (int)yPos, cellRuns, filePos));
 
 		}
+
+		// does not get the chunk offset dict, its unnecessary
+
 
 		// finally create and return the world info instance
 
@@ -187,13 +477,14 @@ public partial class WorldStreamer : Object
 	/// Saves the data within <c>Data</c> to a <c>.pwdr</c> file while overriding the previous contents.
 	/// </summary>
 	/// <param name="Data"></param>
-	/// <param name="Path"></param>
 	/// <returns>Whether the operation was successful or not.</returns>
 	private bool SaveFromData(storedWorldInfo Data)
 	{
+		WorldFile.Seek(0);
 
-		// keep header
+		// keep header + file offset pointer
 		WorldFile.GetPascalString();
+		WorldFile.Get32();
 		WorldFile.Resize((long)WorldFile.GetPosition());
 
 		// store element num
@@ -236,55 +527,21 @@ public partial class WorldStreamer : Object
 			}
 		}
 
-		return true;
-	}
-
-
-	/// <summary>
-	/// Saves the world to disk at the specified <c>Path</c>, only operating on the chunks currently active in the simulation. <c>Path</c> must point
-	/// to a file with the <c>.pwdr</c> extension.
-	/// </summary>
-	/// <param name="Override">Whether or not to override the contents of the file, essentially replacing the contents with the current ones.</param>
-	/// <returns>Whether the operation was successful or not.</returns>
-	public bool SaveWorld(bool Override)
-	{
-
-		if(Override)
-		{
-			WorldFile.GetPascalString();
-			WorldFile.Resize((long)WorldFile.GetPosition());
-
-			// element lookup table --------------
-			StoreElementLookup();
-
-			// store the number of cell-specific fields every cell has
-			WorldFile.Store8((byte)Sim.GetCell(new Vector2I(0, 0)).Fields.Count());
-
-			// store number of chunks
-			WorldFile.Store32((uint)Sim.Chunks.Count);
-			
-			// store chunks
-			foreach(SandInfoCS.Chunk chunk in Sim.Chunks.Values)
-			{
-				StoreChunk(chunk);
-			}
-		}
-		else // --------------------------------------------------------------
-		{
-
-		}
+		SetOffsetDict();
+		WorldFile.SeekEnd();
+		StoreFileOffsetDict();
 
 		return true;
 	}
-
 
 	/// <summary>
 	/// stores a chunk's worth of data at the pointer of <c>File</c>.
 	/// </summary>
-	/// <param name="File"></param>
 	/// <param name="Chunk"></param>
-	private void StoreChunk(SandInfoCS.Chunk Chunk)
+	private void StoreChunk(SandInfo.Chunk Chunk)
 	{
+		ChunkFileOffsets[Chunk.ChunkPosition] = WorldFile.GetPosition();
+
 		//store chunk position
 		WorldFile.Store32((uint)Chunk.ChunkPosition.X);
 		WorldFile.Store32((uint)Chunk.ChunkPosition.Y);
@@ -298,10 +555,9 @@ public partial class WorldStreamer : Object
 	/// Uses RLE (Run-length encoding) to compress horizontal runs of the same element and compress them into one instance. Then stores the cell data at the 
 	/// pointer position of the <c>File</c>.
 	/// </summary>
-	/// <param name="File"></param>
-	private void CompressAndStoreCells(SandInfoCS.Cell[] Cells)
+	private void CompressAndStoreCells(SandInfo.Cell[] Cells)
 	{
-		List<StringName> elementOrder = SandInfoCS.ElementResource.ElementOrder.ToList();
+		List<StringName> elementOrder = SandInfo.ElementResource.ElementOrder.ToList();
 
 		List<int> runLengths = new List<int>();
 		List<int> elementIDs = new List<int>();
@@ -311,7 +567,7 @@ public partial class WorldStreamer : Object
 		int currentRunLength = 0;
 		int prevID = -1;
 		int idx = 0;
-		foreach(SandInfoCS.Cell cell in Cells)
+		foreach(SandInfo.Cell cell in Cells)
 		{
 			// get the unique ID of the element name
 			int ID = elementOrder.IndexOf(Enum.GetName(cell.Element));
@@ -364,23 +620,84 @@ public partial class WorldStreamer : Object
 	/// <summary>
 	/// File must be empty (the default .pwdr template).
 	/// </summary>
-	/// <param name="File"></param>
 	private void StoreElementLookup()
 	{
 		// add the number of elements
-		WorldFile.Store16((ushort)SandInfoCS.ElementResource.ElementOrder.Count);
+		WorldFile.Store16((ushort)SandInfo.ElementResource.ElementOrder.Count);
 		//add the element names
-		foreach(string element in SandInfoCS.ElementResource.ElementOrder)
+		foreach(string element in SandInfo.ElementResource.ElementOrder)
 		{
 			WorldFile.StorePascalString(element);
 		}
 	}
 
     
-    private void StoreChunkFileOffsets()
+    private void StoreFileOffsetDict()
     {
-        
+		// does not store number of offsets since it uses the number of chunks saved before.
+
+
+		ulong pointerpos = WorldFile.GetPosition();
+
+		// save each key/value pair
+		foreach (Vector2I pos in ChunkFileOffsets.Keys)
+		{
+			//store x and y position separately
+			WorldFile.Store32((uint)pos.X);
+			WorldFile.Store32((uint)pos.Y);
+
+			//store file offset
+			WorldFile.Store32((uint)ChunkFileOffsets[pos]);
+		}
+
+
+		// change the 32-bit integer to point to this dict
+		WorldFile.Seek(0);
+		// advance past header
+		WorldFile.GetPascalString();
+		WorldFile.Store32((uint)pointerpos);
+
     }
+
+
+
+
+	/// <summary>
+	/// Reads the offset dict in this streamer's file, and uses that to make the offset dict in local memory.
+	/// </summary>
+	private void SetOffsetDict()
+	{
+		WorldFile.Seek(0);
+		// advance past header
+		WorldFile.GetPascalString();
+
+		uint offsetDictPos = WorldFile.Get32();
+
+		// get to the chunk num save
+		for(int i = 0; i < WorldFile.Get16(); i++)
+		{
+			WorldFile.GetPascalString();
+		}
+		WorldFile.Get8();
+
+		// get number of chunks
+		uint chunkNum = WorldFile.Get32();
+
+		WorldFile.Seek(offsetDictPos);
+
+		// generates offset dict
+		ChunkFileOffsets.Clear();
+		for(int i = 0; i < chunkNum; i++)
+		{
+			uint X = WorldFile.Get32();
+			uint Y = WorldFile.Get32();
+			uint fileOffset = WorldFile.Get32();
+
+			// insert stuff
+			ChunkFileOffsets.Add(new Vector2I((int)X, (int)Y), fileOffset);
+		}
+
+	}
 
 
     // stored data structs -------------------------
@@ -409,12 +726,16 @@ public partial class WorldStreamer : Object
 		public uint CellRunNum;
 		public List<storedCellRun> CellRuns;
 
-		public storedChunkInfo(int XPosition, int YPosition, List<storedCellRun> cellRuns)
+		public ulong filePosition;
+
+		public storedChunkInfo(int XPosition, int YPosition, List<storedCellRun> cellRuns, ulong filePos)
 		{
 			X = XPosition;
 			Y = YPosition;
 
 			CellRuns = cellRuns;
+
+			filePosition = filePos;
 
 			CellRunNum = (uint)CellRuns.Count;
 		}

@@ -1,6 +1,6 @@
 using Godot;
 using System;
-using static SandInfoCS;
+using static SandInfo;
 using static Elements;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;

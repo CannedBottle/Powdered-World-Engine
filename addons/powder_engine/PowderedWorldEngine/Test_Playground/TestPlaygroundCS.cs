@@ -32,6 +32,9 @@ public partial class TestPlaygroundCS : Node2D
 	[Export] public int brushSize = 2;
 
 
+	private WorldStreamer WorldSave;
+		
+
 	public Dictionary<Key, AllElements> ElementKeys = new Dictionary<Key, AllElements>
 	{
 		{Key.S, AllElements.SAND},
@@ -62,6 +65,7 @@ public partial class TestPlaygroundCS : Node2D
 		Player = GetNode<Sprite2D>("player");
 
 		
+		WorldSave = WorldStreamer.Open("user://pwengine/worlds/", Sim);
 
 		DisplayServer.WindowSetSize(DisplayServer.ScreenGetSize());
 
@@ -158,6 +162,10 @@ public partial class TestPlaygroundCS : Node2D
 		}
 	}
 
+	private void SaveWorld()
+	{
+		WorldSave.SaveWorld(true);
+	}
 
 	// Chunk Addition + Removal UI ------------------------------
 

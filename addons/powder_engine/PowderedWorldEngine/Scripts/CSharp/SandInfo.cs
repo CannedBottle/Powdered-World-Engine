@@ -6,7 +6,7 @@ using static ElementAttributes;
 
 
 [Tool]
-public partial class SandInfoCS : Node
+public partial class SandInfo : Node
 {
 	// ---------------------------- Element Attribute Storage ---------------------------- //
 
@@ -287,14 +287,14 @@ public partial class SandInfoCS : Node
 
 		private static Dictionary<Neighbors, Vector2I> NeighborOffsets = new Dictionary<Neighbors, Vector2I>
 		{
-			{SandInfoCS.Neighbors.TOPLEFT, new Vector2I(-1, -1)},
-			{SandInfoCS.Neighbors.TOPMIDDLE, new Vector2I(0, -1)},
-			{SandInfoCS.Neighbors.TOPRIGHT, new Vector2I(1, -1)},
-			{SandInfoCS.Neighbors.LEFTMIDDLE, new Vector2I(-1, 0)},
-			{SandInfoCS.Neighbors.RIGHTMIDDLE, new Vector2I(1, 0)},
-			{SandInfoCS.Neighbors.BOTTOMLEFT, new Vector2I(-1, 1)},
-			{SandInfoCS.Neighbors.BOTTOMMIDDLE, new Vector2I(0, 1)},
-			{SandInfoCS.Neighbors.BOTTOMRIGHT, new Vector2I(1, 1)},
+			{SandInfo.Neighbors.TOPLEFT, new Vector2I(-1, -1)},
+			{SandInfo.Neighbors.TOPMIDDLE, new Vector2I(0, -1)},
+			{SandInfo.Neighbors.TOPRIGHT, new Vector2I(1, -1)},
+			{SandInfo.Neighbors.LEFTMIDDLE, new Vector2I(-1, 0)},
+			{SandInfo.Neighbors.RIGHTMIDDLE, new Vector2I(1, 0)},
+			{SandInfo.Neighbors.BOTTOMLEFT, new Vector2I(-1, 1)},
+			{SandInfo.Neighbors.BOTTOMMIDDLE, new Vector2I(0, 1)},
+			{SandInfo.Neighbors.BOTTOMRIGHT, new Vector2I(1, 1)},
 		};
 
 		// ------------------------------------
@@ -555,10 +555,11 @@ public partial class SandInfoCS : Node
 		public Vector2I DirtyRectMin;
 		public bool HasValidDirtyRect;
 
-		
 		public bool Sleeping = false;
 
 		public ChunkRendererCS Renderer;
+
+		public event Action<Vector2I> OnChange;
 
 		public Chunk(int chunkSize, Vector2I chunkPosition, int insomnia)
 		{
@@ -733,6 +734,9 @@ public partial class SandInfoCS : Node
 			{
 				UpdatedCellsMask[cell.ChunkIdx] = true;
 			}
+		
+			OnChange.Invoke(ChunkPosition);
+
 		}
 
 

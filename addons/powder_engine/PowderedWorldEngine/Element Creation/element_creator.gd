@@ -34,13 +34,13 @@ var temp_attributes: Dictionary[StringName, ElementAttributes]
 var selected_element: StringName
 
 func _ready() -> void:
-	E_storage_ref = SandInfoCS.GetElementResource()
+	E_storage_ref = SandInfo.GetElementResource()
 	
 	fill_movetype_button()
 	
 	#fill element type selector
 	type_selection.clear()
-	for type in SandInfoCS.GetElementTypes():
+	for type in SandInfo.GetElementTypes():
 		type_selection.add_item(type)
 	
 	set_temp_to_actual()
@@ -156,7 +156,7 @@ func _reset_defaults():
 
 func apply_changes():
 	set_actual_to_temp()
-	SandInfoCS.SaveElementStorage()
+	SandInfo.SaveElementStorage()
 	ElementEnumGenerator.GenerateElementAttributes()
 
 func get_selected_element() -> StringName:
@@ -182,7 +182,7 @@ func create_flag_selector(edit_idx: int, selection: int = 0):
 	var new_attributes: AttributeSelector = AttributeSelector.new()
 	new_attributes.this_index = edit_idx
 	new_attributes.selected_index = selection
-	new_attributes.options = SandInfoCS.GetElementFlagsAsString()
+	new_attributes.options = SandInfo.GetElementFlagsAsString()
 	flags_parent.add_child(new_attributes)
 	
 	new_attributes.attribute_deleted.connect(_flag_removed)
