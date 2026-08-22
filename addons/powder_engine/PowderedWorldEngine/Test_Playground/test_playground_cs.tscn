@@ -163,4 +163,4 @@ text = "LoadWorld"
 [node name="Flush" type="Button" parent="ui/VBoxContainer" unique_id=1438193679]
 layout_mode = 2
 size_flags_horizontal = 0
-text = "FlushDeadChunks"
+text = "Push To File"

@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.InteropServices;
 using Godot;
 using static Elements;
 
@@ -32,8 +31,6 @@ public partial class WorldStreamer : RefCounted
 		if (newStreamer.HasFileOffsetDict())
 		{
 			newStreamer.SetOffsetDict();
-
-			newStreamer.RemoveFileOffsetDict();
 		}
 
         return newStreamer;
@@ -127,6 +124,12 @@ public partial class WorldStreamer : RefCounted
         WorldFile = FileAccess.Open(Path, FileAccess.ModeFlags.ReadWrite);
 
 		ElementLookup = GetElementLookup();
+
+		// save world if the file was just created
+		if (!HasFileOffsetDict())
+		{
+			SaveWorld(true);
+		}
     }
 
 	public Dictionary<int, AllElements> ElementLookup;
@@ -208,13 +211,14 @@ public partial class WorldStreamer : RefCounted
 		// save the file
 		SaveFromData(worldData);
 
+		WorldFile.Flush();
+
 		return RemovedChunks;
 	}
 
 
 	/// <summary>
-	/// Saves the world to disk at the specified <c>Path</c>, only operating on the chunks currently active in the simulation. <c>Path</c> must point
-	/// to a file with the <c>.pwdr</c> extension.
+	/// Saves the world to disk, only operating on the chunks currently active in the simulation.
 	/// </summary>
 	/// <param name="Override">Whether or not to override the contents of the file, essentially replacing the contents with the current ones.</param>
 	/// <returns>Whether the operation was successful or not.</returns>
@@ -348,7 +352,7 @@ public partial class WorldStreamer : RefCounted
 	}
 
 	/// <summary>
-	/// 
+	/// Replaces or adds a chunk to the simulation with data from the file.
 	/// </summary>
 	/// <param name="ChunkPosition"></param>
 	/// <returns>Whether the specified chunk position exists in the file.</returns>
@@ -357,6 +361,7 @@ public partial class WorldStreamer : RefCounted
 		// check if the position exists in the file
 		if(!ChunkFileOffsets.TryGetValue(ChunkPosition, out ulong filePos))
 		{
+			GD.Print(ChunkPosition + "did not exist in the offsets dict");
 			return false;
 		}
 		
@@ -379,15 +384,16 @@ public partial class WorldStreamer : RefCounted
 		int cellIndex = 0;
 		foreach (storedCellRun run in chunkData.CellRuns)
 		{
-			
+
 			for(int i = 0; i < run.RunLength; i++)
 			{
+
 				SandInfo.Cell cell = editChunk.Cells[cellIndex];
 
-				GD.Print(ElementLookup[0]);
-				GD.Print(ElementLookup[run.ElementIndex]);
 				cell.Element = ElementLookup[run.ElementIndex];
 				cell.Fields = run.CellFields;
+
+				editChunk.MarkCellUpdated(cell);
 
 				cellIndex++;
 			}
@@ -514,8 +520,11 @@ public partial class WorldStreamer : RefCounted
 			uint yPos = WorldFile.Get32();
 
 			List<storedCellRun> cellRuns = new List<storedCellRun>();
+
+			uint runNum = WorldFile.Get32();
+
 			// get cell runs
-			for (int run = 0; run < WorldFile.Get32(); run++)
+			for (int run = 0; run < runNum; run++)
 			{
 				uint runLength = WorldFile.Get32();
 				ushort elementIndex = WorldFile.Get16();
@@ -561,8 +570,11 @@ public partial class WorldStreamer : RefCounted
 		uint yPos = WorldFile.Get32();
 
 		List<storedCellRun> cellRuns = new List<storedCellRun>();
+
+		uint runNum = WorldFile.Get32();
+
 		// get cell runs
-		for (int run = 0; run < WorldFile.Get32(); run++)
+		for (int run = 0; run < runNum; run++)
 		{
 			uint runLength = WorldFile.Get32();
 			ushort elementIndex = WorldFile.Get16();
@@ -628,6 +640,9 @@ public partial class WorldStreamer : RefCounted
 	/// <returns>Whether the operation was successful or not.</returns>
 	private bool SaveFromData(storedWorldInfo Data)
 	{
+		// refresh element lookup
+		ElementLookup = GetElementLookup();
+
 		WorldFile.Seek(0);
 
 		// keep header + file offset pointer
@@ -652,6 +667,9 @@ public partial class WorldStreamer : RefCounted
 		// store chunks
 		foreach(storedChunkInfo chunk in Data.Chunks)
 		{
+			// update this chunk's file offset
+			ChunkFileOffsets[new Vector2I(chunk.X, chunk.Y)] = WorldFile.GetPosition();
+
 			// store x/y position
 			WorldFile.Store32((uint)chunk.X);
 			WorldFile.Store32((uint)chunk.Y);
@@ -675,7 +693,6 @@ public partial class WorldStreamer : RefCounted
 			}
 		}
 
-		SetOffsetDict();
 		WorldFile.SeekEnd();
 		StoreFileOffsetDict();
 
@@ -718,14 +735,15 @@ public partial class WorldStreamer : RefCounted
 		foreach(SandInfo.Cell cell in Cells)
 		{
 			// get the unique ID of the element name
-			int ID = elementOrder.IndexOf(Enum.GetName(cell.Element));
+			//int ID = elementOrder.IndexOf(Enum.GetName(cell.Element));
+			int ID = ElementLookup.FirstOrDefault(x => x.Value == cell.Element).Key;
 
 			// if ID is not the same as prevID then mark this run completed
 			if((ID != prevID || idx == Cells.Count() - 1) && prevID != -1)
 			{
 				runLengths.Add(currentRunLength);
-				elementIDs.Add(ID);
-				beginningIdxs.Add(idx);
+				elementIDs.Add(prevID);
+				beginningIdxs.Add(idx - 1);
 
 				currentRunLength = 0;
 				prevID = -1;
@@ -788,6 +806,9 @@ public partial class WorldStreamer : RefCounted
 
 		ulong pointerpos = WorldFile.GetPosition();
 
+		// store chunk num
+		WorldFile.Store32((uint)ChunkFileOffsets.Count());
+
 		// save each key/value pair
 		foreach (Vector2I pos in ChunkFileOffsets.Keys)
 		{
@@ -797,6 +818,7 @@ public partial class WorldStreamer : RefCounted
 
 			//store file offset
 			WorldFile.Store32((uint)ChunkFileOffsets[pos]);
+
 		}
 
 
@@ -821,20 +843,11 @@ public partial class WorldStreamer : RefCounted
 		WorldFile.GetPascalString();
 
 		uint offsetDictPos = WorldFile.Get32();
-
-		ushort elementNum = WorldFile.Get16();
-
-		// get to the chunk num save
-		for(int i = 0; i < elementNum; i++)
-		{
-			WorldFile.GetPascalString();
-		}
-		WorldFile.Get8();
+		
+		WorldFile.Seek(offsetDictPos);
 
 		// get number of chunks
 		uint chunkNum = WorldFile.Get32();
-
-		WorldFile.Seek(offsetDictPos);
 
 		// generates offset dict
 		ChunkFileOffsets.Clear();
@@ -845,7 +858,7 @@ public partial class WorldStreamer : RefCounted
 			uint fileOffset = WorldFile.Get32();
 
 			// insert stuff
-			ChunkFileOffsets.Add(new Vector2I((int)X, (int)Y), fileOffset);
+			ChunkFileOffsets[new Vector2I((int)X, (int)Y)] = fileOffset;
 		}
 
 	}
