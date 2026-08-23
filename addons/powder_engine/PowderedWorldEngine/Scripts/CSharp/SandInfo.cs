@@ -297,6 +297,12 @@ public partial class SandInfo : Node
 			{SandInfo.Neighbors.BOTTOMRIGHT, new Vector2I(1, 1)},
 		};
 
+
+		/// <summary>
+		/// The number of cell-specific fields each cell has. Each cell's fields are a fixed-size C# array, so this is how many there are for every cell.
+		/// </summary>
+		public static readonly byte FieldCount = 8;
+
 		// ------------------------------------
 
 		public int ChunkSize;

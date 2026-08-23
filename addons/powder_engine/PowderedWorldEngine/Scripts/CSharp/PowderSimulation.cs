@@ -155,6 +155,8 @@ public partial class PowderSimulation : Node2D
 	// number of ticks passed since startup, mod by 2
 	private int TicksPassed = 1;
 
+	private WorldStreamer currentStreamer;
+
 	public List<ChunkRendererCS> ActiveChunkRenderers = new List<ChunkRendererCS>();
 	public Node2D ChunkRendererParent;
 
@@ -180,6 +182,22 @@ public partial class PowderSimulation : Node2D
 	private void OnChunkChanged(Vector2I at)
 	{
 		ChunkChanged?.Invoke(at);
+	}
+
+	// ***************** Setters + Getters -----------------------------------
+
+	/// <summary>
+	/// Assigns a WorldStreamer object to the simulation. When assigned, using FollowMode will save/load chunks using the WorldStreamer object. Set to <c>null</c> to disable this behavior.
+	/// </summary>
+	/// <param name="NewStreamer"></param>
+	public void SetWorldStreamer(WorldStreamer NewStreamer)
+	{
+		currentStreamer = NewStreamer;
+	}
+
+	public WorldStreamer GetWorldStreamer()
+	{
+		return currentStreamer;
 	}
 
 	// ***************** Misc ---------------------------------------
@@ -279,7 +297,8 @@ public partial class PowderSimulation : Node2D
 
 
 	/// <summary>
-	/// Deletes all chunks outside and adds chunks inside of the constraints defined in <c>FollowAreaConstraints</c> around <c>FollowNode.Position</c>.
+	/// Deletes all chunks outside and adds chunks inside of the constraints defined in <c>FollowAreaConstraints</c> around <c>FollowNode.Position</c>. 
+	/// If a WorldStreamer is set using <see cref="SetWorldStreamer"/>, it uses that file to load and save chunks.
 	/// </summary>
 	private void ConstrainChunks()
 	{
@@ -315,8 +334,20 @@ public partial class PowderSimulation : Node2D
 			
 			if (PointInsideConstraints(targetPos))
 			{
-				// add chunk
-				AddChunk(pos + offset);
+				// add chunk, load chunk if worldStreamer is set
+				if(currentStreamer != null)
+				{
+					// if chunk does not exist in file, add new chunk
+					if(!currentStreamer.LoadChunk(pos + offset))
+					{
+						AddChunk(pos + offset);
+					}				
+				}
+				else
+				{
+					AddChunk(pos + offset);
+				}
+				
 			}
 			
 
@@ -336,7 +367,15 @@ public partial class PowderSimulation : Node2D
 			return;
 		}
 
-		RemoveChunk(pos);
+		// unload chunk if worldstreamer is set
+		if (currentStreamer != null)
+		{
+			currentStreamer.UnloadChunk(GetChunk(pos));
+		}
+		else
+		{
+			RemoveChunk(pos);
+		}
 		
 	
 	}

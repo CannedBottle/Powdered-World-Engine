@@ -115,7 +115,7 @@ public partial class WorldStreamer : RefCounted
 
     // --------------------------
 
-    public WorldStreamer(string Path, PowderSimulation Simulation)
+    private WorldStreamer(string Path, PowderSimulation Simulation)
     {
         Sim = Simulation;
 
@@ -130,6 +130,7 @@ public partial class WorldStreamer : RefCounted
 		{
 			SaveWorld(true);
 		}
+		
     }
 
 	public Dictionary<int, AllElements> ElementLookup;
@@ -237,7 +238,7 @@ public partial class WorldStreamer : RefCounted
 			StoreElementLookup();
 
 			// store the number of cell-specific fields every cell has
-			WorldFile.Store8((byte)Sim.GetCell(new Vector2I(0, 0)).Fields.Count());
+			WorldFile.Store8((byte)SandInfo.Cell.FieldCount);
 
 			// store number of chunks
 			WorldFile.Store32((uint)Sim.Chunks.Count);
@@ -352,6 +353,17 @@ public partial class WorldStreamer : RefCounted
 	}
 
 	/// <summary>
+	/// Saves the given Chunk to the file, and removes it from the simulation. Uses <see cref="SaveChunk"/> to save to file, so everything from that description applies here.
+	/// </summary>
+	/// <param name="Chunk"></param>
+	public void UnloadChunk(SandInfo.Chunk Chunk)
+	{
+		SaveChunk(Chunk);
+
+		Sim.RemoveChunk(Chunk.ChunkPosition);
+	}
+
+	/// <summary>
 	/// Replaces or adds a chunk to the simulation with data from the file.
 	/// </summary>
 	/// <param name="ChunkPosition"></param>
@@ -361,7 +373,6 @@ public partial class WorldStreamer : RefCounted
 		// check if the position exists in the file
 		if(!ChunkFileOffsets.TryGetValue(ChunkPosition, out ulong filePos))
 		{
-			GD.Print(ChunkPosition + "did not exist in the offsets dict");
 			return false;
 		}
 		

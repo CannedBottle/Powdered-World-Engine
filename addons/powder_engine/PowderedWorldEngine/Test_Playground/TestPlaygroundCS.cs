@@ -74,6 +74,7 @@ public partial class TestPlaygroundCS : Node2D
 		
 		WorldSave = WorldStreamer.Open("user://pwengine/worlds/WorldTest.pwdr", Sim);
 		//WorldSave = WorldStreamer.Create("user://pwengine/worlds/", "WorldTest", Sim);
+		Sim.SetWorldStreamer(WorldSave);
 
 		DisplayServer.WindowSetSize(DisplayServer.ScreenGetSize());
 
