@@ -15,7 +15,7 @@ public partial class WorldStreamer : RefCounted
     // STATICS ----------------------------
 	
     /// <summary>
-    /// Creates a new WorldStreamer Object and assigns it the specified file.
+    /// Creates a new WorldStreamer object and assigns it the specified file. <c>WorldPath</c> must point to an existing file with the <c>.pwdr</c> extension.
     /// </summary>
     /// <returns>a new <c>WorldStreamer</c> object if the file is usable; otherwise returns <c>null</c>.</returns>
     public static WorldStreamer Open(string WorldPath, PowderSimulation Simulation)
@@ -41,9 +41,9 @@ public partial class WorldStreamer : RefCounted
     /// Creates a new WorldStreamer object and a <c>.pwdr</c>file with the given <c>FileName</c> assigned to it. <c>WorldDirPath</c> must point to a directory in which the file can be created. Usually starts with <c>user://</c>.
 	/// <b>FileName MUST be different than an already existing file. Otherwise it opens the existing file.</b>
     /// </summary>
-    /// <param name="WorldPath"></param>
-    /// <param name="FileName"></param>
-    /// <returns></returns>
+    /// <param name="WorldPath">The path to the folder for this file to be saved in. Usually starts with <c>user://</c>.</param>
+    /// <param name="FileName">The name for the new file to be called. The extension is automatically attached, so no need to add <c>.pwdr</c> to the end of this parameter.</param>
+    /// <returns>Returns a new <c>WorldStreamer</c> object if the filename and directory path are usable; otherwise returns <c>null</c>.</returns>
     public static WorldStreamer Create(string WorldDirPath, string FileName, PowderSimulation Simulation)
     {
         return new WorldStreamer(SaveEmpty(FileName, WorldDirPath), Simulation);
@@ -51,10 +51,10 @@ public partial class WorldStreamer : RefCounted
 
 
     /// <summary>
-	/// creates an empty save file. <c>Path</c> must point to a directory in which the new file can be added to. <c>Path</c> also must end with <c>/</c>. <b>Do not</b> include the file extension in <c>Name</c>.
+	/// Creates an empty save file. <c>Path</c> must point to a directory in which the new file can be added to. <c>Path</c> also must end with <c>/</c>. <b>Do not</b> include the file extension in <c>Name</c>.
 	/// </summary>
-	/// <param name="Name"></param>
-	/// <param name="Path"></param>
+	/// <param name="Name">The name to be given to the newly created file. The file extension is automatically attached, so no need to add <c>.pwdr</c> to the end of this parameter.</param>
+	/// <param name="Path">The path to the folder for this file to be saved in. Usually starts with <c>user://</c>. <b>Must</b> end with <c>/</c>.</param>
     /// <returns>the path to the newly created file.</returns>
 	private static string SaveEmpty(string Name, string Path)
 	{
@@ -942,7 +942,7 @@ public partial class WorldStreamer : RefCounted
 			ChunkNum = Chunks.Count;
 		}
 
-
+		/* UNUSED
 		// Helpers ---------------------
 		
 		/// <summary>
@@ -950,7 +950,7 @@ public partial class WorldStreamer : RefCounted
 		/// </summary>
 		/// <param name="Position"></param>
 		/// <returns>Whether the operation was successful or not.</returns>
-		public bool AddOrReplaceChunk(Vector2I Position, storedChunkInfo newChunkInfo)
+		private bool AddOrReplaceChunk(Vector2I Position, storedChunkInfo newChunkInfo)
 		{
 
 			// whether the chunk was found in the chunks list and was replaced.
@@ -978,6 +978,7 @@ public partial class WorldStreamer : RefCounted
 
 			return true;
 		}
+		*/
 
 	}
 

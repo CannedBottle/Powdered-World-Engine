@@ -195,6 +195,8 @@ public partial class PowderSimulation : Node2D
 		currentStreamer = NewStreamer;
 	}
 
+	/// <summary></summary>
+	/// <returns>the current WorldStreamer instance attached to this node.</returns>
 	public WorldStreamer GetWorldStreamer()
 	{
 		return currentStreamer;
@@ -226,6 +228,9 @@ public partial class PowderSimulation : Node2D
 		renderer.QueueFree();	
 	}
 
+	/// <summary></summary>
+	/// <param name="pos"></param>
+	/// <returns>The chunk currently at <c>pos</c>. Throws an error if there is no chunk at <c>pos</c>.</returns>
 	public SandInfo.Chunk GetChunk(Vector2I pos)
 	{
 		//old array-based chunk lookup
@@ -244,6 +249,9 @@ public partial class PowderSimulation : Node2D
 		return Chunks.TryGetValue(LocalToChunk(pos), out SandInfo.Chunk chunk);
 	}
 
+	/// <summary></summary>
+	/// <param name="pos"></param>
+	/// <returns>Whether the given <c>pos</c> corresponds to a chunk in the simulation.</returns>
 	public bool SimContainsChunk(Vector2I pos)
 	{
 		//return !(pos.X < SimulationMinChunkExtents.X || pos.Y < SimulationMinChunkExtents.Y
@@ -262,7 +270,7 @@ public partial class PowderSimulation : Node2D
 	}
 
 	/// <summary>
-	/// sets the follow mode of the simulation.
+	/// Sets <c>FollowEnabled</c> to <c>to</c>.
 	/// </summary>
 	/// <param name="to"></param>
 	public void SetFollowMode(bool to)
@@ -271,7 +279,8 @@ public partial class PowderSimulation : Node2D
 	}
 
 	/// <summary>
-	/// Sets the node for the simulation to follow. Only effective if <c>FollowEnabled</c> is set to <c>true</c>.
+	/// Sets the node for the simulation to follow. If <c>FollowEnabled</c> is set to <c>true</c>, the simulation uses the Node2D's position to determine where
+	/// the constraints are centered.
 	/// </summary>
 	/// <param name="what"></param>
 	public void SetFollowNode(Node2D what)
@@ -280,12 +289,12 @@ public partial class PowderSimulation : Node2D
 	}
 
 	/// <summary>
-	/// Sets the constraints for the simulation. Only effective if <c>FollowEnabled</c> is set to <c>true</c>.
+	/// Sets the constraints for the simulation. If <c>FollowEnabled</c> is set to <c>true</c>, the simulation auto loads/unloads chunks to fill the range ± <c>to</c>.
 	/// </summary>
 	/// <param name="to"></param>
-	public void SetConstraints(Rect2 to)
+	public void SetConstraints(Vector2 to)
 	{
-		FollowAreaConstraint = to;
+		FollowAreaConstraint = new Rect2(Vector2.Zero, to);
 
 		if (FollowCenterConstraintsOnFollowedNode)
 		{
@@ -414,30 +423,36 @@ public partial class PowderSimulation : Node2D
 
 	/// <summary></summary>
 	/// <returns>the converted local simulation coordinates to chunk coordinates.</returns>
-	public Vector2I LocalToChunk(Vector2I local_pos)
+	public Vector2I LocalToChunk(Vector2I localPos)
 	{
 		return new Vector2I(
-			(int)Math.Floor((decimal)local_pos.X / (decimal)IndividualChunkSize),
-			(int)Math.Floor((decimal)local_pos.Y / (decimal)IndividualChunkSize)
+			(int)Math.Floor((decimal)localPos.X / (decimal)IndividualChunkSize),
+			(int)Math.Floor((decimal)localPos.Y / (decimal)IndividualChunkSize)
 		);
 	}
 
-	public Vector2I WorldToChunk(Vector2 world_pos)
+	/// <summary></summary>
+	/// <returns>the given global (world) position converted to chunk coordinates.</returns>
+	public Vector2I WorldToChunk(Vector2 worldPos)
 	{
-		return LocalToChunk(WorldToLocal(world_pos));
+		return LocalToChunk(WorldToLocal(worldPos));
 	}
 
 
 	// ***************** Swap Buffer ----------------------------------------
 
-
+	/// <summary>
+	/// Adds two cells to list of cells to be swapped at the end of the frame.
+	/// </summary>
+	/// <param name="Cell1"></param>
+	/// <param name="Cell2"></param>
 	public void QueueSwap(SandInfo.Cell Cell1, SandInfo.Cell Cell2)
 	{
 		SwapQueue.Add(new Swap(Cell1, Cell2));
 	}
 
 	/// <summary>
-	/// writes all the buffered swaps onto the simulation.
+	/// Writes all the buffered swaps onto the simulation.
 	/// </summary>
 	public void CommitSwapQueue()
 	{
@@ -478,7 +493,11 @@ public partial class PowderSimulation : Node2D
 		
 	}
 
-	
+	/// <summary>
+	/// Removes the chunk at the specified coordinates.
+	/// </summary>
+	/// <param name="at"></param>
+	/// <returns>Whether there was a chunk at the specified position or not.</returns>
 	public bool RemoveChunk(Vector2I at)
 	{
 		if (Chunks.TryGetValue(at, out SandInfo.Chunk chunk))
@@ -540,9 +559,12 @@ public partial class PowderSimulation : Node2D
 
 	// ***************** Updating + Initialization --------------------------
 
+	/// <summary>
+	/// Populates the grid with Chunk and Cell objects set to the correct default state. One of the functions called in this node's _Ready() function.
+	/// </summary>
 	public void InitGrid()
 	{
-		_FindIndexOffsets();
+		FindIndexOffsets();
 
 		Chunks.Clear();
 
@@ -573,7 +595,7 @@ public partial class PowderSimulation : Node2D
 		UpdateSimulationSize();
 	}
 
-	public void _FindIndexOffsets()
+	private void FindIndexOffsets()
 	{
 		NeighborIndexOffsets = new Dictionary<SandInfo.Neighbors, int>
 		{
@@ -588,6 +610,10 @@ public partial class PowderSimulation : Node2D
 		};
 	}
 
+	/// <summary>
+	/// Updates the cells in all the chunks of the simulation, sending them to the swap buffer. Automatically called in UpdateSimulation().
+	/// </summary>
+	/// <param name="tick">The elapsed frame, mod by two (constrained to 0 and 1). Changes update direction based on the current tick, making the simulation less one-sided.</param>
 	public void UpdateChunks(int tick)
 	{
 		if(tick == 1){
@@ -716,7 +742,9 @@ public partial class PowderSimulation : Node2D
 		}
 	}
 
-
+	/// <summary>
+	/// Loops through each chunk and sends its cell data to its respective ChunkRenderer.
+	/// </summary>
 	public void RenderChunkUpdates()
 	{
 		DrawTime = Time.GetTicksUsec() / 1000.0f;
@@ -777,7 +805,7 @@ public partial class PowderSimulation : Node2D
 	public override void _Ready()
 	{
 
-		SetConstraints(FollowAreaConstraint);
+		SetConstraints(FollowAreaConstraint.Size);
 
 		ChunkRendererParent = new Node2D();
 		ChunkRendererParent.Name = "ChunkRendererParent";
@@ -838,7 +866,7 @@ public partial class PowderSimulation : Node2D
 	/// Updates the simulation while being safe to put in <c>_Process</c>/<c>_PhysicsProcess</c> because if <c>wait</c> is set to <c>true</c>, it will not tick until the right amount of time has passed specified in <c>SimulationSpeed</c>.
 	/// If <c>wait</c> is set to <c>false</c>, runs one tick of the simulation regardless.
 	/// </summary>
-	/// <param name="wait"></param>
+	/// <param name="wait">Whether or not to check if the correct amount of time has passed specified in `SimulationSpeed`, and if not, does not call the function.</param>
 	public void UpdateSimulation(bool wait = true)
 	{
 		
