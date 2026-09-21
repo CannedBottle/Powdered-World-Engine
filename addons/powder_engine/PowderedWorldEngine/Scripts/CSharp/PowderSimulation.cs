@@ -163,7 +163,7 @@ public partial class PowderSimulation : Node2D
 	/// <summary>
 	/// 
 	/// </summary>
-	public Dictionary<SandInfo.Neighbors, int> NeighborIndexOffsets;
+	public Dictionary<Vector2I, int> NeighborIndexOffsets;
 
 	// ------------ Signals
 
@@ -597,16 +597,16 @@ public partial class PowderSimulation : Node2D
 
 	private void FindIndexOffsets()
 	{
-		NeighborIndexOffsets = new Dictionary<SandInfo.Neighbors, int>
+		NeighborIndexOffsets = new Dictionary<Vector2I, int>
 		{
-			{SandInfo.Neighbors.TOPLEFT, -(IndividualChunkSize + 1)},
-			{SandInfo.Neighbors.TOPMIDDLE, -IndividualChunkSize},
-			{SandInfo.Neighbors.TOPRIGHT, -(IndividualChunkSize - 1)},
-			{SandInfo.Neighbors.LEFTMIDDLE, -1},
-			{SandInfo.Neighbors.RIGHTMIDDLE, 1},
-			{SandInfo.Neighbors.BOTTOMLEFT, IndividualChunkSize - 1},
-			{SandInfo.Neighbors.BOTTOMMIDDLE, IndividualChunkSize},
-			{SandInfo.Neighbors.BOTTOMRIGHT, IndividualChunkSize + 1},	
+			{SandInfo.TOPLEFT, -(IndividualChunkSize + 1)},
+			{SandInfo.TOPMIDDLE, -IndividualChunkSize},
+			{SandInfo.TOPRIGHT, -(IndividualChunkSize - 1)},
+			{SandInfo.LEFTMIDDLE, -1},
+			{SandInfo.RIGHTMIDDLE, 1},
+			{SandInfo.BOTTOMLEFT, IndividualChunkSize - 1},
+			{SandInfo.BOTTOMMIDDLE, IndividualChunkSize},
+			{SandInfo.BOTTOMRIGHT, IndividualChunkSize + 1},	
 		};
 	}
 

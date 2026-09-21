@@ -53,16 +53,20 @@ public partial class ElementAttributes : Resource
 	};
 
 
-	public struct Reaction
+	public static Reaction CreateReaction(Godot.Collections.Array<Vector2I> MarkedNeighbors, AllElements ElementToCheck, int NeighborComparison, int ReactionType, AllElements ReplaceElement, int MatchingNumToCheck)
 	{
-		/// <summary>
-		/// The neighbors the reaction checks to find if the it meets the criteria to cause the reaction.
-		/// </summary>
-		public Godot.Collections.Array<Neighbors> CheckedNeighbors;
+		return new Reaction(MarkedNeighbors, ElementToCheck, (Reaction.Comparisons)NeighborComparison, (Reaction.ReactionTypes)ReactionType, ReplaceElement, MatchingNumToCheck);
+	}
 
+	
+
+	public static Reaction GetDefaultReaction()
+	{
+		return new Reaction(new Godot.Collections.Array<Vector2I>{}, null, Reaction.Comparisons.GREATER_THAN_OR_EQUAL, Reaction.ReactionTypes.REPLACE_SELF, AllElements.AIR, 1);
 	}
 
 	// ----------------------------------------------------------------------------------
+
 
 	/// <summary>
 	/// 
@@ -124,6 +128,8 @@ public partial class ElementAttributes : Resource
 
 	[Export] public float NoiseStrength {get; set;}
 
+	[Export] public Godot.Collections.Array<Reaction> Reactions {get; set;} = new Godot.Collections.Array<Reaction>{};
+
 	// -------- Custom Fields ----------------------
 
 	[Export] public Godot.Collections.Dictionary<string, byte> FieldToIndex = new Godot.Collections.Dictionary<string, byte>{};
@@ -142,7 +148,7 @@ public partial class ElementAttributes : Resource
 
 	// ---------------------------------------------
 
-	public ElementAttributes(AllElements EId, ElementTypes EType, MoveTypes EMoveType, Color EColor, float ENoiseStrength, Godot.Collections.Array<ElementFlags>? EFlags)
+	public ElementAttributes(AllElements EId, ElementTypes EType, MoveTypes EMoveType, Color EColor, float ENoiseStrength, Godot.Collections.Array<ElementFlags>? EFlags, Godot.Collections.Array<Reaction> EReactions)
 	{
 			
 		Id = EId;
@@ -151,10 +157,15 @@ public partial class ElementAttributes : Resource
 		BaseColor = EColor;
 		NoiseStrength = ENoiseStrength;
 		Flags = EFlags;
+		Reactions = EReactions;
 		
 		if(Flags == null)
 		{
 			Flags = new Godot.Collections.Array<ElementFlags>{};
+		}
+		if(Reactions == null)
+		{
+			Reactions = new Godot.Collections.Array<Reaction>{};
 		}
 
 		_GenerateFields();
@@ -190,7 +201,7 @@ public partial class ElementAttributes : Resource
 
 	public ElementAttributes Clone()
 	{
-		return new ElementAttributes(Id, Type, MovementType, BaseColor, NoiseStrength, Flags.Duplicate(true));
+		return new ElementAttributes(Id, Type, MovementType, BaseColor, NoiseStrength, Flags.Duplicate(true), Reactions.Duplicate(true));
 	}
 
 	public StringName GetTypeStrN()
@@ -217,5 +228,84 @@ public partial class ElementAttributes : Resource
 	{
 		return Flags.Count;
 	}
+
+	public void AddReaction(Reaction reaction)
+	{
+		Reactions.Add(reaction);
+	}
+
+	public void RemoveReaction(int Idx)
+	{
+		Reactions.RemoveAt(Idx);
+	}
+
+	// GET REACTION DATA FUNCTIONS -------------------------------------------------------------------
+
+	public Godot.Collections.Array<Vector2I> GetReactionMarkedNeighbors(int ReactionIdx)
+	{
+		return Reactions[ReactionIdx].MarkedNeighbors.Duplicate();
+	}
+
+	/// <summary></summary>
+	/// <param name="ReactionIdx"></param>
+	/// <returns>-1 if it means ANY element, but otherwise returns the specific element enum index.</returns>
+	public int GetReactionElementCheck(int ReactionIdx)
+	{
+		return Reactions[ReactionIdx].ElementCheck != null ? (int)Reactions[ReactionIdx].ElementCheck : -1;
+	}
+
+	public int GetReactionNeighborElementComparison(int ReactionIdx)
+	{
+		return (int)Reactions[ReactionIdx].NeighborElementComparison;
+	}
+
+	public int GetReactionType(int ReactionIdx)
+	{
+		return (int)Reactions[ReactionIdx].reactionType;
+	}
+
+	public int GetReactionReplaceElement(int ReactionIdx)
+	{
+		return (int)Reactions[ReactionIdx].ReplaceWith;
+	}
+
+	public int GetReactionMatchingNumCheck(int ReactionIdx)
+	{
+		return Reactions[ReactionIdx].MatchingNumToCheck;
+	}
+
+	// SET REACTION DATA FUNCTIONS -------------------------------------------------------------------
+
+	public void SetReactionMarkedNeighbors(int ReactionIdx, Godot.Collections.Array<Vector2I> NewMarkedNeighbors)
+	{
+		Reactions[ReactionIdx].MarkedNeighbors = NewMarkedNeighbors;
+	}
+
+	public void SetReactionElementCheck(int ReactionIdx, int NewElementCheck)
+	{
+		Reactions[ReactionIdx].ElementCheck = NewElementCheck == -1 ? null : (AllElements)NewElementCheck;
+	}
+
+	public void SetReactionNeighborElementComparison(int ReactionIdx, int NewNeighborElementComparison)
+	{
+		Reactions[ReactionIdx].NeighborElementComparison = (Reaction.Comparisons)NewNeighborElementComparison;
+	}
+
+	public void SetReactionType(int ReactionIdx, int NewReactionType)
+	{
+		Reactions[ReactionIdx].reactionType = (Reaction.ReactionTypes)NewReactionType;
+	}
+
+	public void SetReactionReplaceElement(int ReactionIdx, int NewReactionReplaceElement)
+	{
+		Reactions[ReactionIdx].ReplaceWith = (AllElements)NewReactionReplaceElement;
+	}
+
+	public void SetReactionMatchingNumCheck(int ReactionIdx, int NewMatchingNumCheck)
+	{
+		Reactions[ReactionIdx].MatchingNumToCheck = NewMatchingNumCheck;
+	}
+
+	// ---------------------------------------------------------------------------
 
 }

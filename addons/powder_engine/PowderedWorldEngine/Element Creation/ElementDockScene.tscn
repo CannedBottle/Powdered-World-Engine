@@ -206,7 +206,25 @@ layout_mode = 2
 folded = true
 title = "Reactions"
 
+[node name="VboxCont" type="VBoxContainer" parent="ReactionSection" unique_id=1986738079]
+visible = false
+layout_mode = 2
+
+[node name="ReactionsParent" type="MarginContainer" parent="ReactionSection/VboxCont" unique_id=1427219760]
+layout_mode = 2
+theme_override_constants/margin_left = 16
+
+[node name="VBoxContainer" type="VBoxContainer" parent="ReactionSection/VboxCont/ReactionsParent" unique_id=849241903]
+layout_mode = 2
+
+[node name="AddReactionButton" type="Button" parent="ReactionSection/VboxCont" unique_id=380937895]
+layout_mode = 2
+size_flags_horizontal = 4
+text = "Add Reaction"
+icon = ExtResource("2_3hmnj")
+
 [node name="MovementSection" type="FoldableContainer" parent="." unique_id=1814600024]
+visible = false
 layout_mode = 2
 folded = true
 title = "Movement"

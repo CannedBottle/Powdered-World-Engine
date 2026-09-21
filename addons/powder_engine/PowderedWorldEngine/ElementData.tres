@@ -2,6 +2,7 @@
 
 [ext_resource type="Script" uid="uid://b18mxtsbkwnds" path="res://addons/powder_engine/PowderedWorldEngine/Scripts/CSharp/ElementAttributes.cs" id="1_b1pp6"]
 [ext_resource type="Script" uid="uid://jcjrgxvwm8xe" path="res://addons/powder_engine/PowderedWorldEngine/Scripts/CSharp/ElementStorage.cs" id="1_dvpe1"]
+[ext_resource type="Script" uid="uid://cm7pub3uagnh7" path="res://addons/powder_engine/PowderedWorldEngine/Element Creation/Reaction.cs" id="2_u0hdg"]
 
 [sub_resource type="Resource" id="Resource_bucba"]
 script = ExtResource("1_b1pp6")

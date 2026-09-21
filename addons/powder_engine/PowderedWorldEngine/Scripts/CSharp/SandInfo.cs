@@ -38,6 +38,9 @@ public partial class SandInfo : Node
 
 	// ----------------------------------------------------------------------------------------------------------------------------------- //
 
+	/// <summary>
+	/// this property is set in the plugin config file, where the plugin is initialized.
+	/// </summary>
 	public static string PluginVersion = "1.0";
 
 
@@ -96,22 +99,14 @@ public partial class SandInfo : Node
 	}
 
 	// -------------------------------------------------------------------------------------
-	
-	/// <summary>
-	/// Names to make the neighbor positions more readable.
-	/// </summary>
-	public enum Neighbors
-	{
-		TOPLEFT,
-		TOPMIDDLE,
-		TOPRIGHT,
-		LEFTMIDDLE,
-		RIGHTMIDDLE,
-		BOTTOMLEFT,
-		BOTTOMMIDDLE,
-		BOTTOMRIGHT
-	}
-
+	public static readonly Vector2I TOPLEFT = new Vector2I(-1, -1);
+	public static readonly Vector2I TOPMIDDLE = new Vector2I(0, -1);
+	public static readonly Vector2I TOPRIGHT = new Vector2I(1, -1);
+	public static readonly Vector2I LEFTMIDDLE = new Vector2I(-1, 0);
+	public static readonly Vector2I RIGHTMIDDLE = new Vector2I(1, 0);
+	public static readonly Vector2I BOTTOMLEFT = new Vector2I(-1, 1);
+	public static readonly Vector2I BOTTOMMIDDLE = new Vector2I(0, 1);
+	public static readonly Vector2I BOTTOMRIGHT = new Vector2I(1, 1);
 
 	// ------------------------------------ USEFUL FUNCTIONS ----------------------------- //
 	public static int CellPosToChunkPos(Vector2I cellPos, int chunkSize)
@@ -193,20 +188,20 @@ public partial class SandInfo : Node
 		{
 			case MoveTypes.SAND: // ---------------------------------------
 
-				if(cell.TryMove(Neighbors.BOTTOMMIDDLE, simRef) == false)
+				if(cell.TryMove(BOTTOMMIDDLE, simRef) == false)
 				{
 					if(cell.Fields[cell.GetFieldIndex("R#random")] == 0)
 					{
-						if(cell.TryMove(Neighbors.BOTTOMRIGHT, simRef) == false)
+						if(cell.TryMove(BOTTOMRIGHT, simRef) == false)
 						{
-							cell.TryMove(Neighbors.BOTTOMLEFT, simRef);
+							cell.TryMove(BOTTOMLEFT, simRef);
 						}
 					}
 					else
 					{
-						if(cell.TryMove(Neighbors.BOTTOMLEFT, simRef) == false)
+						if(cell.TryMove(BOTTOMLEFT, simRef) == false)
 						{
-							cell.TryMove(Neighbors.BOTTOMRIGHT, simRef);
+							cell.TryMove(BOTTOMRIGHT, simRef);
 						}
 					}
 				}
@@ -214,23 +209,23 @@ public partial class SandInfo : Node
 			
 			case MoveTypes.LIQUID: // ---------------------------------------
 
-				if(cell.TryMove(Neighbors.BOTTOMMIDDLE, simRef) == false)
+				if(cell.TryMove(BOTTOMMIDDLE, simRef) == false)
 				{
 					bool success;
 					if(cell.Fields[cell.GetFieldIndex("R#random")] == 0)
 					{
-						success = cell.TryMove(Neighbors.BOTTOMRIGHT, simRef);
+						success = cell.TryMove(BOTTOMRIGHT, simRef);
 						if(success == false)
 						{
-							success = cell.TryMove(Neighbors.BOTTOMLEFT, simRef);
+							success = cell.TryMove(BOTTOMLEFT, simRef);
 						}
 					}
 					else
 					{
-						success = cell.TryMove(Neighbors.BOTTOMLEFT, simRef);
+						success = cell.TryMove(BOTTOMLEFT, simRef);
 						if(success == false)
 						{
-							success = cell.TryMove(Neighbors.BOTTOMRIGHT, simRef);
+							success = cell.TryMove(BOTTOMRIGHT, simRef);
 						}
 					}
 
@@ -240,26 +235,26 @@ public partial class SandInfo : Node
 
 						if(cell.Fields[cell.GetFieldIndex("R#direction")] == 1)
 						{
-							success = cell.TryMove(Neighbors.RIGHTMIDDLE, simRef);
+							success = cell.TryMove(RIGHTMIDDLE, simRef);
 							tempAtts[cell.GetFieldIndex("bumps")] += success ? (byte)0 : (byte)1;
 							tempAtts[cell.GetFieldIndex("R#direction")] = tempAtts[cell.GetFieldIndex("bumps")] >= 3 ? (byte)0 : (byte)1;
 							tempAtts[cell.GetFieldIndex("bumps")] = tempAtts[cell.GetFieldIndex("R#direction")] == 1 ? tempAtts[cell.GetFieldIndex("bumps")] : (byte)0;
 
 							if(success == false)
 							{
-								cell.TryMove(Neighbors.LEFTMIDDLE, simRef);
+								cell.TryMove(LEFTMIDDLE, simRef);
 							}
 						}
 						else
 						{
-							success = cell.TryMove(Neighbors.LEFTMIDDLE, simRef);
+							success = cell.TryMove(LEFTMIDDLE, simRef);
 							tempAtts[cell.GetFieldIndex("bumps")] += success ? (byte)0 : (byte)1;
 							tempAtts[cell.GetFieldIndex("R#direction")] = tempAtts[cell.GetFieldIndex("bumps")] >= 3 ? (byte)1 : (byte)0;
 							tempAtts[cell.GetFieldIndex("bumps")] = tempAtts[cell.GetFieldIndex("R#direction")] == 0 ? tempAtts[cell.GetFieldIndex("bumps")] : (byte)0;
 
 							if(success == false)
 							{
-								cell.TryMove(Neighbors.RIGHTMIDDLE, simRef);
+								cell.TryMove(RIGHTMIDDLE, simRef);
 							}
 						}
 					}
@@ -270,7 +265,7 @@ public partial class SandInfo : Node
 
 			case MoveTypes.STONE: // ----------------------------------------
 
-				cell.TryMove(Neighbors.BOTTOMMIDDLE, simRef);
+				cell.TryMove(BOTTOMMIDDLE, simRef);
 				break;
 		}
 
@@ -284,19 +279,7 @@ public partial class SandInfo : Node
 	public class Cell
 	{
 		// --------------- STATICS
-
-		private static Dictionary<Neighbors, Vector2I> NeighborOffsets = new Dictionary<Neighbors, Vector2I>
-		{
-			{SandInfo.Neighbors.TOPLEFT, new Vector2I(-1, -1)},
-			{SandInfo.Neighbors.TOPMIDDLE, new Vector2I(0, -1)},
-			{SandInfo.Neighbors.TOPRIGHT, new Vector2I(1, -1)},
-			{SandInfo.Neighbors.LEFTMIDDLE, new Vector2I(-1, 0)},
-			{SandInfo.Neighbors.RIGHTMIDDLE, new Vector2I(1, 0)},
-			{SandInfo.Neighbors.BOTTOMLEFT, new Vector2I(-1, 1)},
-			{SandInfo.Neighbors.BOTTOMMIDDLE, new Vector2I(0, 1)},
-			{SandInfo.Neighbors.BOTTOMRIGHT, new Vector2I(1, 1)},
-		};
-
+		private static readonly Vector2I[] Neighbors = [TOPRIGHT, TOPMIDDLE, LEFTMIDDLE, RIGHTMIDDLE, BOTTOMLEFT, BOTTOMMIDDLE, BOTTOMRIGHT];
 
 		/// <summary>
 		/// The number of cell-specific fields each cell has. Each cell's fields are a fixed-size C# array, so this is how many there are for every cell.
@@ -365,7 +348,7 @@ public partial class SandInfo : Node
 			Array.Clear(NeighborElements);
 
 			int i = 0;
-			foreach(Neighbors neighbor in Enum.GetValues<Neighbors>())
+			foreach(Vector2I neighbor in Neighbors)
 			{
 					
 				#nullable enable
@@ -386,7 +369,7 @@ public partial class SandInfo : Node
 		#nullable enable
 		public Cell? SearchNeighborElements(PowderSimulation simRef, AllElements targetElement, bool opposite = false, AllElements? SecondaryTarget = null)
 		{
-			foreach(Neighbors neighbor in Enum.GetValues<Neighbors>())
+			foreach(Vector2I neighbor in Neighbors)
 			{
 
 				Cell? NeighborCell = GetNeighbor(neighbor, simRef);
@@ -416,9 +399,9 @@ public partial class SandInfo : Node
 		}
 
 
-		public Cell? GetNeighbor(Neighbors neighbor, PowderSimulation simRef)
+		public Cell? GetNeighbor(Vector2I neighbor, PowderSimulation simRef)
 		{
-			Vector2I NeighborPos = Position + NeighborOffsets[neighbor];
+			Vector2I NeighborPos = Position + neighbor;
 			
 			if(!simRef.SimContainsCell(NeighborPos))
 			{
@@ -473,7 +456,7 @@ public partial class SandInfo : Node
 		///<summary>
 		///returns whether the move that successful or not.
 		/// </summary>
-		public bool TryMove(Neighbors ToNeighbor, PowderSimulation simRef)
+		public bool TryMove(Vector2I ToNeighbor, PowderSimulation simRef)
 		{
 			
 			#nullable enable

@@ -1,0 +1,200 @@
+[gd_scene format=3 uid="uid://bufawshn4aprg"]
+
+[ext_resource type="Script" uid="uid://dq0dxrha3drxe" path="res://addons/powder_engine/PowderedWorldEngine/Element Creation/reaction_editor.gd" id="1_1j2sj"]
+[ext_resource type="Texture2D" uid="uid://cttltm6n42bnt" path="res://addons/powder_engine/PowderedWorldEngine/Assets/toggleOff.png" id="1_isrvm"]
+[ext_resource type="Texture2D" uid="uid://f74vflvc1qcr" path="res://addons/powder_engine/PowderedWorldEngine/Assets/Remove.svg" id="3_iknyq"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_6ao8s"]
+content_margin_left = 4.0
+content_margin_top = 4.0
+content_margin_right = 4.0
+content_margin_bottom = 4.0
+bg_color = Color(0.07, 0.07, 0.07, 0.6)
+corner_radius_top_left = 3
+corner_radius_top_right = 3
+corner_detail = 5
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_iknyq"]
+content_margin_left = 4.0
+content_margin_top = 4.0
+content_margin_right = 4.0
+content_margin_bottom = 4.0
+bg_color = Color(0.22, 0.22, 0.22, 0.57254905)
+corner_radius_bottom_right = 3
+corner_radius_bottom_left = 3
+corner_detail = 5
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_ekejy"]
+content_margin_left = 4.0
+content_margin_top = 4.0
+content_margin_right = 4.0
+content_margin_bottom = 4.0
+bg_color = Color(0.04, 0.04, 0.04, 0.65882355)
+corner_radius_bottom_right = 3
+corner_radius_bottom_left = 3
+corner_detail = 5
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_1j2sj"]
+content_margin_left = 4.0
+content_margin_top = 4.0
+content_margin_right = 4.0
+content_margin_bottom = 4.0
+bg_color = Color(0, 0, 0, 0.6)
+corner_radius_top_left = 3
+corner_radius_top_right = 3
+corner_radius_bottom_right = 3
+corner_radius_bottom_left = 3
+corner_detail = 5
+
+[node name="ReactionEditorP" type="HBoxContainer" unique_id=581845556]
+offset_left = 4.0
+offset_top = 35.0
+offset_right = 369.0
+offset_bottom = 424.0
+script = ExtResource("1_1j2sj")
+
+[node name="ReactionEditor" type="FoldableContainer" parent="." unique_id=640835645]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_styles/title_panel = SubResource("StyleBoxFlat_6ao8s")
+theme_override_styles/panel = SubResource("StyleBoxFlat_iknyq")
+title = "Reaction 1"
+
+[node name="options" type="VBoxContainer" parent="ReactionEditor" unique_id=1405502148]
+layout_mode = 2
+
+[node name="MarkedNeighbors" type="FoldableContainer" parent="ReactionEditor/options" unique_id=983662901]
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_ekejy")
+title = "Marked Neighbors"
+
+[node name="NeighborButtonParent" type="GridContainer" parent="ReactionEditor/options/MarkedNeighbors" unique_id=716579104]
+layout_mode = 2
+size_flags_horizontal = 4
+columns = 3
+
+[node name="topleft" type="Button" parent="ReactionEditor/options/MarkedNeighbors/NeighborButtonParent" unique_id=1272696662]
+layout_mode = 2
+theme_override_styles/pressed = SubResource("StyleBoxFlat_1j2sj")
+toggle_mode = true
+icon = ExtResource("1_isrvm")
+icon_alignment = 1
+
+[node name="topmiddle" type="Button" parent="ReactionEditor/options/MarkedNeighbors/NeighborButtonParent" unique_id=136052987]
+layout_mode = 2
+theme_override_styles/pressed = SubResource("StyleBoxFlat_1j2sj")
+toggle_mode = true
+icon = ExtResource("1_isrvm")
+
+[node name="topright" type="Button" parent="ReactionEditor/options/MarkedNeighbors/NeighborButtonParent" unique_id=848235533]
+layout_mode = 2
+theme_override_styles/pressed = SubResource("StyleBoxFlat_1j2sj")
+toggle_mode = true
+icon = ExtResource("1_isrvm")
+
+[node name="leftmiddle" type="Button" parent="ReactionEditor/options/MarkedNeighbors/NeighborButtonParent" unique_id=995987086]
+layout_mode = 2
+theme_override_styles/pressed = SubResource("StyleBoxFlat_1j2sj")
+toggle_mode = true
+icon = ExtResource("1_isrvm")
+
+[node name="middle" type="Button" parent="ReactionEditor/options/MarkedNeighbors/NeighborButtonParent" unique_id=1406035727]
+layout_mode = 2
+theme_override_styles/pressed = SubResource("StyleBoxFlat_1j2sj")
+disabled = true
+text = "E"
+
+[node name="rightmiddle" type="Button" parent="ReactionEditor/options/MarkedNeighbors/NeighborButtonParent" unique_id=720762834]
+layout_mode = 2
+theme_override_styles/pressed = SubResource("StyleBoxFlat_1j2sj")
+toggle_mode = true
+icon = ExtResource("1_isrvm")
+
+[node name="bottomleft" type="Button" parent="ReactionEditor/options/MarkedNeighbors/NeighborButtonParent" unique_id=368190491]
+layout_mode = 2
+theme_override_styles/pressed = SubResource("StyleBoxFlat_1j2sj")
+toggle_mode = true
+icon = ExtResource("1_isrvm")
+
+[node name="bottommiddle" type="Button" parent="ReactionEditor/options/MarkedNeighbors/NeighborButtonParent" unique_id=2033008975]
+layout_mode = 2
+theme_override_styles/pressed = SubResource("StyleBoxFlat_1j2sj")
+toggle_mode = true
+icon = ExtResource("1_isrvm")
+
+[node name="bottomright" type="Button" parent="ReactionEditor/options/MarkedNeighbors/NeighborButtonParent" unique_id=424920272]
+layout_mode = 2
+theme_override_styles/pressed = SubResource("StyleBoxFlat_1j2sj")
+toggle_mode = true
+icon = ExtResource("1_isrvm")
+
+[node name="Label" type="Label" parent="ReactionEditor/options" unique_id=1279410076]
+layout_mode = 2
+text = "(Condition) If Marked Neighbors is "
+
+[node name="HBoxContainer" type="HBoxContainer" parent="ReactionEditor/options" unique_id=402409664]
+layout_mode = 2
+
+[node name="ComparisonOptions" type="OptionButton" parent="ReactionEditor/options/HBoxContainer" unique_id=1319300145]
+layout_mode = 2
+size_flags_horizontal = 3
+selected = 0
+item_count = 3
+popup/item_0/text = "=="
+popup/item_0/id = 0
+popup/item_1/text = ">="
+popup/item_1/id = 1
+popup/item_2/text = "<"
+popup/item_2/id = 2
+
+[node name="compareAmount" type="SpinBox" parent="ReactionEditor/options/HBoxContainer" unique_id=133535233]
+layout_mode = 2
+max_value = 8.0
+rounded = true
+
+[node name="ElementPicker" type="OptionButton" parent="ReactionEditor/options/HBoxContainer" unique_id=2114448552]
+layout_mode = 2
+size_flags_horizontal = 3
+selected = 0
+search_bar_enabled = true
+item_count = 1
+popup/item_0/text = "[Element here]"
+popup/item_0/id = 0
+
+[node name="Label2" type="Label" parent="ReactionEditor/options" unique_id=370780439]
+layout_mode = 2
+text = "(Effect) then"
+
+[node name="ReactOptions" type="OptionButton" parent="ReactionEditor/options" unique_id=2130134417]
+layout_mode = 2
+selected = 0
+item_count = 3
+popup/item_0/text = "Replace element with [Element]"
+popup/item_0/id = 0
+popup/item_1/text = "Replace All Neighbors with [Element]"
+popup/item_1/id = 1
+popup/item_2/text = "Replace Marked Neighbors with [Element]"
+popup/item_2/id = 2
+
+[node name="HSeparator" type="HSeparator" parent="ReactionEditor/options" unique_id=1821198179]
+layout_mode = 2
+
+[node name="Label3" type="Label" parent="ReactionEditor/options" unique_id=315916743]
+layout_mode = 2
+text = "Effect Options:"
+
+[node name="Element" type="HBoxContainer" parent="ReactionEditor/options" unique_id=669014241]
+layout_mode = 2
+
+[node name="label" type="Label" parent="ReactionEditor/options/Element" unique_id=759588529]
+layout_mode = 2
+text = "Replace With:"
+
+[node name="EffectOpsElementPicker" type="OptionButton" parent="ReactionEditor/options/Element" unique_id=1480511338]
+layout_mode = 2
+size_flags_horizontal = 3
+search_bar_enabled = true
+
+[node name="Remove" type="Button" parent="." unique_id=1672690946]
+layout_mode = 2
+icon = ExtResource("3_iknyq")

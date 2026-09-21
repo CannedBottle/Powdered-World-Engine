@@ -26,6 +26,8 @@ public partial class TestPlaygroundCS : Node2D
 	private Button LoadButton;
 	private Button FlushButton;
 
+	private ChunkPosVisualizer PosVisualizer;
+
 	private Sprite2D Player;
 
 	private static readonly float PLAYER_SPEED = 750.0f;
@@ -67,6 +69,7 @@ public partial class TestPlaygroundCS : Node2D
 		SaveButton = GetNode<Button>("ui/VBoxContainer/SaveWorld");
 		LoadButton = GetNode<Button>("ui/VBoxContainer/LoadWorld");
 		FlushButton = GetNode<Button>("ui/VBoxContainer/Flush");
+		PosVisualizer = GetNode<ChunkPosVisualizer>("ChunkPosVisualizer");
 
 
 		Player = GetNode<Sprite2D>("player");
@@ -159,6 +162,8 @@ public partial class TestPlaygroundCS : Node2D
 	{
 		Sim.DebugMode = DebugSwitch.ButtonPressed;
 		Sim.QueueRedraw();
+
+		PosVisualizer.Visible = !PosVisualizer.Visible;
 	}
 
 	private void Pause(bool on)

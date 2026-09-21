@@ -18,6 +18,9 @@ extends VBoxContainer
 @onready var delete_element_button: Button = $DangerSection/VBoxContainer/DeleteElement/DeleteElementButton
 @onready var reset_defaults_button: Button = $DangerSection/VBoxContainer/ResetDefaults/ResetDefaultsButton
 
+# ----------------------------------------------------------- Reactions
+@onready var reactions_parent: VBoxContainer = $ReactionSection/VboxCont/ReactionsParent/VBoxContainer
+@onready var add_reaction_button: Button = $ReactionSection/VboxCont/AddReactionButton
 
 static var req_type_movement: Dictionary[StringName, StringName] = {
 	&"STATIC": &"NONE",
@@ -25,13 +28,15 @@ static var req_type_movement: Dictionary[StringName, StringName] = {
 
 const add_icon := preload("res://addons/powder_engine/PowderedWorldEngine/Assets/Add.svg")
 
+const reaction_editor_path: String = "res://addons/powder_engine/PowderedWorldEngine/Element Creation/reaction_editor.tscn"
+
 var temp_element_names: Array[StringName]
 
 var E_storage_ref: ElementStorage
 
 var temp_attributes: Dictionary[StringName, ElementAttributes]
 
-var selected_element: StringName
+var selected_element: StringName = &"AIR"
 
 func _ready() -> void:
 	E_storage_ref = SandInfo.GetElementResource()
@@ -47,6 +52,7 @@ func _ready() -> void:
 	update_element_selector()
 	update_button_states()
 	update_flag_list()
+	update_reaction_section()
 	
 	
 	# ------------- Connections -------------- #
@@ -63,6 +69,9 @@ func _ready() -> void:
 	
 	reset_defaults_button.pressed.connect(_reset_defaults)
 	delete_element_button.pressed.connect(_delete_selected_element)
+	
+	add_reaction_button.pressed.connect(_add_reaction)
+	
 
 func fill_movetype_button():
 	move_type_selection.clear()
@@ -92,6 +101,28 @@ func update_element_selector(keep_idx: bool = false):
 		element_selection.select(idx)
 	else:
 		element_selection.select(0)
+	# ---------------------------------------- #
+
+func fill_optionbutton_with_elements(op_but: OptionButton, option_for_any: bool, keep_idx: bool = false):
+	# --------- Element Selection ------------- #
+	var idx: int = op_but.selected
+	
+	op_but.clear()
+	var i: int = 0
+	for name in temp_element_names:
+		op_but.add_item(name)
+		var new_icon: Image = Image.create_empty(15, 15, false, Image.Format.FORMAT_RGBA8)
+		new_icon.fill(temp_attributes[name].BaseColor)
+		op_but.set_item_icon(i, ImageTexture.create_from_image(new_icon))
+		
+		i += 1
+	if(option_for_any):
+		op_but.add_item("Any")
+	
+	if keep_idx:
+		op_but.select(idx)
+	else:
+		op_but.select(0)
 	# ---------------------------------------- #
 
 func update_flag_list():
@@ -153,6 +184,7 @@ func _reset_defaults():
 	update_element_selector()
 	update_button_states()
 	update_flag_list()
+	update_reaction_section()
 
 func apply_changes():
 	set_actual_to_temp()
@@ -198,6 +230,43 @@ func add_flag():
 	
 	create_flag_selector(temp_attributes[selected_element].GetFlagsCount() - 1)
 
+func update_reaction_section():
+	selected_element = get_selected_element()
+	
+	# delete existing reaction sections
+	for child: Control in reactions_parent.get_children():
+		if(child is HBoxContainer):
+			child.queue_free()
+	
+	# create a new editor for each existing reaction
+	for reaction_num: int in temp_attributes[selected_element].Reactions.size():
+		add_reaction_editor(reaction_num)
+
+func add_reaction_editor(reaction_num: int):
+	selected_element = get_selected_element()
+	
+	var current_element: ElementAttributes = temp_attributes[selected_element]
+	if(reaction_num >= current_element.Reactions.size()):
+		create_new_reaction()
+	
+	var new_editor: Control = load(reaction_editor_path).instantiate()
+	
+	reactions_parent.add_child(new_editor)
+	
+	new_editor.removed.connect(_on_reaction_removed)
+	
+	new_editor.setup(reaction_num, self)
+
+##returns the reaction index of the newly created reaction.
+func create_new_reaction() -> int:
+	selected_element = get_selected_element()
+
+	var current_element: ElementAttributes = temp_attributes[selected_element]
+	
+	current_element.AddReaction(ElementAttributes.GetDefaultReaction())
+	
+	return current_element.Reactions.size() - 1
+
 # -------------------- Signals ------------------- #
 func _new_selected_element(index: int):
 	if index == temp_element_names.size():
@@ -208,6 +277,8 @@ func _new_selected_element(index: int):
 		element_selection.selected = index
 	
 	update_flag_list()
+	
+	update_reaction_section()
 	
 	update_button_states()
 	
@@ -284,3 +355,14 @@ func _move_type_changed(index: int):
 		
 		temp_attributes[selected_element].MovementType = ElementAttributes.GetMoveTypes().find(req_type_movement[type_strn])
 		update_button_states()
+
+func _add_reaction():
+	selected_element = get_selected_element()
+	add_reaction_editor(temp_attributes[selected_element].Reactions.size())
+
+func _on_reaction_removed(reaction_num: int):
+	selected_element = get_selected_element()
+	#remove reaction from list
+	temp_attributes[selected_element].RemoveReaction(reaction_num)
+	# shift all editors indexes since the old one was removed
+	update_reaction_section()
