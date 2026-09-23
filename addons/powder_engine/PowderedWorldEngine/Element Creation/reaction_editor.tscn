@@ -2,6 +2,7 @@
 
 [ext_resource type="Script" uid="uid://dq0dxrha3drxe" path="res://addons/powder_engine/PowderedWorldEngine/Element Creation/reaction_editor.gd" id="1_1j2sj"]
 [ext_resource type="Texture2D" uid="uid://cttltm6n42bnt" path="res://addons/powder_engine/PowderedWorldEngine/Assets/toggleOff.png" id="1_isrvm"]
+[ext_resource type="Texture2D" uid="uid://0wfxwmclxoui" path="res://addons/powder_engine/PowderedWorldEngine/Assets/Add.svg" id="3_6ao8s"]
 [ext_resource type="Texture2D" uid="uid://f74vflvc1qcr" path="res://addons/powder_engine/PowderedWorldEngine/Assets/Remove.svg" id="3_iknyq"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_6ao8s"]
@@ -58,9 +59,11 @@ layout_mode = 2
 size_flags_horizontal = 3
 theme_override_styles/title_panel = SubResource("StyleBoxFlat_6ao8s")
 theme_override_styles/panel = SubResource("StyleBoxFlat_iknyq")
+folded = true
 title = "Reaction 1"
 
 [node name="options" type="VBoxContainer" parent="ReactionEditor" unique_id=1405502148]
+visible = false
 layout_mode = 2
 
 [node name="MarkedNeighbors" type="FoldableContainer" parent="ReactionEditor/options" unique_id=983662901]
@@ -130,7 +133,7 @@ icon = ExtResource("1_isrvm")
 
 [node name="Label" type="Label" parent="ReactionEditor/options" unique_id=1279410076]
 layout_mode = 2
-text = "(Condition) If Marked Neighbors is "
+text = "(Condition) If Marked Neighbors contains"
 
 [node name="HBoxContainer" type="HBoxContainer" parent="ReactionEditor/options" unique_id=402409664]
 layout_mode = 2
@@ -161,6 +164,21 @@ item_count = 1
 popup/item_0/text = "[Element here]"
 popup/item_0/id = 0
 
+[node name="Excluding" type="FoldableContainer" parent="ReactionEditor/options" unique_id=1739164390]
+layout_mode = 2
+folded = true
+title = "Excluding"
+
+[node name="excludingOptionsParent" type="VBoxContainer" parent="ReactionEditor/options/Excluding" unique_id=1662537646]
+visible = false
+layout_mode = 2
+
+[node name="AddExclusion" type="Button" parent="ReactionEditor/options/Excluding/excludingOptionsParent" unique_id=102204891]
+layout_mode = 2
+size_flags_horizontal = 4
+text = "Add Exclusion"
+icon = ExtResource("3_6ao8s")
+
 [node name="Label2" type="Label" parent="ReactionEditor/options" unique_id=370780439]
 layout_mode = 2
 text = "(Effect) then"
@@ -168,13 +186,15 @@ text = "(Effect) then"
 [node name="ReactOptions" type="OptionButton" parent="ReactionEditor/options" unique_id=2130134417]
 layout_mode = 2
 selected = 0
-item_count = 3
+item_count = 4
 popup/item_0/text = "Replace element with [Element]"
 popup/item_0/id = 0
 popup/item_1/text = "Replace All Neighbors with [Element]"
 popup/item_1/id = 1
 popup/item_2/text = "Replace Marked Neighbors with [Element]"
 popup/item_2/id = 2
+popup/item_3/text = "Replace Last Iterated Neighbor with [Element]"
+popup/item_3/id = 3
 
 [node name="HSeparator" type="HSeparator" parent="ReactionEditor/options" unique_id=1821198179]
 layout_mode = 2

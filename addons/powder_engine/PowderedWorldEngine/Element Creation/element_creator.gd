@@ -38,6 +38,8 @@ var temp_attributes: Dictionary[StringName, ElementAttributes]
 
 var selected_element: StringName = &"AIR"
 
+signal changes_applied
+
 func _ready() -> void:
 	E_storage_ref = SandInfo.GetElementResource()
 	
@@ -190,6 +192,7 @@ func apply_changes():
 	set_actual_to_temp()
 	SandInfo.SaveElementStorage()
 	ElementEnumGenerator.GenerateElementAttributes()
+	changes_applied.emit()
 
 func get_selected_element() -> StringName:
 	if temp_element_names.size() > 0:

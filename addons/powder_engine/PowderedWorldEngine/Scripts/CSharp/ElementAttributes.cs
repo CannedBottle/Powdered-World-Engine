@@ -53,9 +53,9 @@ public partial class ElementAttributes : Resource
 	};
 
 
-	public static Reaction CreateReaction(Godot.Collections.Array<Vector2I> MarkedNeighbors, AllElements ElementToCheck, int NeighborComparison, int ReactionType, AllElements ReplaceElement, int MatchingNumToCheck)
+	public static Reaction CreateReaction(Godot.Collections.Array<Vector2I> MarkedNeighbors, AllElements ElementToCheck, int NeighborComparison, int ReactionType, AllElements ReplaceElement, int MatchingNumToCheck, Godot.Collections.Array<AllElements> elementExclusions)
 	{
-		return new Reaction(MarkedNeighbors, ElementToCheck, (Reaction.Comparisons)NeighborComparison, (Reaction.ReactionTypes)ReactionType, ReplaceElement, MatchingNumToCheck);
+		return new Reaction(MarkedNeighbors, ElementToCheck, (Reaction.Comparisons)NeighborComparison, (Reaction.ReactionTypes)ReactionType, ReplaceElement, MatchingNumToCheck, elementExclusions);
 	}
 
 	
@@ -201,7 +201,13 @@ public partial class ElementAttributes : Resource
 
 	public ElementAttributes Clone()
 	{
-		return new ElementAttributes(Id, Type, MovementType, BaseColor, NoiseStrength, Flags.Duplicate(true), Reactions.Duplicate(true));
+		Godot.Collections.Array<Reaction> clonedReactions = new Godot.Collections.Array<Reaction>{};
+		foreach(Reaction reaction in Reactions)
+		{
+			clonedReactions.Add((Reaction)reaction.Duplicate(true));
+		}
+
+		return new ElementAttributes(Id, Type, MovementType, BaseColor, NoiseStrength, Flags.Duplicate(true), clonedReactions);
 	}
 
 	public StringName GetTypeStrN()
@@ -246,6 +252,11 @@ public partial class ElementAttributes : Resource
 		return Reactions[ReactionIdx].MarkedNeighbors.Duplicate();
 	}
 
+	public Godot.Collections.Array<AllElements> GetReactionElementExclusions(int ReactionIdx)
+	{
+		return Reactions[ReactionIdx].ElementExclusions.Duplicate();
+	}
+
 	/// <summary></summary>
 	/// <param name="ReactionIdx"></param>
 	/// <returns>-1 if it means ANY element, but otherwise returns the specific element enum index.</returns>
@@ -280,6 +291,17 @@ public partial class ElementAttributes : Resource
 	{
 		Reactions[ReactionIdx].MarkedNeighbors = NewMarkedNeighbors;
 	}
+
+	public void SetReactionElementExclusions(int ReactionIdx, Godot.Collections.Array<int> NewElementExclusions)
+	{
+		Godot.Collections.Array<AllElements> newArray = new Godot.Collections.Array<AllElements>{};
+		foreach(int elementIdx in NewElementExclusions)
+		{
+			newArray.Add((AllElements)elementIdx);
+		}
+		Reactions[ReactionIdx].ElementExclusions = newArray;
+	}
+
 
 	public void SetReactionElementCheck(int ReactionIdx, int NewElementCheck)
 	{

@@ -4,6 +4,8 @@ extends HBoxContainer
 const unmarked_icon_path: String = "res://addons/powder_engine/PowderedWorldEngine/Assets/toggleOff.png"
 const marked_icon_path: String = "res://addons/powder_engine/PowderedWorldEngine/Assets/toggleOn.png"
 
+const remove_icon_path: String = "res://addons/powder_engine/PowderedWorldEngine/Assets/Remove.svg"
+
 @onready var reaction_editor: FoldableContainer = $ReactionEditor
 @onready var remove_button: Button = $Remove
 
@@ -12,6 +14,10 @@ const marked_icon_path: String = "res://addons/powder_engine/PowderedWorldEngine
 @onready var comparison_options: OptionButton = $ReactionEditor/options/HBoxContainer/ComparisonOptions
 @onready var compare_amount: SpinBox = $ReactionEditor/options/HBoxContainer/compareAmount
 @onready var condition_element_picker: OptionButton = $ReactionEditor/options/HBoxContainer/ElementPicker
+@onready var add_exclusion_button: Button = $ReactionEditor/options/Excluding/excludingOptionsParent/AddExclusion
+@onready var excluding_foldable: FoldableContainer = $ReactionEditor/options/Excluding
+@onready var excluding_options_parent: VBoxContainer = $ReactionEditor/options/Excluding/excludingOptionsParent
+
 
 @onready var react_type_options: OptionButton = $ReactionEditor/options/ReactOptions
 
@@ -27,6 +33,8 @@ signal option_changed(reaction: int)
 ##The same as the index in the ElementAttributes instance pointing to the attached reaction object
 var reaction_num: int
 var this_attribute: ElementAttributes
+
+var temp_exclusions: Array[int]
 
 var marked_neighbors: Dictionary[String, bool] = {
 	"topleft": false,
@@ -65,6 +73,7 @@ func _ready() -> void:
 		btn.button_pressed = false
 		apply_icon_state(btn)
 	
+	reaction_editor.folded = true
 	
 	# connect signals -------------------
 	remove_button.pressed.connect(_on_remove)
@@ -75,24 +84,36 @@ func _ready() -> void:
 	
 	react_type_options.item_selected.connect(_on_react_options_selected)
 	effect_options_e_picker.item_selected.connect(_on_effect_ops_e_picker_selected)
+	
+	add_exclusion_button.pressed.connect(_on_add_exclusion_pressed)
 
 ## use this function after instantiating the scene in the main ui scene
 func setup(assigned_idx: int, elem_creator: Control):
 	reaction_num = assigned_idx
 	reaction_editor.title = "Reaction " + str(assigned_idx + 1)
-	reaction_editor.folded = false
+	reaction_editor.folded = true
 	
 	element_creator = elem_creator
 	
+	element_creator.changes_applied.connect(apply_exclusions)
+	
 	this_attribute = element_creator.temp_attributes[element_creator.selected_element]
+	
+	temp_exclusions = this_attribute.GetReactionElementExclusions(reaction_num)
 	
 	fill_element_pickers()
 	
 	update_to_match()
+	
+	update_exclusions()
 
 func fill_element_pickers():
 	element_creator.fill_optionbutton_with_elements(condition_element_picker, true, false)
 	element_creator.fill_optionbutton_with_elements(effect_options_e_picker, false, false)
+	# fill all exclusion buttons
+	for parent: Control in excluding_options_parent.get_children():
+		if(parent is HBoxContainer and parent.get_child(0) is OptionButton):
+			element_creator.fill_optionbutton_with_elements(parent.get_child(0), false, false)
 
 ##updates all children to match the stored ElementAttributes values.
 func update_to_match():
@@ -100,7 +121,7 @@ func update_to_match():
 	
 	comparison_options.select(this_attribute.GetReactionNeighborElementComparison(reaction_num))
 	compare_amount.value = this_attribute.GetReactionMatchingNumCheck(reaction_num)
-	condition_element_picker.select(this_attribute.GetReactionElementCheck(reaction_num))
+	condition_element_picker.select(this_attribute.GetReactionElementCheck(reaction_num) if this_attribute.GetReactionElementCheck(reaction_num) != -1 else element_creator.temp_element_names.size())
 	react_type_options.select(this_attribute.GetReactionType(reaction_num))
 	effect_options_e_picker.select(this_attribute.GetReactionReplaceElement(reaction_num))
 
@@ -112,6 +133,25 @@ func update_neighbor_buttons(with: Array[Vector2i]):
 			marked_neighbors[neighbor_pos_to_name[pos]] = false
 	
 	upd_neighbor_buttons_todict()
+
+## unused
+func update_exclusion_buttons(with: Array[int]):
+	# set temp array
+	temp_exclusions = with
+	# get number of current exclusion buttons
+	var button_num: int = 0
+	for parent: Control in excluding_options_parent.get_children():
+		if(parent is HBoxContainer and parent.get_child(0) is OptionButton):
+			button_num += 1
+	# update and create the number of buttons needed
+	var idx: int = 0
+	for elementIdx: int in with:
+		if(excluding_options_parent.get_child(elementIdx) is HBoxContainer):
+			element_creator.fill_optionbutton_with_elements(excluding_options_parent.get_child(elementIdx), false, false)
+		else:
+			pass # TODO: add exclusion here
+		
+		idx += 1
 
 ## updates the marked neighbor buttons to match the marked_neighbors dict
 func upd_neighbor_buttons_todict():
@@ -165,9 +205,76 @@ func _on_element_check_selected(index: int):
 	this_attribute.SetReactionElementCheck(reaction_num, index_to_store)
 	
 	option_changed.emit(reaction_num)
+	
+	update_exclusions()
 
 func _on_react_options_selected(index: int):
 	this_attribute.SetReactionType(reaction_num, index)
 
 func _on_effect_ops_e_picker_selected(index: int):
 	this_attribute.SetReactionReplaceElement(reaction_num, index)
+
+# Exclusions -----------
+
+# decides whether or not to show exclusions, refill the ui, or to clear the exclusions list.
+func update_exclusions():
+	if(condition_element_picker.selected == element_creator.temp_element_names.size()): # if "Any" is selected
+		# only reset stored exclusions if switching onto ANY
+		if(excluding_foldable.visible == false):
+			temp_exclusions = this_attribute.GetReactionElementExclusions(reaction_num)
+		excluding_foldable.show()
+		refill_exclusion_ui()
+	else: # if "Any" is not selected
+		excluding_foldable.hide()
+		temp_exclusions.clear()
+		refill_exclusion_ui()
+
+func add_exclusion_ui(exclusion_num: int):
+	# create an HBoxContainer with an OptionButton and Button as children
+	var new_parent: HBoxContainer = HBoxContainer.new()
+	excluding_options_parent.add_child(new_parent)
+	# add the OptionButton
+	var new_element_picker: OptionButton = OptionButton.new()
+	new_element_picker.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	new_element_picker.search_bar_enabled = true
+	element_creator.fill_optionbutton_with_elements(new_element_picker, false, false)
+	new_parent.add_child(new_element_picker)
+	
+	new_element_picker.item_selected.connect(_on_exclusion_element_selected.bind(exclusion_num))
+	new_element_picker.select(temp_exclusions[exclusion_num])
+	# add the Button (remove button)
+	var new_remove_button: Button = Button.new()
+	new_remove_button.pressed.connect(_on_exclusion_removed.bind(exclusion_num))
+	new_remove_button.icon = load(remove_icon_path)
+	new_parent.add_child(new_remove_button)
+	
+	# move add button to bottom
+	excluding_options_parent.move_child(add_exclusion_button, -1)
+
+## deletes existing ui and refills the parent with the info from the temp_exclusions
+func refill_exclusion_ui():
+	# delete existing ui
+	for child: Control in excluding_options_parent.get_children():
+		if(child is HBoxContainer):
+			child.queue_free()
+	
+	for exclusion_num: int in temp_exclusions.size():
+		add_exclusion_ui(exclusion_num)
+
+func _on_exclusion_element_selected(element_idx: int, exclusion_num: int):
+	temp_exclusions[exclusion_num] = element_idx
+	apply_exclusions()
+
+func _on_exclusion_removed(exclusion_num: int):
+	# remove and refill all exclusion ui pieces
+	temp_exclusions.remove_at(exclusion_num)
+	refill_exclusion_ui()
+
+# add an exclusion in temp_exclusions and add a new ui
+func _on_add_exclusion_pressed():
+	temp_exclusions.append(1)
+	add_exclusion_ui(temp_exclusions.size() - 1)
+
+# saves the exclusions
+func apply_exclusions():
+	this_attribute.SetReactionElementExclusions(reaction_num, temp_exclusions)

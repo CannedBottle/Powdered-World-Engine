@@ -69,7 +69,6 @@ public partial class SandInfo : Node
 	public enum ElementFlags
 	{
 		FLAMMABLE,
-		ACID_RESISTANT,
 		INDESTRUCTIBLE,
 
 	}
@@ -165,21 +164,10 @@ public partial class SandInfo : Node
 	public static void OnUpdate(Cell cell, PowderSimulation simRef)
 	{
 		// Reactions *********************************************************************
-		// TODO: Change this section when implementing custom reaction rulesets (and movement section when making custom movements)
-		switch (cell.Element)
-		{
-			case AllElements.ACID:
-				Cell neighbor = cell.SearchNeighborElements(simRef, AllElements.AIR, true, AllElements.ACID);
-				if(neighbor != null && neighbor.Element != AllElements.ACID && !neighbor.Attributes.Flags.Contains(ElementFlags.ACID_RESISTANT))
-				{
-					cell.Element = AllElements.AIR;
-					cell.CellChunk.MarkCellUpdated(cell);
-					neighbor.Element = AllElements.AIR;
-					neighbor.CellChunk.MarkCellUpdated(neighbor);
-					return;
-				}
 
-				break;
+		if (RunReactions(cell, simRef))
+		{
+			return;
 		}
 
 		// Movement ******************************************************************************--
@@ -264,22 +252,140 @@ public partial class SandInfo : Node
 				break;
 
 			case MoveTypes.STONE: // ----------------------------------------
-
+			
 				cell.TryMove(BOTTOMMIDDLE, simRef);
 				break;
 		}
 
 	}
 
+	/// <summary>
+	/// goes through and does all the reactions connected to the cell's element.
+	/// </summary>
+	/// <returns>Whether or not to stop the update function after this is done.</returns>
+	private static bool RunReactions(Cell cell, PowderSimulation simRef)
+	{
 
+		// loop over reactions and run that corresponding one
+		foreach(Reaction reaction in cell.Attributes.Reactions)
+		{
+			RunReaction(cell, simRef, reaction);
+		}
 
+		if(cell.Element == AllElements.AIR)
+		{
+			return true;
+		}
+		else
+		{
+			return false;
+		}
+	}
+
+	private static void RunReaction(Cell cell, PowderSimulation simRef, Reaction reaction)
+	{
+		int currentAmount = 0;
+		// fall back on itself if there are no marked neighbors assigned
+		Cell LastIteratedCell = cell;
+		foreach(Vector2I neighborPos in reaction.MarkedNeighbors)
+		{
+			Cell tempNullTest = cell.GetNeighbor(neighborPos, simRef);
+			// only proceed if the neighbor exists
+			if(tempNullTest == null){continue;}
+
+			LastIteratedCell = tempNullTest;
+
+			if(reaction.ElementCheck == null)
+			{
+				// search for any non-air element
+				if(LastIteratedCell.Element != AllElements.AIR && !reaction.ElementExclusions.Contains(LastIteratedCell.Element))
+				{
+					currentAmount++;
+				}
+			}
+			else
+			{
+				// search for specified element
+				if(LastIteratedCell.Element == reaction.ElementCheck.Value)
+				{
+					currentAmount++;
+				}
+			}
+
+			if(CheckReactionAmount(currentAmount, reaction))
+			{
+				break;
+			}
+		}
+
+		// only progress if the conditions were met
+		if(!CheckReactionAmount(currentAmount, reaction))
+		{
+			return;	
+		}
+
+		// all the different replace types
+		switch (reaction.reactionType)
+		{
+			case Reaction.ReactionTypes.REPLACE_SELF:
+				cell.Element = reaction.ReplaceWith;
+				cell.CellChunk.MarkCellUpdated(cell);
+				break;
+			
+			case Reaction.ReactionTypes.REPLACE_NEIGHBORS:
+				// replace all neighbors
+				foreach(Vector2I neighborPos in Cell.Neighbors)
+				{
+					Cell neighborCell = cell.GetNeighbor(neighborPos, simRef);
+					neighborCell.Element = reaction.ReplaceWith;
+					neighborCell.CellChunk.MarkCellUpdated(neighborCell);
+				}
+				break;
+			
+			case Reaction.ReactionTypes.REPLACE_MARKED_NEIGHBORS:
+				// replace only marked neighbors
+				foreach(Vector2I neighborPos in reaction.MarkedNeighbors)
+				{
+					Cell neighborCell = cell.GetNeighbor(neighborPos, simRef);
+					neighborCell.Element = reaction.ReplaceWith;
+					neighborCell.CellChunk.MarkCellUpdated(neighborCell);
+				}
+				break;
+			
+			case Reaction.ReactionTypes.REPLACE_LAST_ITERATED_NEIGHBOR:
+				// replace only the last neighbor iterated on
+				LastIteratedCell.Element = reaction.ReplaceWith;
+				LastIteratedCell.CellChunk.MarkCellUpdated(LastIteratedCell);
+				break;
+			
+		}
+
+	}
+
+	private static bool CheckReactionAmount(int currentAmount, Reaction reaction)
+	{
+		switch (reaction.NeighborElementComparison)
+		{
+			case Reaction.Comparisons.EQUALS:
+				return currentAmount == reaction.MatchingNumToCheck;
+			
+			case Reaction.Comparisons.GREATER_THAN_OR_EQUAL:
+				return currentAmount >= reaction.MatchingNumToCheck;
+
+			case Reaction.Comparisons.LESS_THAN:
+				return currentAmount < reaction.MatchingNumToCheck;
+				
+		}
+
+		return false;
+	}
 
 	// --------------------------------- CELL / CHUNK CLASSES ----------------------------- //
 
 	public class Cell
 	{
 		// --------------- STATICS
-		private static readonly Vector2I[] Neighbors = [TOPRIGHT, TOPMIDDLE, LEFTMIDDLE, RIGHTMIDDLE, BOTTOMLEFT, BOTTOMMIDDLE, BOTTOMRIGHT];
+		public static readonly Vector2I[] Neighbors = [TOPRIGHT, TOPMIDDLE, LEFTMIDDLE, RIGHTMIDDLE, BOTTOMLEFT, BOTTOMMIDDLE, BOTTOMRIGHT];
 
 		/// <summary>
 		/// The number of cell-specific fields each cell has. Each cell's fields are a fixed-size C# array, so this is how many there are for every cell.
@@ -367,8 +473,9 @@ public partial class SandInfo : Node
 		}
 
 		#nullable enable
-		public Cell? SearchNeighborElements(PowderSimulation simRef, AllElements targetElement, bool opposite = false, AllElements? SecondaryTarget = null)
+		public Cell? SearchNeighborElements(PowderSimulation simRef, AllElements targetElement, bool opposite = false, int targetAmount = 1, AllElements? SecondaryTarget = null)
 		{
+			int currentAmount = 0;
 			foreach(Vector2I neighbor in Neighbors)
 			{
 
@@ -383,14 +490,22 @@ public partial class SandInfo : Node
 				{
 					if (NeighborCell.Element == targetElement || NeighborCell.Element == SecondaryTarget)
 					{
-						return NeighborCell;
+						currentAmount++;
+						if(currentAmount >= targetAmount)
+						{
+							return NeighborCell;
+						}
 					}
 				}
 				else
 				{
 					if (NeighborCell.Element != targetElement && SecondaryTarget != null && NeighborCell.Element != SecondaryTarget)
 					{
-						return NeighborCell;
+						currentAmount++;
+						if(currentAmount >= targetAmount)
+						{
+							return NeighborCell;
+						}
 					}
 				}
 				

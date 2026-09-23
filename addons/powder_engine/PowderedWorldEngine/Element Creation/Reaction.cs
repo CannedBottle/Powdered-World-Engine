@@ -17,13 +17,16 @@ public partial class Reaction : Resource
 		{
 			REPLACE_SELF,
 			REPLACE_NEIGHBORS,
-			REPLACE_FIRST_NEIGHBOR,
+			REPLACE_MARKED_NEIGHBORS,
+			REPLACE_LAST_ITERATED_NEIGHBOR,
 		}
 
 		/// <summary>
 		/// The neighbors the reaction checks to find if the it meets the criteria to cause the reaction.
 		/// </summary>
 		[Export] public Godot.Collections.Array<Vector2I> MarkedNeighbors;
+
+		[Export] public Godot.Collections.Array<AllElements> ElementExclusions;
 
         private AllElements? _elementCheck;
 
@@ -70,7 +73,7 @@ public partial class Reaction : Resource
 		[Export] public AllElements ReplaceWith;
 		[Export] public int MatchingNumToCheck;
 
-		public Reaction(Godot.Collections.Array<Vector2I> markedNeighbors, AllElements? ElementToCheck, Comparisons NeighborComparison, ReactionTypes ReactionType, AllElements ReplaceElement, int matchingNumToCheck)
+		public Reaction(Godot.Collections.Array<Vector2I> markedNeighbors, AllElements? ElementToCheck, Comparisons NeighborComparison, ReactionTypes ReactionType, AllElements ReplaceElement, int matchingNumToCheck, Godot.Collections.Array<AllElements> elementExclusions = null)
 		{
 			MarkedNeighbors = markedNeighbors;
 			ElementCheck = ElementToCheck;
@@ -78,6 +81,15 @@ public partial class Reaction : Resource
 			reactionType = ReactionType;
 			ReplaceWith = ReplaceElement;
 			MatchingNumToCheck = matchingNumToCheck;
+
+			if(elementExclusions == null)
+			{
+				ElementExclusions = new Godot.Collections.Array<AllElements>{};
+			}
+			else
+			{
+				ElementExclusions = elementExclusions;
+			}
 
 		}
 
@@ -95,7 +107,7 @@ public partial class Reaction : Resource
 
 		public Reaction Clone()
 		{
-			return new Reaction(MarkedNeighbors, ElementCheck, NeighborElementComparison, reactionType, ReplaceWith, MatchingNumToCheck);
+			return new Reaction(MarkedNeighbors, ElementCheck, NeighborElementComparison, reactionType, ReplaceWith, MatchingNumToCheck, ElementExclusions);
 		}
 
 	}
