@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using static Elements;
 using static ElementAttributes;
+using System.Runtime.Intrinsics.Arm;
 
 
 [Tool]
@@ -163,6 +164,9 @@ public partial class SandInfo : Node
 	// First run Reactions, then run Movement
 	public static void OnUpdate(Cell cell, PowderSimulation simRef)
 	{
+		// Do not move if it was already updated
+		if(cell.CellChunk.IsCellMarked(cell)){return;}
+
 		// Reactions *********************************************************************
 
 		if (RunReactions(cell, simRef))
@@ -252,7 +256,7 @@ public partial class SandInfo : Node
 				break;
 
 			case MoveTypes.STONE: // ----------------------------------------
-			
+
 				cell.TryMove(BOTTOMMIDDLE, simRef);
 				break;
 		}
@@ -843,6 +847,15 @@ public partial class SandInfo : Node
 
 		}
 
+		/// <summary>
+		/// 
+		/// </summary>
+		/// <param name="cell"></param>
+		/// <returns>Whether or not the given cell was marked "updated" by using MarkCellUpdated()</returns>
+		public bool IsCellMarked(Cell cell)
+		{
+			return UpdatedCellsMask[cell.ChunkIdx];
+		}
 
 		public void UpdateDirtyRect()
 		{
