@@ -255,8 +255,16 @@ public partial class SandInfo : Node
 				break;
 
 			case MoveTypes.STONE: // ----------------------------------------
+				
+				Cell leftCell = cell.GetNeighbor(LEFTMIDDLE, simRef);
+				Cell rightCell = cell.GetNeighbor(RIGHTMIDDLE, simRef);
 
-				cell.TryMove(BOTTOMMIDDLE, simRef);
+				if (leftCell == null || leftCell.Element == AllElements.AIR || (leftCell.Attributes.Type != ElementTypes.SOLID && leftCell.Attributes.Type != ElementTypes.STATIC)
+				|| rightCell == null || rightCell.Element == AllElements.AIR || (rightCell.Attributes.Type != ElementTypes.SOLID && rightCell.Attributes.Type != ElementTypes.STATIC))
+				{
+					cell.TryMove(BOTTOMMIDDLE, simRef);
+				}
+
 				break;
 
 			case MoveTypes.GAS: // ------------------------------------------ (upside down water)
@@ -396,7 +404,14 @@ public partial class SandInfo : Node
 				// replace all neighbors
 				foreach(Vector2I neighborPos in Cell.Neighbors)
 				{
+
 					Cell neighborCell = cell.GetNeighbor(neighborPos, simRef);
+					// do not replace if cell is indesctructible
+					if (neighborCell.Attributes.Flags.Contains(ElementFlags.INDESTRUCTIBLE))
+					{
+						continue;
+					}
+
 					neighborCell.Element = reaction.ReplaceWith;
 					neighborCell.CellChunk.MarkCellUpdated(neighborCell);
 				}
@@ -407,6 +422,12 @@ public partial class SandInfo : Node
 				foreach(Vector2I neighborPos in reaction.MarkedNeighbors)
 				{
 					Cell neighborCell = cell.GetNeighbor(neighborPos, simRef);
+					// do not replace if cell is indesctructible
+					if (neighborCell.Attributes.Flags.Contains(ElementFlags.INDESTRUCTIBLE))
+					{
+						continue;
+					}
+
 					neighborCell.Element = reaction.ReplaceWith;
 					neighborCell.CellChunk.MarkCellUpdated(neighborCell);
 				}
@@ -414,6 +435,12 @@ public partial class SandInfo : Node
 			
 			case Reaction.ReactionTypes.REPLACE_LAST_ITERATED_NEIGHBOR:
 				// replace only the last neighbor iterated on
+				// do not replace if cell is indesctructible
+				if (LastIteratedCell.Attributes.Flags.Contains(ElementFlags.INDESTRUCTIBLE))
+				{
+					break;
+				}
+
 				LastIteratedCell.Element = reaction.ReplaceWith;
 				LastIteratedCell.CellChunk.MarkCellUpdated(LastIteratedCell);
 				break;

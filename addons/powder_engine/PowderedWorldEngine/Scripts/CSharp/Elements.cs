@@ -33,7 +33,6 @@ public partial class Elements : Resource
        ACID,
        STONE,
        WALL,
-       SMOKE,
 
     }
 }
