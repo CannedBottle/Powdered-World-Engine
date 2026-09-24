@@ -48,6 +48,7 @@ public partial class TestPlaygroundCS : Node2D
 		{Key.Q, AllElements.WALL},
 		{Key.D, AllElements.STONE},
 		{Key.E, AllElements.ACID},
+		{Key.C, AllElements.SMOKE},
 	};
 
 	private List<Key> KeysPressed = new List<Key>();

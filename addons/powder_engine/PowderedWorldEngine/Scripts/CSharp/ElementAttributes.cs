@@ -49,7 +49,11 @@ public partial class ElementAttributes : Resource
 			{"bumps", 0},
 		}},
 		
-		{MoveTypes.GAS, new Dictionary<string, byte>{{"R#random", 7}}},
+		{MoveTypes.GAS, new Dictionary<string, byte>{
+			{"R#random", 1},
+			{"R#direction", 0},
+			{"bumps", 0},
+		}},
 	};
 
 

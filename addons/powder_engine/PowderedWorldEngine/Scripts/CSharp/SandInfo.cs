@@ -3,7 +3,6 @@ using System;
 using System.Collections.Generic;
 using static Elements;
 using static ElementAttributes;
-using System.Runtime.Intrinsics.Arm;
 
 
 [Tool]
@@ -259,6 +258,63 @@ public partial class SandInfo : Node
 
 				cell.TryMove(BOTTOMMIDDLE, simRef);
 				break;
+
+			case MoveTypes.GAS: // ------------------------------------------ (upside down water)
+
+				if(cell.TryMove(TOPMIDDLE, simRef) == false)
+				{
+					bool success;
+					if(cell.Fields[cell.GetFieldIndex("R#random")] == 0)
+					{
+						success = cell.TryMove(TOPRIGHT, simRef);
+						if(success == false)
+						{
+							success = cell.TryMove(TOPLEFT, simRef);
+						}
+					}
+					else
+					{
+						success = cell.TryMove(TOPLEFT, simRef);
+						if(success == false)
+						{
+							success = cell.TryMove(TOPRIGHT, simRef);
+						}
+					}
+
+					if(success == false)
+					{
+						byte[] tempAtts = cell.Fields;
+
+						if(cell.Fields[cell.GetFieldIndex("R#direction")] == 1)
+						{
+							success = cell.TryMove(RIGHTMIDDLE, simRef);
+							tempAtts[cell.GetFieldIndex("bumps")] += success ? (byte)0 : (byte)1;
+							tempAtts[cell.GetFieldIndex("R#direction")] = tempAtts[cell.GetFieldIndex("bumps")] >= 3 ? (byte)0 : (byte)1;
+							tempAtts[cell.GetFieldIndex("bumps")] = tempAtts[cell.GetFieldIndex("R#direction")] == 1 ? tempAtts[cell.GetFieldIndex("bumps")] : (byte)0;
+
+							if(success == false)
+							{
+								cell.TryMove(LEFTMIDDLE, simRef);
+							}
+						}
+						else
+						{
+							success = cell.TryMove(LEFTMIDDLE, simRef);
+							tempAtts[cell.GetFieldIndex("bumps")] += success ? (byte)0 : (byte)1;
+							tempAtts[cell.GetFieldIndex("R#direction")] = tempAtts[cell.GetFieldIndex("bumps")] >= 3 ? (byte)1 : (byte)0;
+							tempAtts[cell.GetFieldIndex("bumps")] = tempAtts[cell.GetFieldIndex("R#direction")] == 0 ? tempAtts[cell.GetFieldIndex("bumps")] : (byte)0;
+
+							if(success == false)
+							{
+								cell.TryMove(RIGHTMIDDLE, simRef);
+							}
+						}
+					}
+				}
+
+				
+				break;
+			
 		}
 
 	}
