@@ -34,6 +34,8 @@ func create_children(func_to_connect: Callable = Callable(), text: String = "Fla
 		new_flag_label.text = text + str(this_index)
 	else:
 		new_flag_label.text = text
+	new_flag_label.tooltip_text = tooltip
+	new_flag_label.mouse_filter = Control.MOUSE_FILTER_PASS
 	add_child(new_flag_label)
 	
 	# -------- OptionButton / SpinBox --------
@@ -43,7 +45,6 @@ func create_children(func_to_connect: Callable = Callable(), text: String = "Fla
 			option_picker.add_item(attribute)
 		option_picker.select(selected_index)
 		option_picker.search_bar_enabled = true
-		option_picker.tooltip_text = tooltip
 		add_child(option_picker)
 		
 		option_picker.item_selected.connect(_on_flag_selected)
@@ -52,7 +53,6 @@ func create_children(func_to_connect: Callable = Callable(), text: String = "Fla
 		number_picker.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		number_picker.max_value = max_val
 		number_picker.rounded = rounded
-		number_picker.tooltip_text = tooltip
 		if(rounded == true):
 			number_picker.step = 1.0
 		else:

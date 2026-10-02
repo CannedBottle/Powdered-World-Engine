@@ -314,6 +314,7 @@ func add_flag_options_selector(parent: VBoxContainer, title: String, type: Attri
 	
 	var new_selector: AttributeSelector = AttributeSelector.new()
 	new_selector.type = type
+	new_selector.tooltip = tooltip
 	
 	parent.add_child(new_selector)
 	
