@@ -942,44 +942,6 @@ public partial class WorldStreamer : RefCounted
 			ChunkNum = Chunks.Count;
 		}
 
-		/* UNUSED
-		// Helpers ---------------------
-		
-		/// <summary>
-		/// If the given <c>Position</c> does not exist in the stored chunks, creates a new chunk in the save data. If it does exist, replaces that chunk instance.
-		/// </summary>
-		/// <param name="Position"></param>
-		/// <returns>Whether the operation was successful or not.</returns>
-		private bool AddOrReplaceChunk(Vector2I Position, storedChunkInfo newChunkInfo)
-		{
-
-			// whether the chunk was found in the chunks list and was replaced.
-			bool replace = false;
-
-			// search for chunk
-			int idx = 0;
-			foreach(storedChunkInfo chunk in Chunks)
-			{
-				if (chunk.X == Position.X && chunk.Y == Position.Y)
-				{
-					Chunks[idx] = newChunkInfo;
-					replace = true;
-					break;
-				}
-
-				idx++;
-			}
-
-			if (replace == false)
-			{
-				Chunks.Add(newChunkInfo);
-			}
-			
-
-			return true;
-		}
-		*/
-
 	}
 
 

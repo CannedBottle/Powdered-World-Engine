@@ -1,11 +1,19 @@
 extends HBoxContainer
 class_name AttributeSelector
 
+enum Types{
+	OPTION,
+	NUMBER,
+}
+
+var type: Types = Types.OPTION
 
 var options: Array[String]
 var selected_index: int = 0
 #the index of the attribute in the original array of attributes
 var this_index: int = 0
+
+var tooltip: String = ""
 
 var option_picker: OptionButton
 
@@ -18,28 +26,46 @@ signal attribute_deleted(attribute_index: int)
 func _ready() -> void:
 	alignment = BoxContainer.ALIGNMENT_CENTER
 
-func create_children():
+func create_children(func_to_connect: Callable = Callable(), text: String = "Flag ", max_val: float = 255, rounded: bool = true, trash: bool = true):
 	# --------- LABEL -------------
 	var new_flag_label: Label = Label.new()
 	new_flag_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	new_flag_label.text = "Flag " + str(this_index)
+	if(text == "Flag "):
+		new_flag_label.text = text + str(this_index)
+	else:
+		new_flag_label.text = text
 	add_child(new_flag_label)
 	
-	# -------- OptionButton --------
-	option_picker = OptionButton.new()
-	for attribute in options:
-		option_picker.add_item(attribute)
-	option_picker.select(selected_index)
-	option_picker.search_bar_enabled = true
-	add_child(option_picker)
-	
-	option_picker.item_selected.connect(_on_flag_selected)
+	# -------- OptionButton / SpinBox --------
+	if(type == Types.OPTION): # init OptionButton
+		option_picker = OptionButton.new()
+		for attribute in options:
+			option_picker.add_item(attribute)
+		option_picker.select(selected_index)
+		option_picker.search_bar_enabled = true
+		option_picker.tooltip_text = tooltip
+		add_child(option_picker)
+		
+		option_picker.item_selected.connect(_on_flag_selected)
+	else: # init SpinBox
+		var number_picker = SpinBox.new()
+		number_picker.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		number_picker.max_value = max_val
+		number_picker.rounded = rounded
+		number_picker.tooltip_text = tooltip
+		if(rounded == true):
+			number_picker.step = 1.0
+		else:
+			number_picker.step = 0.01
+		add_child(number_picker)
+		number_picker.value_changed.connect(func_to_connect)
 	
 	# ------- TrashButton ----------
-	var new_trash_button: Button = Button.new()
-	new_trash_button.icon = load(trash_icon_path)
-	add_child(new_trash_button)
-	new_trash_button.pressed.connect(_on_remove)
+	if(trash):
+		var new_trash_button: Button = Button.new()
+		new_trash_button.icon = load(trash_icon_path)
+		add_child(new_trash_button)
+		new_trash_button.pressed.connect(_on_remove)
 	
 
 func get_selection_string() -> String:

@@ -5,6 +5,7 @@ extends VBoxContainer
 @onready var name_field: LineEdit = $Name/NameField
 @onready var type_selection: OptionButton = $Type/TypeSelection
 @onready var move_type_selection: OptionButton = $MoveType/MoveTypeSelection
+@onready var behavior_picker: EditorResourcePicker = $HBoxContainer/BehaviorPicker
 
 # ----------------------------------------------------------- Visuals
 @onready var color_selection: ColorPickerButton = $VisualSection/VBoxContainer/Color/ColorSelection
@@ -13,6 +14,9 @@ extends VBoxContainer
 # ----------------------------------------------------------- Flags
 @onready var flags_parent: VBoxContainer = $FlagSection/FlagsParent
 @onready var add_flag_button: Button = $FlagSection/FlagsParent/AddFlagButton
+
+@onready var flammable_options: FoldableContainer = $FlagSection/FlagsParent/FlammableOptions
+@onready var flame_options_parent: VBoxContainer = $FlagSection/FlagsParent/FlammableOptions/flameOptionsParent
 
 # ----------------------------------------------------------- Danger Zone
 @onready var delete_element_button: Button = $DangerSection/VBoxContainer/DeleteElement/DeleteElementButton
@@ -50,12 +54,16 @@ func _ready() -> void:
 	for type in SandInfo.GetElementTypes():
 		type_selection.add_item(type)
 	
+	setup_flag_options_sections()
+	
 	set_temp_to_actual()
 	update_element_selector()
 	update_button_states()
 	update_flag_list()
 	update_reaction_section()
 	
+	decide_behavior_visibility()
+	decide_flammable_visibility()
 	
 	# ------------- Connections -------------- #
 	apply_changes_button.pressed.connect(apply_changes)
@@ -63,6 +71,7 @@ func _ready() -> void:
 	name_field.text_submitted.connect(_new_element_name)
 	type_selection.item_selected.connect(_type_changed)
 	move_type_selection.item_selected.connect(_move_type_changed)
+	behavior_picker.resource_changed.connect(_custom_behavior_changed)
 	
 	color_selection.popup_closed.connect(_color_changed)
 	noise_strength_field.value_changed.connect(_noise_strength_changed)
@@ -141,10 +150,12 @@ func update_flag_list():
 		create_flag_selector(idx, flag_idx)
 		idx += 1
 	
+	decide_flammable_visibility()
 
 func update_button_states():
 	var selected_element: StringName = get_selected_element()
 	
+	behavior_picker.edited_resource = temp_attributes[selected_element].CustomBehavior
 	# ------------- Element Name -------------- #
 	name_field.text = selected_element
 	# ------------- Element Selector -------------- #
@@ -163,6 +174,19 @@ func update_button_states():
 	# ------------- Visuals --------------------- #
 	color_selection.color = temp_attributes[selected_element].BaseColor
 	noise_strength_field.value = temp_attributes[selected_element].NoiseStrength
+	
+	# --------------- Fields
+	# ------ FLAMMABLE
+	var idx: int = 0
+	for child: HBoxContainer in flame_options_parent.get_children():
+		var picker: SpinBox = child.get_child(-1)
+		match idx:
+			0: # BurnSpeed
+				picker.set_value_no_signal(temp_attributes[selected_element].BurnSpeed)
+			1: # SpreadResistance
+				picker.set_value_no_signal(temp_attributes[selected_element].SpreadResistance)
+		idx += 1
+
 
 func set_temp_to_actual():
 	if E_storage_ref.AllElementAttributes.size() > 0:
@@ -190,6 +214,7 @@ func _reset_defaults():
 
 func apply_changes():
 	set_actual_to_temp()
+	E_storage_ref.UpdateIds()
 	SandInfo.SaveElementStorage()
 	ElementEnumGenerator.GenerateElementAttributes()
 	changes_applied.emit()
@@ -232,6 +257,8 @@ func add_flag():
 	temp_attributes[selected_element].Flags.append(0)
 	
 	create_flag_selector(temp_attributes[selected_element].GetFlagsCount() - 1)
+	
+	decide_flammable_visibility()
 
 func update_reaction_section():
 	selected_element = get_selected_element()
@@ -270,6 +297,42 @@ func create_new_reaction() -> int:
 	
 	return current_element.Reactions.size() - 1
 
+## spawns AttributeSelectors that correspond with the flag options; should be called in _ready()
+func setup_flag_options_sections():
+	# add things for FLAMMABLE -----------------------
+	
+	var burnspeed_tooltip: String = "How long, in seconds, it takes for the element to burn completely."
+	var spreadresistance_tooltip: String = "The percent chance, from 0-1, for the element to resist being caught on fire every tick."
+	
+	add_flag_options_selector(flame_options_parent, "Burn Speed ", AttributeSelector.Types.NUMBER, _on_burnspeed_changed, 255, false, burnspeed_tooltip)
+	add_flag_options_selector(flame_options_parent, "Spread Resistance ", AttributeSelector.Types.NUMBER, _on_spreadresistance_changed, 1.0, false, spreadresistance_tooltip)
+	
+	# ------------------------------------------------
+	
+
+func add_flag_options_selector(parent: VBoxContainer, title: String, type: AttributeSelector.Types, value_changed_func_connection: Callable, max_val: float = 255, rounded: bool = true, tooltip: String = ""):
+	
+	var new_selector: AttributeSelector = AttributeSelector.new()
+	new_selector.type = type
+	
+	parent.add_child(new_selector)
+	
+	new_selector.create_children(value_changed_func_connection, title, max_val, rounded, false)
+	
+
+func decide_behavior_visibility():
+	# show/hide custombehavior based on what was selected
+	if(temp_attributes[get_selected_element()].GetMoveTypeStrN() == &"CUSTOM"):
+		$HBoxContainer.show()
+	else:
+		$HBoxContainer.hide()
+
+func decide_flammable_visibility():
+	if(temp_attributes[get_selected_element()].ContainsFlag(0)):
+		flammable_options.show()
+	else:
+		flammable_options.hide()
+
 # -------------------- Signals ------------------- #
 func _new_selected_element(index: int):
 	if index == temp_element_names.size():
@@ -285,6 +348,11 @@ func _new_selected_element(index: int):
 	
 	update_button_states()
 	
+	decide_behavior_visibility()
+	decide_flammable_visibility()
+
+func _custom_behavior_changed(new_behavior: ElementBehavior):
+	temp_attributes[get_selected_element()].CustomBehavior = new_behavior
 
 func _flag_removed(index: int):
 	temp_attributes[get_selected_element()].Flags.remove_at(index)
@@ -292,6 +360,8 @@ func _flag_removed(index: int):
 
 func _flag_changed(attribute_idx: int, flag_selection_idx: int):
 	temp_attributes[get_selected_element()].Flags[attribute_idx] = flag_selection_idx
+	
+	decide_flammable_visibility()
 
 func _new_element_name(new_text: String):
 	var old_name: StringName = get_selected_element()
@@ -301,6 +371,8 @@ func _new_element_name(new_text: String):
 		return
 	
 	var attributes: ElementAttributes = temp_attributes[old_name]
+	attributes.StringName = new_text
+	
 	temp_element_names[element_selection.selected] = new_text
 	temp_attributes.erase(old_name)
 	temp_attributes.get_or_add(new_text, attributes)
@@ -358,6 +430,14 @@ func _move_type_changed(index: int):
 		
 		temp_attributes[selected_element].MovementType = ElementAttributes.GetMoveTypes().find(req_type_movement[type_strn])
 		update_button_states()
+	
+	# show/hide custombehavior based on what was selected
+	if(movetype_strn == &"CUSTOM"):
+		$HBoxContainer.show()
+	else:
+		$HBoxContainer.hide()
+	
+	decide_behavior_visibility()
 
 func _add_reaction():
 	selected_element = get_selected_element()
@@ -369,3 +449,10 @@ func _on_reaction_removed(reaction_num: int):
 	temp_attributes[selected_element].RemoveReaction(reaction_num)
 	# shift all editors indexes since the old one was removed
 	update_reaction_section()
+
+# ------ flammable
+func _on_burnspeed_changed(new_value: int):
+	temp_attributes[get_selected_element()].BurnSpeed = new_value
+
+func _on_spreadresistance_changed(new_value: float):
+	temp_attributes[get_selected_element()].SpreadResistance = new_value

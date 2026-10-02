@@ -3,6 +3,7 @@ using static SandInfo;
 using static Elements;
 using System.Collections.Generic;
 using System.Linq;
+using System.ComponentModel;
 
 [Tool]
 [GlobalClass]
@@ -36,11 +37,11 @@ public partial class ElementAttributes : Resource
 
 	public static Dictionary<MoveTypes, Dictionary<string, byte>> MoveTypeDefaultFields = new Dictionary<MoveTypes, Dictionary<string, byte>>
 	{
-		{MoveTypes.NONE, new Dictionary<string, byte>{{"none", 0}}},
+		{MoveTypes.NONE, new Dictionary<string, byte>{ {"none", 0} }},
 		
-		{MoveTypes.SAND, new Dictionary<string, byte>{{"R#random", 1}}},
+		{MoveTypes.SAND, new Dictionary<string, byte>{ {"R#random", 1} }},
 		
-		{MoveTypes.STONE, new Dictionary<string, byte>{{"none", 0}}},
+		{MoveTypes.STONE, new Dictionary<string, byte>{ {"none", 0} }},
 		
 		{MoveTypes.LIQUID, new Dictionary<string, byte> 
 		{
@@ -54,6 +55,11 @@ public partial class ElementAttributes : Resource
 			{"R#direction", 0},
 			{"bumps", 0},
 		}},
+	};
+
+	public static Dictionary<ElementFlags, Dictionary<string, byte>> FlagDefaultFields = new Dictionary<ElementFlags, Dictionary<string, byte>>
+	{
+		{ElementFlags.FLAMMABLE, new Dictionary<string, byte>{ {"burnProgress", 0} }}
 	};
 
 
@@ -78,22 +84,21 @@ public partial class ElementAttributes : Resource
 	/// <returns>the default array of the element-specific fields needed for its movement.</returns>
 	public byte[] GetDefaultFieldArray()
 	{
-		byte[] arr = new byte[FieldToIndex.Count];
-
-		arr = MoveTypeDefaultFields[MovementType].Values.ToArray();
+		byte[] newArr = new byte[8];
+		DefaultFieldArray.CopyTo(newArr, 0);
 
 		int i = 0;
 		foreach(string field in FieldToIndex.Keys)
 		{
 			if (field.StartsWith("R#"))
 			{
-				arr[FieldToIndex[field]] = (byte)GD.RandRange(0, arr[FieldToIndex[field]]);
+				newArr[FieldToIndex[field]] = (byte)GD.RandRange(0, newArr[FieldToIndex[field]]);
 			}
 
 			i++;
 		}
 
-		return arr;
+		return newArr;
 	}
 
 	/// <summary>
@@ -106,6 +111,17 @@ public partial class ElementAttributes : Resource
 		return FieldToIndex[field];
 	}
 
+	public void UpdateDefaultFieldsToCustom()
+	{
+		if(CustomBehavior != null)
+		{
+			FieldDefaults = CustomBehavior._DefaultFields();
+		}
+	}
+
+	[Export] public ElementBehavior CustomBehavior {get; set;}
+
+	[ExportGroup("Saved Data")]
     [Export] public AllElements Id {get; set;}
 
 	[Export] public ElementTypes Type {get; set;}
@@ -138,21 +154,26 @@ public partial class ElementAttributes : Resource
 
 	[Export] public Godot.Collections.Dictionary<string, byte> FieldToIndex = new Godot.Collections.Dictionary<string, byte>{};
 
-	public struct FieldProperties
-	{
-		public int Index;
-		public int DefaultValue;
+	/// <summary>
+	/// Used when a custom behavior is implemented.
+	/// </summary>
+	[Export] public Godot.Collections.Dictionary<string, byte> FieldDefaults = new Godot.Collections.Dictionary<string, byte>{};
 
-		public FieldProperties(int defaultValue, int index)
-		{
-			Index = index;
-			DefaultValue = defaultValue;
-		}
-	}
+	[Export] public byte[] DefaultFieldArray = new byte[8];
+
+	// FLAMMABLE field properties
+	/// <summary>
+	/// The chance the element has of not catching fire when one if its neighboring elements is FIRE.
+	/// </summary>
+	[Export] public float SpreadResistance = 0.8f;
+	/// <summary>
+	/// time to fully burn (in seconds). if this value is too high, could result in the element never burning since element fields cannot hold decimals.
+	/// </summary>
+	[Export] public float BurnSpeed = 1f;
 
 	// ---------------------------------------------
 
-	public ElementAttributes(AllElements EId, ElementTypes EType, MoveTypes EMoveType, Color EColor, float ENoiseStrength, Godot.Collections.Array<ElementFlags>? EFlags, Godot.Collections.Array<Reaction> EReactions)
+	public ElementAttributes(AllElements EId, ElementTypes EType, MoveTypes EMoveType, Color EColor, float ENoiseStrength, Godot.Collections.Array<ElementFlags>? EFlags, Godot.Collections.Array<Reaction> EReactions, ElementBehavior behavior)
 	{
 			
 		Id = EId;
@@ -162,6 +183,7 @@ public partial class ElementAttributes : Resource
 		NoiseStrength = ENoiseStrength;
 		Flags = EFlags;
 		Reactions = EReactions;
+		CustomBehavior = behavior;
 		
 		if(Flags == null)
 		{
@@ -184,18 +206,44 @@ public partial class ElementAttributes : Resource
 
 	private void _GenerateFields()
 	{
-		if(MovementType != MoveTypes.CUSTOM)
-		{ 
-			FieldToIndex = new Godot.Collections.Dictionary<string, byte>(MoveTypeDefaultFields[MovementType]);
-			
-			int i = 0;
-			foreach(string field in FieldToIndex.Keys)
-			{
-				FieldToIndex[field] = (byte)i;
+		UpdateDefaultFieldsToCustom();
+		
+		FieldToIndex = MovementType != MoveTypes.CUSTOM ? new Godot.Collections.Dictionary<string, byte>(MoveTypeDefaultFields[MovementType]) : FieldDefaults.Duplicate();
 
-				i++;
+		// add other fields
+		if(Flags != null)
+		{
+			foreach(ElementFlags flag in Flags)
+			{
+				if(!FlagDefaultFields.Keys.Contains(flag)){continue;} // only proceed if the flag has special fields
+				foreach(string fieldName in FlagDefaultFields[flag].Keys)
+				{
+					// add to FieldToIndex
+					FieldToIndex.Add(fieldName, FlagDefaultFields[flag][fieldName]);
+				}
+
 			}
 		}
+
+		// create default array ----------------------------------------------------------------
+		byte i = 0;
+		foreach(string fieldName in FieldToIndex.Keys)
+		{
+			DefaultFieldArray[i] = FieldToIndex[fieldName];
+
+			i++;
+		}
+
+
+		// assign indices after default array generation
+		i = 0;
+		foreach(string field in FieldToIndex.Keys)
+		{
+			FieldToIndex[field] = i;
+
+			i++;
+		}
+
 	}
 
 	public void OnSave()
@@ -211,7 +259,7 @@ public partial class ElementAttributes : Resource
 			clonedReactions.Add((Reaction)reaction.Duplicate(true));
 		}
 
-		return new ElementAttributes(Id, Type, MovementType, BaseColor, NoiseStrength, Flags.Duplicate(true), clonedReactions);
+		return new ElementAttributes(Id, Type, MovementType, BaseColor, NoiseStrength, Flags.Duplicate(true), clonedReactions, CustomBehavior);
 	}
 
 	public StringName GetTypeStrN()
@@ -232,6 +280,11 @@ public partial class ElementAttributes : Resource
 	public void RemoveFlag(int index)
 	{
 		Flags.RemoveAt(index);
+	}
+
+	public bool ContainsFlag(int flagNum)
+	{
+		return Flags.Contains((ElementFlags)flagNum);
 	}
 
 	public int GetFlagsCount()

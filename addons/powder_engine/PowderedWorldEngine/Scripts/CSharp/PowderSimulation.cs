@@ -145,11 +145,20 @@ public partial class PowderSimulation : Node2D
 	public float UpdateTime = 0.0f;
 	public float DrawTime = 0.0f;
 	
-	// moved around various functions for testing.
+	/// <summary>
+	/// moved around various functions for testing.
+	/// </summary>
 	public float MiscTime = 0.0f;
 
-	// update 60 times/sec
+	/// <summary>
+	/// update 60 times/sec
+	/// </summary>
 	private float SimDt = 1.0f / 60.0f;
+
+	/// <summary>
+	/// returns SimDt * SimulationSpeed. Represents the deltaTime of the simulation WITHOUT accounting for lag.
+	/// </summary>
+	public float SimActualDt => SimDt * SimulationSpeed;
 	// time passed since startup
 	private float Accumulator = 0.0f;
 	// number of ticks passed since startup, mod by 2
@@ -804,6 +813,7 @@ public partial class PowderSimulation : Node2D
 
 	public override void _Ready()
 	{
+		SandInfo.UpdateAttributeFields();
 
 		SetConstraints(FollowAreaConstraint.Size);
 
