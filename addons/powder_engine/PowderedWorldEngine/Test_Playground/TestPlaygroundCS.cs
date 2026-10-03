@@ -50,6 +50,7 @@ public partial class TestPlaygroundCS : Node2D
 		{Key.E, AllElements.ACID},
 		{Key.C, AllElements.SMOKE},
 		{Key.F, AllElements.FIRE},
+		{Key.R, AllElements.WOOD},
 	};
 
 	private List<Key> KeysPressed = new List<Key>();

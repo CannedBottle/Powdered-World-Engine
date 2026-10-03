@@ -286,6 +286,7 @@ layout_mode = 2
 theme_override_constants/separation = 15
 
 [node name="FlammableOptions" type="FoldableContainer" parent="FlagSection/FlagsParent" unique_id=1087946479]
+visible = false
 layout_mode = 2
 folded = true
 title = "Flammable Options"

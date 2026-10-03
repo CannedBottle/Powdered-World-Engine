@@ -17,7 +17,6 @@ FieldToIndex = Dictionary[String, int]({
 
 [sub_resource type="Resource" id="Resource_bucba"]
 script = ExtResource("1_b1pp6")
-Id = 1
 Type = 1
 StringName = "SAND"
 Flags = Array[int]([])
@@ -30,7 +29,6 @@ DefaultFieldArray = PackedByteArray(1, 0, 0, 0, 0, 0, 0, 0)
 
 [sub_resource type="Resource" id="Resource_tw7t8"]
 script = ExtResource("1_b1pp6")
-Id = 2
 Type = 2
 StringName = "WATER"
 MovementType = 1
@@ -62,7 +60,6 @@ MatchingNumToCheck = 1
 
 [sub_resource type="Resource" id="Resource_i34jk"]
 script = ExtResource("1_b1pp6")
-Id = 3
 Type = 2
 StringName = "ACID"
 MovementType = 1
@@ -78,7 +75,6 @@ DefaultFieldArray = PackedByteArray(1, 0, 0, 0, 0, 0, 0, 0)
 
 [sub_resource type="Resource" id="Resource_w50f0"]
 script = ExtResource("1_b1pp6")
-Id = 4
 Type = 1
 StringName = "STONE"
 MovementType = 2
@@ -91,7 +87,6 @@ FieldToIndex = Dictionary[String, int]({
 
 [sub_resource type="Resource" id="Resource_8cutb"]
 script = ExtResource("1_b1pp6")
-Id = 5
 StringName = "WALL"
 MovementType = 4
 Flags = Array[int]([])
@@ -103,7 +98,6 @@ FieldToIndex = Dictionary[String, int]({
 
 [sub_resource type="Resource" id="Resource_j732q"]
 script = ExtResource("1_b1pp6")
-Id = 6
 Type = 3
 StringName = "SMOKE"
 MovementType = 3
@@ -123,7 +117,6 @@ script = ExtResource("3_njb8b")
 [sub_resource type="Resource" id="Resource_l2sc5"]
 script = ExtResource("1_b1pp6")
 CustomBehavior = SubResource("Resource_ii236")
-Id = 7
 Type = 3
 StringName = "FIRE"
 MovementType = 5
@@ -144,6 +137,18 @@ FieldDefaults = Dictionary[String, int]({
 })
 DefaultFieldArray = PackedByteArray(25, 1, 0, 0, 0, 0, 0, 0)
 
+[sub_resource type="Resource" id="Resource_mr8n5"]
+script = ExtResource("1_b1pp6")
+StringName = "WOOD"
+MovementType = 4
+Flags = Array[int]([0])
+BaseColor = Color(1, 0, 0, 1)
+NoiseStrength = 0.1
+FieldToIndex = Dictionary[String, int]({
+"burnProgress": 1,
+"none": 0
+})
+
 [resource]
 script = ExtResource("1_dvpe1")
 AllElementAttributes = Dictionary[StringName, ExtResource("1_b1pp6")]({
@@ -154,7 +159,8 @@ AllElementAttributes = Dictionary[StringName, ExtResource("1_b1pp6")]({
 &"SMOKE": SubResource("Resource_j732q"),
 &"STONE": SubResource("Resource_w50f0"),
 &"WALL": SubResource("Resource_8cutb"),
-&"WATER": SubResource("Resource_tw7t8")
+&"WATER": SubResource("Resource_tw7t8"),
+&"WOOD": SubResource("Resource_mr8n5")
 })
-ElementOrder = Array[StringName]([&"AIR", &"SAND", &"WATER", &"ACID", &"STONE", &"WALL", &"SMOKE", &"FIRE"])
+ElementOrder = Array[StringName]([&"AIR", &"SAND", &"WATER", &"ACID", &"STONE", &"WALL", &"SMOKE", &"FIRE", &"WOOD"])
 metadata/_custom_type_script = "uid://jcjrgxvwm8xe"

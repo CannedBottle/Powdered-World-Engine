@@ -215,6 +215,7 @@ func _reset_defaults():
 func apply_changes():
 	set_actual_to_temp()
 	E_storage_ref.UpdateIds()
+	E_storage_ref.ConnectSavedSignals()
 	SandInfo.SaveElementStorage()
 	ElementEnumGenerator.GenerateElementAttributes()
 	changes_applied.emit()

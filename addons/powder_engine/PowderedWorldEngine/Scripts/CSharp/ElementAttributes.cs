@@ -122,8 +122,6 @@ public partial class ElementAttributes : Resource
 	[Export] public ElementBehavior CustomBehavior {get; set;}
 
 	[ExportGroup("Saved Data")]
-    [Export] public AllElements Id {get; set;}
-
 	[Export] public ElementTypes Type {get; set;}
 
 	[Export] public string StringName {get; set;}
@@ -173,10 +171,9 @@ public partial class ElementAttributes : Resource
 
 	// ---------------------------------------------
 
-	public ElementAttributes(AllElements EId, ElementTypes EType, MoveTypes EMoveType, Color EColor, float ENoiseStrength, Godot.Collections.Array<ElementFlags>? EFlags, Godot.Collections.Array<Reaction> EReactions, ElementBehavior behavior)
+	public ElementAttributes(ElementTypes EType, MoveTypes EMoveType, Color EColor, float ENoiseStrength, Godot.Collections.Array<ElementFlags>? EFlags, Godot.Collections.Array<Reaction> EReactions, ElementBehavior behavior)
 	{
 			
-		Id = EId;
 		Type = EType;
 		MovementType = EMoveType;
 		BaseColor = EColor;
@@ -259,7 +256,7 @@ public partial class ElementAttributes : Resource
 			clonedReactions.Add((Reaction)reaction.Duplicate(true));
 		}
 
-		return new ElementAttributes(Id, Type, MovementType, BaseColor, NoiseStrength, Flags.Duplicate(true), clonedReactions, CustomBehavior);
+		return new ElementAttributes(Type, MovementType, BaseColor, NoiseStrength, Flags.Duplicate(true), clonedReactions, CustomBehavior);
 	}
 
 	public StringName GetTypeStrN()
