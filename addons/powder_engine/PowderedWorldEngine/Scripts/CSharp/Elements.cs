@@ -35,7 +35,6 @@ public partial class Elements : Resource
        WALL,
        SMOKE,
        FIRE,
-       WOOD,
 
     }
 }

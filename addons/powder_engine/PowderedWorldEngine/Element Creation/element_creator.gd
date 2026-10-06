@@ -30,9 +30,9 @@ static var req_type_movement: Dictionary[StringName, StringName] = {
 	&"STATIC": &"NONE",
 }
 
-const add_icon := preload("res://addons/powder_engine/PowderedWorldEngine/Assets/Add.svg")
+const add_icon := preload("uid://0wfxwmclxoui")
 
-const reaction_editor_path: String = "res://addons/powder_engine/PowderedWorldEngine/Element Creation/reaction_editor.tscn"
+const reaction_editor_path: String = "uid://bufawshn4aprg"
 
 var temp_element_names: Array[StringName]
 

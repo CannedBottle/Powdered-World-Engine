@@ -50,7 +50,6 @@ public partial class TestPlaygroundCS : Node2D
 		{Key.E, AllElements.ACID},
 		{Key.C, AllElements.SMOKE},
 		{Key.F, AllElements.FIRE},
-		{Key.R, AllElements.WOOD},
 	};
 
 	private List<Key> KeysPressed = new List<Key>();
@@ -136,11 +135,6 @@ public partial class TestPlaygroundCS : Node2D
 		UTime.Text = "u: " + Sim.UpdateTime.ToString();
 		DTime.Text = "d: " + Sim.DrawTime.ToString();
 		MTime.Text = "misc: " + Sim.MiscTime.ToString();
-
-		if (Input.IsActionPressed("Exit"))
-		{
-			GetTree().Quit();
-		}
 
 		if(!SimPaused)
 		{

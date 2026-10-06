@@ -1,10 +1,10 @@
 @tool
 extends HBoxContainer
 
-const unmarked_icon_path: String = "res://addons/powder_engine/PowderedWorldEngine/Assets/toggleOff.png"
-const marked_icon_path: String = "res://addons/powder_engine/PowderedWorldEngine/Assets/toggleOn.png"
+const unmarked_icon_path: String = "uid://cttltm6n42bnt"
+const marked_icon_path: String = "uid://cyl7s2eiqnfjy"
 
-const remove_icon_path: String = "res://addons/powder_engine/PowderedWorldEngine/Assets/Remove.svg"
+const remove_icon_path: String = "uid://f74vflvc1qcr"
 
 @onready var reaction_editor: FoldableContainer = $ReactionEditor
 @onready var remove_button: Button = $Remove

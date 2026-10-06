@@ -17,7 +17,7 @@ var tooltip: String = ""
 
 var option_picker: OptionButton
 
-const trash_icon_path: String = "res://addons/powder_engine/PowderedWorldEngine/Assets/Remove.svg"
+const trash_icon_path: String = "uid://f74vflvc1qcr"
 
 signal attribute_updated(attribute_index: int, new_selected_index: int)
 

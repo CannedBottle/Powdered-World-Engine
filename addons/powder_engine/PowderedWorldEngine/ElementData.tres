@@ -137,18 +137,6 @@ FieldDefaults = Dictionary[String, int]({
 })
 DefaultFieldArray = PackedByteArray(25, 1, 0, 0, 0, 0, 0, 0)
 
-[sub_resource type="Resource" id="Resource_mr8n5"]
-script = ExtResource("1_b1pp6")
-StringName = "WOOD"
-MovementType = 4
-Flags = Array[int]([0])
-BaseColor = Color(1, 0, 0, 1)
-NoiseStrength = 0.1
-FieldToIndex = Dictionary[String, int]({
-"burnProgress": 1,
-"none": 0
-})
-
 [resource]
 script = ExtResource("1_dvpe1")
 AllElementAttributes = Dictionary[StringName, ExtResource("1_b1pp6")]({
@@ -159,8 +147,7 @@ AllElementAttributes = Dictionary[StringName, ExtResource("1_b1pp6")]({
 &"SMOKE": SubResource("Resource_j732q"),
 &"STONE": SubResource("Resource_w50f0"),
 &"WALL": SubResource("Resource_8cutb"),
-&"WATER": SubResource("Resource_tw7t8"),
-&"WOOD": SubResource("Resource_mr8n5")
+&"WATER": SubResource("Resource_tw7t8")
 })
-ElementOrder = Array[StringName]([&"AIR", &"SAND", &"WATER", &"ACID", &"STONE", &"WALL", &"SMOKE", &"FIRE", &"WOOD"])
+ElementOrder = Array[StringName]([&"AIR", &"SAND", &"WATER", &"ACID", &"STONE", &"WALL", &"SMOKE", &"FIRE"])
 metadata/_custom_type_script = "uid://jcjrgxvwm8xe"

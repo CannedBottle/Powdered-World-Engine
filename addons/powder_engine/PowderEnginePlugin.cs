@@ -30,7 +30,7 @@ public partial class PowderEnginePlugin : EditorPlugin
         SandInfo.PluginVersion = GetPluginVersion();
 
 
-        var _dock_scene = GD.Load<PackedScene>("res://addons/powder_engine/PowderedWorldEngine/Element Creation/ElementDockScene.tscn").Instantiate<Control>();
+        var _dock_scene = GD.Load<PackedScene>("uid://odrmtxhbb4d3").Instantiate<Control>();
 
         _elementDock = new EditorDock();
         _elementDock.AddChild(_dock_scene);
