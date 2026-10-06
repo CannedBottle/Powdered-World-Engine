@@ -45,7 +45,7 @@ script = ExtResource("2_sl452")
 IndividualChunkSize = 64
 ChunkGridSize = Vector2i(5, 3)
 Centered = true
-PixelScale = 6
+PixelScale = 3
 FollowNode = NodePath("../player")
 FollowAreaConstraint = Rect2(0, 0, 1500, 1100)
 ShowSimBorder = true
@@ -82,6 +82,8 @@ lifetime = 10.0
 process_material = SubResource("ParticleProcessMaterial_q510b")
 
 [node name="ui" type="CanvasLayer" parent="." unique_id=1609312808]
+scale = Vector2(0.5, 0.5)
+transform = Transform2D(0.5, 0, 0, 0.5, 0, 0)
 
 [node name="VBoxContainer" type="VBoxContainer" parent="ui" unique_id=1016697764]
 offset_right = 40.0

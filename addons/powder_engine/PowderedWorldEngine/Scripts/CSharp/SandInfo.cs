@@ -10,7 +10,7 @@ public partial class SandInfo : Node
 {
 	// ---------------------------- Element Attribute Storage ---------------------------- //
 
-	public static readonly string ElementResourcePath = "uid://bj5qc7jfjbjel";
+	public static readonly string ElementResourcePath = "res://addons/powder_engine/PowderedWorldEngine/ElementData.tres";
 
 	// the instance of the ElementStorage resource, which contains all element data.
 	public static readonly ElementStorage ElementResource = ResourceLoader.Load<ElementStorage>(ElementResourcePath);
