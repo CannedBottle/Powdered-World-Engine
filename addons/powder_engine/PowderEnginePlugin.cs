@@ -1,4 +1,5 @@
 #if TOOLS
+using System;
 using Godot;
 
 
@@ -28,7 +29,6 @@ public partial class PowderEnginePlugin : EditorPlugin
         base._EnterTree();
         AddAutoloadSingleton("SandInfo", "res://addons/powder_engine/PowderedWorldEngine/Scripts/CSharp/SandInfo.cs");
         SandInfo.PluginVersion = GetPluginVersion();
-
 
         var _dock_scene = GD.Load<PackedScene>("uid://odrmtxhbb4d3").Instantiate<Control>();
 
