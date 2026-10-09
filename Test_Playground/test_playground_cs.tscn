@@ -1,12 +1,12 @@
 [gd_scene format=3 uid="uid://ins8vgen1wrn"]
 
-[ext_resource type="Script" uid="uid://c6kb7kabsigl2" path="res://addons/powder_engine/PowderedWorldEngine/Test_Playground/TestPlaygroundCS.cs" id="1_q510b"]
+[ext_resource type="Script" uid="uid://c6kb7kabsigl2" path="res://Test_Playground/TestPlaygroundCS.cs" id="1_q510b"]
 [ext_resource type="Script" uid="uid://b5ufmvvm0i4bm" path="res://addons/powder_engine/PowderedWorldEngine/Scripts/CSharp/PowderSimulation.cs" id="2_sl452"]
 [ext_resource type="Texture2D" uid="uid://b0ol6juljiyfp" path="res://addons/powder_engine/PowderedWorldEngine/Assets/PowderedWorldIcon.png" id="3_6jmkn"]
-[ext_resource type="Script" uid="uid://d2qdk4il2fgb5" path="res://addons/powder_engine/PowderedWorldEngine/Test_Playground/cameraController.gd" id="3_q510b"]
+[ext_resource type="Script" uid="uid://d2qdk4il2fgb5" path="res://Test_Playground/cameraController.gd" id="3_q510b"]
 [ext_resource type="Script" uid="uid://bor3cnwg1stod" path="res://addons/powder_engine/PowderedWorldEngine/Scripts/CSharp/ChunkPosVisualizer.cs" id="3_rvngg"]
-[ext_resource type="Texture2D" uid="uid://1qu0gcqovs3r" path="res://addons/powder_engine/PowderedWorldEngine/Test_Playground/Pause.svg" id="4_r0ubx"]
-[ext_resource type="Texture2D" uid="uid://fkaei5up58co" path="res://addons/powder_engine/PowderedWorldEngine/Test_Playground/ArrowRight.svg" id="5_65cau"]
+[ext_resource type="Texture2D" uid="uid://1qu0gcqovs3r" path="res://Test_Playground/Pause.svg" id="4_r0ubx"]
+[ext_resource type="Texture2D" uid="uid://fkaei5up58co" path="res://Test_Playground/ArrowRight.svg" id="5_65cau"]
 [ext_resource type="Texture2D" uid="uid://0wfxwmclxoui" path="res://addons/powder_engine/PowderedWorldEngine/Assets/Add.svg" id="7_pme4i"]
 [ext_resource type="Texture2D" uid="uid://f74vflvc1qcr" path="res://addons/powder_engine/PowderedWorldEngine/Assets/Remove.svg" id="8_typh4"]
 

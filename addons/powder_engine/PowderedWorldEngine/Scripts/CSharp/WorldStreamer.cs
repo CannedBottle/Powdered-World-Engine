@@ -38,7 +38,7 @@ public partial class WorldStreamer : RefCounted
 
 
     /// <summary>
-    /// Creates a new WorldStreamer object and a <c>.pwdr</c>file with the given <c>FileName</c> assigned to it. <c>WorldDirPath</c> must point to a directory in which the file can be created. Usually starts with <c>user://</c>.
+    /// Creates a new WorldStreamer object and a <c>.pwdr</c>file with the given <c>FileName</c> assigned to it. <c>WorldDirPath</c> must point to a directory in which the file can be created, and <b>MUST end with /</b>. Usually starts with <c>user://</c>.
 	/// <b>FileName MUST be different than an already existing file. Otherwise it opens the existing file.</b>
     /// </summary>
     /// <param name="WorldPath">The path to the folder for this file to be saved in. Usually starts with <c>user://</c>.</param>

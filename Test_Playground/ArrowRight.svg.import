@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://1qu0gcqovs3r"
-path="res://.godot/imported/Pause.svg-b9615b0d0760269a776f45f99181ae59.ctex"
+uid="uid://fkaei5up58co"
+path="res://.godot/imported/ArrowRight.svg-a39166740e47ad4cb4e9e4899e545131.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://addons/powder_engine/PowderedWorldEngine/Test_Playground/Pause.svg"
-dest_files=["res://.godot/imported/Pause.svg-b9615b0d0760269a776f45f99181ae59.ctex"]
+source_file="res://Test_Playground/ArrowRight.svg"
+dest_files=["res://.godot/imported/ArrowRight.svg-a39166740e47ad4cb4e9e4899e545131.ctex"]
 
 [params]
 
