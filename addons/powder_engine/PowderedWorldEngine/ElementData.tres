@@ -5,7 +5,7 @@
 [ext_resource type="Script" uid="uid://cm7pub3uagnh7" path="res://addons/powder_engine/PowderedWorldEngine/Element Creation/Reaction.cs" id="2_u0hdg"]
 [ext_resource type="Script" uid="uid://bipndtnppwr4m" path="res://addons/powder_engine/PowderedWorldEngine/Scripts/CSharp/FireBehavior.cs" id="3_njb8b"]
 
-[sub_resource type="Resource" id="Resource_icetj"]
+[sub_resource type="Resource" id="Resource_njb8b"]
 script = ExtResource("2_u0hdg")
 MarkedNeighbors = Array[Vector2i]([Vector2i(-1, -1), Vector2i(0, -1), Vector2i(1, -1), Vector2i(-1, 0), Vector2i(1, 0), Vector2i(-1, 1), Vector2i(0, 1), Vector2i(1, 1)])
 ElementExclusions = Array[int]([3])
@@ -13,7 +13,7 @@ ElementCheckSerialized = null
 NeighborElementComparison = 1
 MatchingNumToCheck = 1
 
-[sub_resource type="Resource" id="Resource_ot7ed"]
+[sub_resource type="Resource" id="Resource_bucba"]
 script = ExtResource("2_u0hdg")
 MarkedNeighbors = Array[Vector2i]([Vector2i(-1, -1), Vector2i(0, -1), Vector2i(1, -1), Vector2i(-1, 0), Vector2i(1, 0), Vector2i(-1, 1), Vector2i(0, 1), Vector2i(1, 1)])
 ElementExclusions = Array[int]([3])
@@ -22,14 +22,14 @@ NeighborElementComparison = 1
 reactionType = 3
 MatchingNumToCheck = 1
 
-[sub_resource type="Resource" id="Resource_i34jk"]
+[sub_resource type="Resource" id="Resource_tw7t8"]
 script = ExtResource("1_b1pp6")
 Type = 2
 StringName = "ACID"
 MovementType = 1
 Flags = Array[int]([])
 BaseColor = Color(0.678, 1, 0.31, 0.75)
-Reactions = Array[ExtResource("2_u0hdg")]([SubResource("Resource_icetj"), SubResource("Resource_ot7ed")])
+Reactions = Array[ExtResource("2_u0hdg")]([SubResource("Resource_njb8b"), SubResource("Resource_bucba")])
 FieldToIndex = Dictionary[String, int]({
 "R#direction": 1,
 "R#random": 0,
@@ -37,22 +37,31 @@ FieldToIndex = Dictionary[String, int]({
 })
 DefaultFieldArray = PackedByteArray(1, 0, 0, 0, 0, 0, 0, 0)
 
-[sub_resource type="Resource" id="Resource_njb8b"]
+[sub_resource type="Resource" id="Resource_icetj"]
+script = ExtResource("2_u0hdg")
+MarkedNeighbors = Array[Vector2i]([])
+ElementExclusions = Array[int]([])
+ElementCheckSerialized = null
+NeighborElementComparison = 1
+MatchingNumToCheck = 1
+
+[sub_resource type="Resource" id="Resource_ot7ed"]
 script = ExtResource("1_b1pp6")
 StringName = "AIR"
 MovementType = 4
 Flags = Array[int]([])
 BaseColor = Color(0, 0, 0, 0)
+Reactions = Array[ExtResource("2_u0hdg")]([SubResource("Resource_icetj")])
 FieldToIndex = Dictionary[String, int]({
 "none": 0
 })
 
-[sub_resource type="Resource" id="Resource_ii236"]
+[sub_resource type="Resource" id="Resource_i34jk"]
 script = ExtResource("3_njb8b")
 
-[sub_resource type="Resource" id="Resource_l2sc5"]
+[sub_resource type="Resource" id="Resource_w50f0"]
 script = ExtResource("1_b1pp6")
-CustomBehavior = SubResource("Resource_ii236")
+CustomBehavior = SubResource("Resource_i34jk")
 Type = 3
 StringName = "FIRE"
 MovementType = 5
@@ -73,7 +82,7 @@ FieldDefaults = Dictionary[String, int]({
 })
 DefaultFieldArray = PackedByteArray(25, 1, 0, 0, 0, 0, 0, 0)
 
-[sub_resource type="Resource" id="Resource_bucba"]
+[sub_resource type="Resource" id="Resource_8cutb"]
 script = ExtResource("1_b1pp6")
 Type = 1
 StringName = "SAND"
@@ -100,7 +109,7 @@ FieldToIndex = Dictionary[String, int]({
 })
 DefaultFieldArray = PackedByteArray(1, 0, 0, 0, 0, 0, 0, 0)
 
-[sub_resource type="Resource" id="Resource_w50f0"]
+[sub_resource type="Resource" id="Resource_ii236"]
 script = ExtResource("1_b1pp6")
 Type = 1
 StringName = "STONE"
@@ -112,7 +121,7 @@ FieldToIndex = Dictionary[String, int]({
 "none": 0
 })
 
-[sub_resource type="Resource" id="Resource_8cutb"]
+[sub_resource type="Resource" id="Resource_l2sc5"]
 script = ExtResource("1_b1pp6")
 StringName = "WALL"
 MovementType = 4
@@ -123,7 +132,7 @@ FieldToIndex = Dictionary[String, int]({
 "none": 0
 })
 
-[sub_resource type="Resource" id="Resource_tw7t8"]
+[sub_resource type="Resource" id="Resource_mr8n5"]
 script = ExtResource("1_b1pp6")
 Type = 2
 StringName = "WATER"
@@ -140,14 +149,14 @@ DefaultFieldArray = PackedByteArray(1, 0, 0, 0, 0, 0, 0, 0)
 [resource]
 script = ExtResource("1_dvpe1")
 AllElementAttributes = Dictionary[StringName, ExtResource("1_b1pp6")]({
-&"ACID": SubResource("Resource_i34jk"),
-&"AIR": SubResource("Resource_njb8b"),
-&"FIRE": SubResource("Resource_l2sc5"),
-&"SAND": SubResource("Resource_bucba"),
+&"ACID": SubResource("Resource_tw7t8"),
+&"AIR": SubResource("Resource_ot7ed"),
+&"FIRE": SubResource("Resource_w50f0"),
+&"SAND": SubResource("Resource_8cutb"),
 &"SMOKE": SubResource("Resource_j732q"),
-&"STONE": SubResource("Resource_w50f0"),
-&"WALL": SubResource("Resource_8cutb"),
-&"WATER": SubResource("Resource_tw7t8")
+&"STONE": SubResource("Resource_ii236"),
+&"WALL": SubResource("Resource_l2sc5"),
+&"WATER": SubResource("Resource_mr8n5")
 })
 ElementOrder = Array[StringName]([&"AIR", &"SAND", &"WATER", &"ACID", &"STONE", &"WALL", &"SMOKE", &"FIRE"])
 metadata/_custom_type_script = "uid://jcjrgxvwm8xe"
