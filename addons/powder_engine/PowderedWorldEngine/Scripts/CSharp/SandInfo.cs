@@ -662,7 +662,7 @@ public partial class SandInfo : Node
 		/// <summary>
 		/// Sets this cell's Element while marking it updated on this cell's chunk. Marking a cell updated makes sure it displays the updated information on the simulation.
 		/// </summary>
-		/// <param name="to"></param>
+		/// <param name="to">The element to assign to the cell.</param>
 		public void SetElement(AllElements to)
 		{
 			Element = to;
