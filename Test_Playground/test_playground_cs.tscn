@@ -9,6 +9,7 @@
 [ext_resource type="Texture2D" uid="uid://fkaei5up58co" path="res://Test_Playground/ArrowRight.svg" id="5_65cau"]
 [ext_resource type="Texture2D" uid="uid://0wfxwmclxoui" path="res://addons/powder_engine/PowderedWorldEngine/Assets/Add.svg" id="7_pme4i"]
 [ext_resource type="Texture2D" uid="uid://f74vflvc1qcr" path="res://addons/powder_engine/PowderedWorldEngine/Assets/Remove.svg" id="8_typh4"]
+[ext_resource type="Script" uid="uid://3d70syh41vkb" path="res://addons/powder_engine/PowderedWorldEngine/Scripts/CSharp/CollisionComponent.cs" id="10_aw28y"]
 
 [sub_resource type="Curve" id="Curve_q510b"]
 _data = [Vector2(0.011235952, 0), 0.0, 0.0, 0, 0, Vector2(0.23220974, 1), 0.0, 0.0, 0, 0, Vector2(0.8052435, 1), 0.0, 0.0, 0, 0, Vector2(1, 0), 0.0, 0.0, 0, 0]
@@ -39,6 +40,7 @@ alpha_curve = SubResource("CurveTexture_ew800")
 [node name="Test_Playground CS" type="Node2D" unique_id=1643439571]
 script = ExtResource("1_q510b")
 brushSize = 3
+GenerateNoiseWall = true
 
 [node name="PowderSimulation" type="Node2D" parent="." unique_id=215125392 node_paths=PackedStringArray("FollowNode")]
 script = ExtResource("2_sl452")
@@ -51,6 +53,12 @@ FollowAreaConstraint = Rect2(0, 0, 1500, 1100)
 ShowSimBorder = true
 SimBorderWidth = 10
 metadata/_custom_type_script = "uid://b5ufmvvm0i4bm"
+
+[node name="CollisionComponent" type="StaticBody2D" parent="." unique_id=917109579 node_paths=PackedStringArray("Simulation")]
+z_index = 10
+script = ExtResource("10_aw28y")
+Simulation = NodePath("../PowderSimulation")
+metadata/_custom_type_script = "uid://3d70syh41vkb"
 
 [node name="player" type="Sprite2D" parent="." unique_id=421318543]
 position = Vector2(-278, -3103)
@@ -65,6 +73,7 @@ metadata/_custom_type_script = "uid://bor3cnwg1stod"
 
 [node name="camera" type="Camera2D" parent="." unique_id=1204493082]
 anchor_mode = 0
+zoom = Vector2(5.955, 5.955)
 script = ExtResource("3_q510b")
 use_camera_drag = true
 
@@ -166,3 +175,8 @@ text = "LoadWorld"
 layout_mode = 2
 size_flags_horizontal = 0
 text = "Push To File"
+
+[node name="collisions" type="Button" parent="ui/VBoxContainer" unique_id=768267158]
+layout_mode = 2
+size_flags_horizontal = 0
+text = "Init+Draw Collisions"

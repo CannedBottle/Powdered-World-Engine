@@ -416,7 +416,7 @@ public partial class PowderSimulation : Node2D
 	/// <returns>the given cell local simulation position translated into world position.</returns>
 	public Vector2 LocalToWorld(Vector2I fromLocal, bool includeParentOffset = true)
 	{
-		return fromLocal * PixelScale + (Position * (includeParentOffset ? 1 : 0));
+		return fromLocal * PixelScale + (Position * (includeParentOffset ? 1 : 0)) + new Vector2(PixelScale * 0.5f, PixelScale * 0.5f);
 	}
 
 	/// <summary></summary>
@@ -597,7 +597,6 @@ public partial class PowderSimulation : Node2D
 
 				AddChunk(LoopPos);
 
-				Chunks[LoopPos].Renderer = CreateChunkRenderer(LoopPos);
 			}
 		}
 

@@ -26,6 +26,9 @@ public partial class TestPlaygroundCS : Node2D
 	private Button LoadButton;
 	private Button FlushButton;
 
+	private CollisionComponent collisionComponent;
+	private Button collisionInitButton;
+
 	private ChunkPosVisualizer PosVisualizer;
 
 	private Sprite2D Player;
@@ -35,6 +38,8 @@ public partial class TestPlaygroundCS : Node2D
 	private bool SimPaused = false;
 
 	[Export] public int brushSize = 2;
+
+	[Export] public bool GenerateNoiseWall = false;
 
 
 	private WorldStreamer WorldSave;
@@ -73,6 +78,9 @@ public partial class TestPlaygroundCS : Node2D
 		FlushButton = GetNode<Button>("ui/VBoxContainer/Flush");
 		PosVisualizer = GetNode<ChunkPosVisualizer>("ChunkPosVisualizer");
 
+		collisionComponent = GetNode<CollisionComponent>("CollisionComponent");
+		collisionInitButton = GetNode<Button>("ui/VBoxContainer/collisions");
+
 
 		Player = GetNode<Sprite2D>("player");
 
@@ -89,6 +97,13 @@ public partial class TestPlaygroundCS : Node2D
 
 		DebugSwitch.ButtonPressed = Sim.DebugMode;
 
+
+		if (GenerateNoiseWall)
+		{
+			GenerateWallWorld();
+		}
+
+
 		DebugSwitch.Pressed += OnDebugSwitched;
 		PauseButton.Toggled += Pause;
 		NextFrameButton.Pressed += ProgressFrame;
@@ -97,6 +112,8 @@ public partial class TestPlaygroundCS : Node2D
 		SaveButton.Pressed += SaveWorld;
 		LoadButton.Pressed += LoadWorld;
 		FlushButton.Pressed += FlushFile;
+
+		collisionInitButton.Pressed += collisionComponent.InitSegmentsFromWorld;
 	}
 
 
@@ -158,6 +175,43 @@ public partial class TestPlaygroundCS : Node2D
 		velo.Y * PLAYER_SPEED * (float)delta);
     }
 
+
+	private void GenerateWallWorld()
+	{
+		FastNoiseLite WorldNoise = new FastNoiseLite();
+		WorldNoise.NoiseType = FastNoiseLite.NoiseTypeEnum.Simplex;
+		WorldNoise.Seed = (int)GD.Randi();
+		WorldNoise.Frequency = 0.02f;
+
+		foreach(SandInfo.Chunk Chunk in Sim.Chunks.Values)
+		{
+			foreach(SandInfo.Cell Cell in Chunk.Cells)
+			{
+				if(WorldNoise.GetNoise2D(Cell.Position.X, Cell.Position.Y) > -0.5)
+				{
+					switch (WorldNoise.GetNoise2D(Cell.Position.X, Cell.Position.Y))
+					{
+						
+						case > 0.6f:
+							Sim.SetCell(Cell, AllElements.WATER);
+							break;
+						case > 0.3f:
+							Sim.SetCell(Cell, AllElements.SAND);
+							break;
+						case > -0.2f:
+							Sim.SetCell(Cell, AllElements.WALL);
+							break;
+						default:
+							Sim.SetCell(Cell, AllElements.AIR);
+							break;
+
+					}
+					
+				}
+			}
+		}
+
+	}
 
 	private void OnDebugSwitched()
 	{

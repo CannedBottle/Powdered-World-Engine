@@ -415,6 +415,7 @@ public partial class SandInfo : Node
 		if(cell.TryMove(BOTTOMMIDDLE, simRef) == false)
 				{
 					bool success;
+					
 					if(cell.GetField("R#random") == 0)
 					{
 						success = cell.TryMove(BOTTOMRIGHT, simRef);
@@ -431,7 +432,7 @@ public partial class SandInfo : Node
 							success = cell.TryMove(BOTTOMRIGHT, simRef);
 						}
 					}
-
+					
 					if(success == false)
 					{
 						byte[] tempAtts = cell.Fields;
@@ -616,6 +617,9 @@ public partial class SandInfo : Node
 
 		public int ChunkSize;
 
+		/// <summary>
+		/// local Simulation position.
+		/// </summary>
 		public Vector2I Position = new Vector2I();
 	
 		private AllElements _element;
