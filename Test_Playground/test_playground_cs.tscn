@@ -73,7 +73,7 @@ metadata/_custom_type_script = "uid://bor3cnwg1stod"
 
 [node name="camera" type="Camera2D" parent="." unique_id=1204493082]
 anchor_mode = 0
-zoom = Vector2(5.955, 5.955)
+zoom = Vector2(8.51, 8.51)
 script = ExtResource("3_q510b")
 use_camera_drag = true
 

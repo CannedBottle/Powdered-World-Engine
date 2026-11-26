@@ -135,7 +135,13 @@ public partial class PowderSimulation : Node2D
 
 	public Vector2I SimulationSize;
 
+	/// <summary>
+	/// local simulation coords.
+	/// </summary>
 	public Vector2I SimulationMaxExtents;
+	/// <summary>
+	/// local simulation coords.
+	/// </summary>
 	public Vector2I SimulationMinExtents;
 
 	public Vector2I SimulationMaxChunkExtents;

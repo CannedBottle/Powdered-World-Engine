@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Cryptography;
 using Godot;
 using Godot.NativeInterop;
 using static SandInfo;
@@ -39,6 +40,16 @@ public partial class CollisionComponent : StaticBody2D
 			return startPoint.IsEqualApprox(with.startPoint) || startPoint.IsEqualApprox(with.endPoint) || endPoint.IsEqualApprox(with.startPoint) || endPoint.IsEqualApprox(with.endPoint);
 		}
 
+		/// <summary>
+		/// Sets startPoint to endPoint and vice versa.
+		/// </summary>
+		public void FlipSegment()
+		{
+			Vector2 temp = startPoint;
+			startPoint = endPoint;
+			endPoint = temp;
+		}
+
 	}
 
 	/// <summary>
@@ -50,12 +61,13 @@ public partial class CollisionComponent : StaticBody2D
 		public Vector2[] ends = new Vector2[2];
 		public int[] endSegmentIdxs = new int[2];
 
-		public List<Segment> segments = new List<Segment>{};
+		public List<Segment> frontSegments = new List<Segment>{};
 		
+		public List<Segment> backSegments = new List<Segment>{};
 
 		public Chain(Segment startingSegment)
 		{
-			segments.Add(startingSegment);
+			frontSegments.Add(startingSegment);
 
 			ends[0] = startingSegment.startPoint;
 			ends[1] = startingSegment.endPoint;
@@ -67,6 +79,23 @@ public partial class CollisionComponent : StaticBody2D
 			ends[1] = new Vector2(float.NaN, float.NaN);
 		}
 
+		public List<Segment> GetCombinedList()
+		{
+			List<Segment> newList = new List<Segment>{};
+
+			for(int i = backSegments.Count - 1; i >= 0; i--)
+			{
+				newList.Add(backSegments[i]);
+			}
+
+			foreach(Segment segment in frontSegments)
+			{
+				newList.Add(segment);
+			}
+
+			return newList;
+		}
+
 		/// <summary>
 		/// </summary>
 		/// <returns>The segments of this polygon represented in an Array.</returns>
@@ -74,7 +103,13 @@ public partial class CollisionComponent : StaticBody2D
 		{
 			List<Vector2> newArr = new List<Vector2>{};
 
-			foreach(Segment segment in segments)
+			for(int i = backSegments.Count - 1; i >= 0; i--)
+			{
+				newArr.Add(backSegments[i].startPoint);
+				newArr.Add(backSegments[i].endPoint);
+			}
+
+			foreach(Segment segment in frontSegments)
 			{
 				newArr.Add(segment.startPoint);
 				newArr.Add(segment.endPoint);
@@ -83,62 +118,87 @@ public partial class CollisionComponent : StaticBody2D
 			return newArr.ToArray();
 		}
 
-		
-		public bool TryAddSegment(Segment segment)
+		/// <summary>
+		/// assumes both chains have a connection.
+		/// </summary>
+		/// <param name="otherChain"></param>
+		public void CombineWith(Chain otherChain)
 		{
-			if(segments.Count == 0) // if there is no other segment in the polygon, add the segment and set its ends as the polygon ends
-			{
-				segments.Add(segment);
-				ends[0] = segment.startPoint;
-				ends[1] = segment.endPoint;
+			// the list in the otherChain object that is connected to this Chain's backSegments list
 
-				return true;
-			}
-		
-			// otherwise, test if the segment is connected
+			int connectedIndex = ends[0] == otherChain.ends[0] || ends[0] == otherChain.ends[1] ? 0 : 1;
 
-			if(segment.startPoint.IsEqualApprox(ends[0]))
+			// get full list, not separated into two
+			List<Segment> otherChainFullList = otherChain.GetCombinedList();
+
+			if(connectedIndex == 0) // decides whether the front or back array gets appended to
 			{
-				segments.Add(segment);
-				ends[0] = segment.endPoint;
-				if (segment.endPoint.IsEqualApprox(ends[1])) // if other end is equal to other end of polygon, it is a closed polygon
+				if(otherChainFullList[0].startPoint.IsEqualApprox(ends[connectedIndex])) // start position of other chain connects to end of back list
 				{
-					closed = true;
+					foreach(Segment segment in otherChainFullList)
+					{
+						segment.FlipSegment();
+						backSegments.Add(segment);
+					}
+					ends[0] = backSegments[backSegments.Count - 1].startPoint;
 				}
-				return true;
+				else // if the connection is at the end of the otherChainList and connected to the end of the back list
+				{
+					for(int i = otherChainFullList.Count - 1; i >= 0; i--) //iterate backwards
+					{
+						backSegments.Add(otherChainFullList[i]);
+					}
+					ends[0] = backSegments[backSegments.Count - 1].startPoint;
+				}
 			}
-			else if (segment.startPoint.IsEqualApprox(ends[1]))
+			else if (connectedIndex == 1) // connection is at the end of the front segment list
 			{
-				segments.Add(segment);
-				ends[1] = segment.endPoint;
-				if (segment.endPoint.IsEqualApprox(ends[0]))
+				if(otherChainFullList[0].startPoint.IsEqualApprox(ends[connectedIndex]))
 				{
-					closed = true;
+					frontSegments.AddRange(otherChainFullList);
+					ends[1] = frontSegments[frontSegments.Count - 1].endPoint;
 				}
-				return true;
-			}
-			else if (segment.endPoint.IsEqualApprox(ends[0]))
-			{
-				segments.Add(segment);
-				ends[0] = segment.startPoint;
-				if (segment.startPoint.IsEqualApprox(ends[1]))
+				else // if the connection is at the end of the otherChainList and connected to the end of the front list
 				{
-					closed = true;
+					for(int i = otherChainFullList.Count - 1; i >= 0; i--)
+					{
+						Segment editedSegment = otherChainFullList[i];
+						editedSegment.FlipSegment();
+						frontSegments.Add(editedSegment);
+					}
+					ends[1] = frontSegments[frontSegments.Count - 1].endPoint;
 				}
-				return true;
-			}
-			else if (segment.endPoint.IsEqualApprox(ends[1]))
-			{
-				segments.Add(segment);
-				ends[1] = segment.startPoint;
-				if (segment.startPoint.IsEqualApprox(ends[0]))
-				{
-					closed = true;
-				}
-				return true;
 			}
 
-			return false;
+			if (ends[0].IsEqualApprox(ends[1]))
+			{
+				closed = true;
+			}
+
+		}
+
+		public void AddConnectedSegment(Segment connectedSegment, Vector2 connectedPoint)
+		{
+			List<Segment> listToAdd = connectedPoint.IsEqualApprox(ends[0]) ? backSegments : frontSegments;
+
+			// see if the segment needs to be flipped
+			if(listToAdd == backSegments && connectedSegment.startPoint.IsEqualApprox(connectedPoint))
+			{
+				connectedSegment.FlipSegment();
+			}
+			else if (listToAdd == frontSegments && connectedSegment.endPoint.IsEqualApprox(connectedPoint))
+			{
+				connectedSegment.FlipSegment();
+			}
+
+			// add to list and change the ends (and check if its closed)
+			listToAdd.Add(connectedSegment);
+			ends[0] = backSegments.Count > 0 ? backSegments[backSegments.Count - 1].startPoint : frontSegments[0].startPoint;
+			ends[1] = frontSegments[frontSegments.Count - 1].endPoint;
+			if (ends[0].IsEqualApprox(ends[1]))
+			{
+				closed = true;
+			}
 
 		}
 		
@@ -155,6 +215,8 @@ public partial class CollisionComponent : StaticBody2D
 	/// </summary>
 	public Dictionary<Vector2, Chain> Chains = new Dictionary<Vector2, Chain>{};
 
+	public List<Chain> closedChains = new List<Chain>{};
+
 	/// <summary>
 	/// holds the index where the generated CollisionPolygon2Ds start, to allow for non-dynamically added children to be present in this node.
 	/// </summary>
@@ -163,41 +225,110 @@ public partial class CollisionComponent : StaticBody2D
     public override void _Draw() // draw isolines for debug
     {
         base._Draw();
-
-		foreach(Chain chain in Chains.Values)
+		
+		foreach(Chain chain in closedChains)
 		{
-			foreach (Segment line in chain.segments)
+			Vector2[] points = chain.SegmentsToArray();
+
+			for(int i = 0; i < points.Length; i += 2)
 			{
-				DrawLine(line.startPoint, line.endPoint, Colors.White, 0.75f);
+				DrawLine(points[i], points[i + 1], Colors.White, 0.75f);
 			}	
 		}
+		
 
     }
 
 	public void InitSegmentsFromWorld()
 	{
 		Chains.Clear();
-
-		GD.Print("Before getting segments");
+		closedChains.Clear();
 
 		foreach(Chunk chunk in Simulation.Chunks.Values)
 		{
 			GetSegmentsFromChunk(chunk);
 		}
 
-		GD.Print("Before Polygons");
+		GetPaddingSegments();
 
 		UpdateAllPolygons();
 
-		GD.Print("After Polygons");
+		// uncomment to show debug isolines
+		//QueueRedraw(); 
+	}
 
-		//QueueRedraw();
+	/// <summary>
+	/// gets the marching squares segments from empty cells outside the world border one cell to the left and one cell up. this fixes an issue of chains on those borders not closing.
+	/// </summary>
+	public void GetPaddingSegments()
+	{
+		// loop over top boundary, then left (this loop goes over the very top-left pixel, and the second one doesn't so it doesnt get run twice)
+		for(int i = Simulation.SimulationMinExtents.X - 1; i <= Simulation.SimulationMaxExtents.X; i++)
+		{
+			// no top-right, since there will never be one
+			Cell bl = Simulation.SimContainsCell(new Vector2I(i, Simulation.SimulationMinExtents.Y)) ?  Simulation.GetCell(new Vector2I(i, Simulation.SimulationMinExtents.Y)): null;
+			Cell br = Simulation.SimContainsCell(new Vector2I(i + 1, Simulation.SimulationMinExtents.Y)) ?  Simulation.GetCell(new Vector2I(i + 1, Simulation.SimulationMinExtents.Y)): null;
+			
+			char tls = '0';
+			char trs = '0';
+			char bls = bl != null && bl.Attributes.Type == ElementTypes.SOLID ? '1' : '0';
+			char brs = br != null && br.Attributes.Type == ElementTypes.SOLID ? '1' : '0';
+
+			int lineState = GetIntRepresentation(tls, trs, brs, bls);
+
+			// get midpoints to start with
+			Vector2 midpointTop = Simulation.LocalToWorld(new Vector2I(i, Simulation.SimulationMinExtents.Y - 1));
+			midpointTop.X += (float)(Simulation.PixelScale * 0.5);
+			Vector2 midpointLeft = Simulation.LocalToWorld(new Vector2I(i, Simulation.SimulationMinExtents.Y - 1));
+			midpointLeft.Y += (float)(Simulation.PixelScale * 0.5);
+
+			Segment[] linesToAdd = getIso(lineState, midpointTop, midpointLeft);
+			for(int n = 0; n < linesToAdd.Length; n++)
+			{
+				if(!float.IsNaN(linesToAdd[n].startPoint.X))
+				{
+					AddCollisionSegment(linesToAdd[n]);
+				}
+			}
+
+		}
+
+		// loop over left boundary
+		for(int i = Simulation.SimulationMinExtents.Y; i <= Simulation.SimulationMaxExtents.Y; i++)
+		{
+			// no bottom-left, since there will never be one
+			Cell tr = Simulation.SimContainsCell(new Vector2I(Simulation.SimulationMinExtents.X, i)) ?  Simulation.GetCell(new Vector2I(Simulation.SimulationMinExtents.X, i)): null;
+			Cell br = Simulation.SimContainsCell(new Vector2I(Simulation.SimulationMinExtents.X, i + 1)) ?  Simulation.GetCell(new Vector2I(Simulation.SimulationMinExtents.X, i + 1)): null;
+			
+			char tls = '0';
+			char bls = '0';
+			char trs = tr != null && tr.Attributes.Type == ElementTypes.SOLID ? '1' : '0';
+			char brs = br != null && br.Attributes.Type == ElementTypes.SOLID ? '1' : '0';
+
+			int lineState = GetIntRepresentation(tls, trs, brs, bls);
+
+			// get midpoints to start with
+			Vector2 midpointTop = Simulation.LocalToWorld(new Vector2I(Simulation.SimulationMinExtents.X - 1, i));
+			midpointTop.X += (float)(Simulation.PixelScale * 0.5);
+			Vector2 midpointLeft = Simulation.LocalToWorld(new Vector2I(Simulation.SimulationMinExtents.X - 1, i));
+			midpointLeft.Y += (float)(Simulation.PixelScale * 0.5);
+
+			Segment[] linesToAdd = getIso(lineState, midpointTop, midpointLeft);
+			for(int n = 0; n < linesToAdd.Length; n++)
+			{
+				if(!float.IsNaN(linesToAdd[n].startPoint.X))
+				{
+					AddCollisionSegment(linesToAdd[n]);
+				}
+			}
+
+		}
+
+
 	}
 
 
 	// For solving cells outside of said chunk: try and get a neighbor from a chunk next to it, and otherwise treat it as empty.
-	// TODO: find out how to make loops that are inside other loops detect as being the same shape
-
 	public void GetSegmentsFromChunk(Chunk chunk)
 	{
 		foreach(Cell cell in chunk.Cells)
@@ -224,46 +355,9 @@ public partial class CollisionComponent : StaticBody2D
 			Segment[] linesToAdd = getIso(lineState, midpointTop, midpointLeft);
 				for(int i = 0; i < linesToAdd.Length; i++)
 				{
-					if(float.IsNaN(linesToAdd[i].startPoint.X))
+					if(!float.IsNaN(linesToAdd[i].startPoint.X))
 					{
-					
-						if(Chains.Count == 0) // if no chains, create one (one dict entry for each end)
-						{
-							Chain newChain = new Chain(linesToAdd[i]);
-
-							Chains.Add(newChain.ends[0], newChain);
-							Chains.Add(newChain.ends[1], newChain);
-							continue;
-						}
-
-						bool segmentAdded = false; // TODO: ******************************************************************* under here
-
-						// keeps track of chains used so it doesnt try to add to another chain
-						List<Chain> chainsTried = new List<Chain>{};
-
-						foreach(Chain chain in Chains.Values) // loop thru polygons and try add
-						{
-							if (chainsTried.Contains(chain))
-							{
-								continue;	
-							}
-							else
-							{
-								chainsTried.Add(chain);
-							}
-
-							if(chain.TryAddSegment(linesToAdd[i]) == true){segmentAdded = true; break;};
-						}
-
-						// if it doesn't fit, make a new one
-						if(segmentAdded == false)
-						{
-							Chain newChain = new Chain(linesToAdd[i]);
-
-							Chains.Add(newChain.ends[0], newChain);
-							Chains.Add(newChain.ends[1], newChain);
-							continue;
-						}
+						AddCollisionSegment(linesToAdd[i]);
 					}
 				}
 
@@ -271,7 +365,7 @@ public partial class CollisionComponent : StaticBody2D
 	}
 
 	/// <summary>
-	/// creates and updates the collision polygons that this node is responsible for creating.
+	/// creates, deletes and updates the collision polygons that this node is responsible for handling.
 	/// </summary>
 	public void UpdateAllPolygons()
 	{
@@ -290,22 +384,11 @@ public partial class CollisionComponent : StaticBody2D
 			}
 		}
 
-		List<Chain> chainsDrawn = new List<Chain>{};
+	
 		int i = 0;
-
-		foreach(Chain chain in Chains.Values)
+		
+		foreach(Chain chain in closedChains)
 		{
-
-			if (chainsDrawn.Contains(chain))
-			{
-				continue;
-			}
-			else
-			{
-				chainsDrawn.Add(chain);
-				i++;
-			}
-
 
 			// if there is already a collisionPolygon made
 			if (childrenList.Count > i + polygonStartIndex && childrenList[i + polygonStartIndex].Name.ToString().Contains("Generated") && childrenList[i + polygonStartIndex] is CollisionPolygon2D)
@@ -318,15 +401,133 @@ public partial class CollisionComponent : StaticBody2D
 			else // else create a new polygon
 			{
 				CollisionPolygon2D newPolygon = new CollisionPolygon2D();
-				newPolygon.Name = "Generated";
+				newPolygon.Name = "Generated" + GetChildren().Count;
 				newPolygon.BuildMode = CollisionPolygon2D.BuildModeEnum.Segments;
 
 				newPolygon.Polygon = chain.SegmentsToArray();
 
 				AddChild(newPolygon);
 			}
+
+			i++;
+		}
+
+		GD.Print("Closed Chains: " + closedChains.Count);
+		// delete any unnecessary nodes
+		if(closedChains.Count < GetChildren().Count - polygonStartIndex)
+		{
+			int idxToDelete = closedChains.Count + polygonStartIndex;
+			for(int n = 0; n < GetChildren().Count - polygonStartIndex - closedChains.Count; n++)
+			{
+				GetChild(idxToDelete + n).QueueFree();
+			}
+		}
+
+	}
+
+	public void AddCollisionSegment(Segment segment)
+	{
+		if(Chains.Count == 0) // if no chains, create one (one dict entry for each end)
+		{
+			AddNewChain(segment);
+			return;
+		}
+
+		bool segmentAdded = false;
+		
+
+		for(int i = 0; i < 2; i++)
+		{
+			Vector2 currentEnd = i == 0 ? segment.startPoint : segment.endPoint;
+
+			if(Chains.TryGetValue(currentEnd, out Chain connectedChain))
+			{
+				// check for other end if it wasnt already checked
+				if (i == 0 && Chains.TryGetValue(segment.endPoint, out Chain secondConnectedChain))
+				{
+					// if they are connected, merge the two chains
+					
+					
+					// remove dict entries first
+					Chains.Remove(connectedChain.ends[0]);
+					Chains.Remove(connectedChain.ends[1]);
+					
+					if(connectedChain != secondConnectedChain)
+					{
+						Chains.Remove(secondConnectedChain.ends[0]);
+						Chains.Remove(secondConnectedChain.ends[1]);	
+					}
+
+					connectedChain.AddConnectedSegment(segment, currentEnd);
+
+					if(connectedChain != secondConnectedChain)
+					{
+						connectedChain.CombineWith(secondConnectedChain);	
+					}
+
+
+					if(connectedChain.closed == true)
+					{
+						closedChains.Add(connectedChain);
+					}
+					else
+					{
+						Chains.Add(connectedChain.ends[0], connectedChain);
+						Chains.Add(connectedChain.ends[1], connectedChain);	
+					}
+
+				}
+				else // if they are not connected, add the segment normally
+				{
+					// remove dict entries first
+					Chains.Remove(connectedChain.ends[0]);
+					Chains.Remove(connectedChain.ends[1]);
+
+					connectedChain.AddConnectedSegment(segment, currentEnd);
+
+					if(connectedChain.closed == true)
+					{
+						closedChains.Add(connectedChain);
+					}
+					else
+					{
+						Chains.Add(connectedChain.ends[0], connectedChain);
+						Chains.Add(connectedChain.ends[1], connectedChain);	
+					}
+				}
+
+
+				segmentAdded = true;
+				break;
+				
+			}
+			else // if chains doesn't contain currentEnd, try the next end
+			{
+				continue;
+			}
+		}
+		
+
+		// if it doesn't fit, make a new one
+		if(segmentAdded == false)
+		{
+			AddNewChain(segment);
+			return;
 		}
 	}
+
+	/// <summary>
+	/// Adds a new Chain to the dictionary (one entry per end of the chain) without checking connections in the dictionary.
+	/// </summary>
+	/// <param name="from"></param>
+	public void AddNewChain(Segment from)
+	{
+		Chain newChain = new Chain(from);
+
+		Chains.Add(newChain.ends[0], newChain);
+		Chains.Add(newChain.ends[1], newChain);
+	}
+
 
 	/// <summary></summary>
 	/// <returns>The integer representation of the 4 bits</returns>
@@ -335,6 +536,7 @@ public partial class CollisionComponent : StaticBody2D
 		char[] bits = [topLeft, topRight, bottomRight, bottomLeft];
         return Convert.ToInt32(new string(bits), 2);
 	}
+
 
 	/// <summary>
 	/// Returns the isolines (lines generated with marching squares) with the correct world position.
@@ -346,6 +548,7 @@ public partial class CollisionComponent : StaticBody2D
 	public Segment[] getIso(int lineState, Vector2 midpointTop, Vector2 midpointLeft)
 	{
 		Segment[] lines = new Segment[2];
+		Array.Fill(lines, new Segment());
 
 		switch (lineState)
 		{
